@@ -3,8 +3,8 @@
   import { fly, fade, blur } from "svelte/transition";
   import Page from "./about/+page.svelte";
 
-  let varY;
-  let loaded = false;
+  let varY = $state();
+  let loaded = $state(false);
 
   onMount(() => {
     requestAnimationFrame(() => {
@@ -14,18 +14,23 @@
     });
   });
 
-  function animEnd() {
+  function onanimationend() {
+    anima = true;
+  }
+  function ontransitionend() {
     anima = true;
   }
 
-  $: anima = false;
-  $: MenuVis = false;
+  let anima = $state(false);
+
+  let MenuVis = $state(false);
+
   let MenuVisTog = () => {
     MenuVis = !MenuVis;
   };
   const imgs = ["linux", "proimgs/Sveltekiticon", "rusticon"];
-  let selected = "1";
-  let explainie;
+  let selected = $state("1");
+  let explainie = $state();
 </script>
 
 <svelte:head>
@@ -38,10 +43,8 @@
 {#if loaded}
   <!-->  <p>{anima}: {selected}</p><!-->
   <h1
-    in:fly={{ x: "100%", duration: 300, delay: 500 }}
-    on:animationend={animEnd}
-    on:transitionend={animEnd}
-    on:animationstart={animEnd}
+    transition:fly={{ x: "100%", duration: 300, delay: 500 }}
+    onintroend={onanimationend}
   >
     Hi, I'm Devin!
   </h1>
@@ -67,8 +70,8 @@
     <div in:fly={{ y: "100%", delay: 175, duration: 500 }} class="ImgContainer">
       {#each imgs as item}
         <img
-          on:click={MenuVisTog}
-          on:mouseenter={() => (selected = item)}
+          onclick={MenuVisTog}
+          onmouseenter={() => (selected = item)}
           class="card"
           src="{item}.png"
           alt=""

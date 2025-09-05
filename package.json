@@ -1,27 +1,27 @@
 {
-	"name": "devinlittlenet",
-	"version": "0.0.1",
-	"scripts": {
-		"start:prod": "node --env-file=template.env build",
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch"
-	},
-	"devDependencies": {
-		"@fontsource/fira-mono": "^4.5.10",
-		"@neoconfetti/svelte": "^1.0.0",
-		"@sveltejs/adapter-auto": "^3.2.4",
-		"@sveltejs/adapter-node": "^4.0.1",
-		"@sveltejs/enhanced-img": "^0.1.9",
-		"@sveltejs/kit": "^2.5.26",
-		"@sveltejs/vite-plugin-svelte": "^3.1.2",
-		"mdsvex": "^0.11.2",
-		"svelte": "^4.2.19",
-		"svelte-check": "^3.8.6",
-		"typescript": "^5.5.4",
-		"vite": "^5.4.3"
-	},
-	"type": "module"
+  "name": "devinlittlenet",
+  "version": "0.0.1",
+  "scripts": {
+    "start:prod": "node --env-file=template.env build",
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch"
+  },
+  "devDependencies": {
+    "@fontsource/fira-mono": "^4.5.10",
+    "@neoconfetti/svelte": "^1.0.0",
+    "@sveltejs/adapter-node": "^5.3.1",
+    "@sveltejs/enhanced-img": "^0.3.10",
+    "@sveltejs/kit": "^2.37.0",
+    "@sveltejs/vite-plugin-svelte": "^6.1.4",
+    "mdsvex": "^0.12.6",
+    "svelte": "^5.38.7",
+    "svelte-check": "^4.3.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4"
+  },
+  "type": "module",
+  "packageManager": "pnpm@9.15.9+sha512.68046141893c66fad01c079231128e9afb89ef87e2691d69e4d40eee228988295fd4682181bae55b58418c3a253bde65a505ec7c5f9403ece5cc3cd37dcf2531"
 }

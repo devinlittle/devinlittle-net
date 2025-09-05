@@ -1,9 +1,15 @@
 <!-->$lib/comps/Preview.svelte</!-->
 
 <script>
-  export let articleLink = "N/A";
-  export let articleTitle = "N/A";
-  export let articleImage = "n/a";
+  /**
+   * @typedef {Object} Props
+   * @property {string} [articleLink]
+   * @property {string} [articleTitle]
+   * @property {string} [articleImage]
+   */
+
+  /** @type {Props} */
+  let { articleLink = "N/A", articleTitle = "N/A", articleImage = "n/a" } = $props();
 </script>
 
 <article class="articleClass">
