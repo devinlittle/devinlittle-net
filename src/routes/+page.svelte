@@ -77,7 +77,7 @@
     color: #4a7a3e;
   }
 
-  /* aimations */
+  /* imations */
   @keyframes fadeUp {
     to {
       opacity: 1;

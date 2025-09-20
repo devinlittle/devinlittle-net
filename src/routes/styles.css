@@ -39,7 +39,6 @@ body {
   font-size: 16px;
 }
 
-/* Typography */
 h1, h2, h3, h4, h5, h6, p {
   margin: 0 0 1rem 0;
 }
@@ -73,7 +72,6 @@ a:hover {
   text-decoration-style: solid;
 }
 
-/* Preformatted blocks */
 pre {
   font-family: var(--font-mono);
   font-size: 0.95rem;
@@ -87,7 +85,6 @@ pre {
   backdrop-filter: blur(6px);
 }
 
-/* Layout container */
 .text-column {
   display: flex;
   max-width: var(--column-width);
@@ -97,7 +94,6 @@ pre {
   padding: 0 1rem;
 }
 
-/* Inputs & Buttons */
 input,
 button {
   font-size: 1rem;
@@ -122,7 +118,6 @@ button:hover {
   cursor: pointer;
 }
 
-/* Responsiveness */
 @media (min-width: 720px) {
   h1 {
     font-size: 3rem;
@@ -131,17 +126,4 @@ button:hover {
   h2 {
     font-size: 1.75rem;
   }
-}
-
-/* Accessibility */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
-  white-space: nowrap;
 }
