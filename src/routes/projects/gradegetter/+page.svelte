@@ -1,5 +1,9 @@
 <h1>My GradeGetter Project</h1>
 
+<article>
+  <p class="postDate">Wrote on 2025-09-21</p>
+  <a href="/projects">Back to Projects</a>
+</article>
 <p>
   I got tired of using Schoology's outdated ui, so I built my own grade viewer
   in Rust. This post is about how I reverse engineered it, kept it cross
@@ -224,5 +228,9 @@
     color: #666;
     margin-top: 8px;
     font-style: italic;
+  }
+  .postDate {
+    font-size: 85%;
+    color: darkgray;
   }
 </style>

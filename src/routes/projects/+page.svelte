@@ -10,7 +10,7 @@
 
 <h1>Projects</h1>
 
-<div class="eachLoop">
+<!--> COMMENTING OUT FOR NOW <div class="eachLoop">
   {#each data.posts as v}
     <div>
       <br />
@@ -22,11 +22,12 @@
       <br />
     </div>
   {/each}
-</div>
+</div>  <!-->
 
 <Preview
   articleLink="/projects/gradegetter"
   articleTitle="My gradegetter project"
+  articleImage="beatuifulpicture.png"
 />
 
 <!-->Content Here!</!-->
