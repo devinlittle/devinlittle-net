@@ -8,5 +8,6 @@ node_modules
 !.env.example
 .output
 *.tar.zst
+build.sh
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*

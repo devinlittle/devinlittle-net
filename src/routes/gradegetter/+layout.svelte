@@ -27,7 +27,7 @@
             ? "page"
             : undefined}
         >
-          <a href="/gradegetter">GradeGetter Grades</a>
+          <a href="/gradegetter">Grades</a>
         </li>
         {#if !LoggedIn}
           <li
