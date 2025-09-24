@@ -7,11 +7,13 @@
   let schoology_email = $state("");
   let schoology_password = $state("");
   let error = $state("");
+  let loading = $state(false);
 
   async function handleRegister(event) {
     error = "";
 
     try {
+      loading = true;
       // 1. Register the user
       const regRes = await fetch(`https://${apiUrl}:3000/auth/register`, {
         method: "POST",
@@ -20,6 +22,7 @@
       });
 
       if (!regRes.ok) {
+        loading = false;
         const msg = await regRes.json();
         throw new Error(`Register failed: ${msg}`);
       }
@@ -32,6 +35,7 @@
       });
 
       if (!loginRes.ok) {
+        loading = false;
         const msg = await loginRes.text();
         throw new Error(`Login failed: ${msg}`);
       }
@@ -56,27 +60,27 @@
       );
 
       if (!schoologyRes.ok) {
+        loading = false;
         const msg = await schoologyRes.text();
         error = `${token}`;
         throw new Error(`Schoology registration failed: ${msg}`);
       }
 
       // 4. Run forward req
-      const forwardRes = await fetch(`https://${apiUrl}:3000/auth/forward`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-        }),
-      });
-
-      if (!forwardRes.ok) {
-        // const msg = await forwardRes.text();
+      try {
+        const forwardRes = await fetch(`https://${apiUrl}:3000/auth/forward`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            token,
+          }),
+        });
+      } finally {
+        loading = false;
       }
 
-      // 4. Redirect to Root
       goto("/gradegetter");
     } catch (err) {
       error = err.message;
@@ -110,7 +114,13 @@
     <input type="password" bind:value={schoology_password} required />
   </label>
 
-  <button type="submit">Register</button>
+  <button type="submit" disabled={loading}>
+    {#if loading}
+      Processing request...
+    {:else}
+      Register
+    {/if}
+  </button>
 
   {#if error}
     <p style="color: red">{error}</p>
