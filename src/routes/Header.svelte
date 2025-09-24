@@ -12,10 +12,13 @@
       <!--			<li aria-current={page.url.pathname === '/about' ? 'page' : undefined}>
 				<a href="/about">about</a>
 			</li> -->
-      <li
-        aria-current={page.url.pathname === "/projects" ? "page" : undefined}
-      >
+      <li aria-current={page.url.pathname === "/projects" ? "page" : undefined}>
         <a href="/projects">Projects</a>
+      </li>
+      <li
+        aria-current={page.url.pathname === "/gradegetter" ? "page" : undefined}
+      >
+        <a href="/gradegetter">GradeGetter</a>
       </li>
     </ul>
   </nav>
