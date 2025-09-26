@@ -38,7 +38,7 @@
   }
 </script>
 
-<h1>Login!</h1>
+<h1>Delete 😢</h1>
 
 <form onsubmit={register}>
   <label>
@@ -49,5 +49,5 @@
     Password
     <input name="password" type="password" required />
   </label>
-  <button type="submit">Login</button>
+  <button type="submit">why do u hate me (Delete User)</button>
 </form>
