@@ -44,6 +44,13 @@
           >
             <a href="/gradegetter/register">Register</a>
           </li>
+          <li
+            aria-current={page.url.pathname === "/gradegetter/delete"
+              ? "page"
+              : undefined}
+          >
+            <a href="/gradegetter/delete">Delete</a>
+          </li>
         {/if}
       </ul>
     </nav>
