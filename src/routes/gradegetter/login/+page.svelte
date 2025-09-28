@@ -1,7 +1,7 @@
 <script>
   import { goto } from "$app/navigation";
 
-  async function register(event) {
+  async function login(event) {
     event.preventDefault();
     const form = new FormData(event.target);
     const username = form.get("username");
@@ -29,7 +29,7 @@
 
 <h1>Login!</h1>
 
-<form onsubmit={register}>
+<form onsubmit={login}>
   <label>
     Username
     <input name="username" type="text" required />
