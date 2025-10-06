@@ -67,6 +67,11 @@
   });
 </script>
 
+<svelte:head>
+  <title>DevinLittle.net - GradeGetter</title>
+  <meta name="description" content="Devin's gradegetter duh" />
+</svelte:head>
+
 {#if LoggedIn}
   <button onclick={logOut} class="logoutButton">Log Out</button>
 
