@@ -1,6 +1,6 @@
 <script>
   import Preview from "$lib/comps/Preview.svelte";
-  let { data } = $props();
+  //  let { data } = $props();
 </script>
 
 <svelte:head>

@@ -1,4 +1,4 @@
-export const fetchMarkdownPosts = async () => {
+/* export const fetchMarkdownPosts = async () => {
   const allPostFiles = import.meta.glob('/src/routes/projects/*.md');
   const iterablePostFiles = Object.entries(allPostFiles);
 
@@ -15,4 +15,4 @@ export const fetchMarkdownPosts = async () => {
   );
 
   return allPosts;
-};
+}; */
