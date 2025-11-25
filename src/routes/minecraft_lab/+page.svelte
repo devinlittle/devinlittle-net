@@ -41,7 +41,7 @@
 
 <p>
   Choose the version for your operating system and CPU architecture (most people
-  in the IT class will use Windows on x86_64).
+  in the IT class will use Windows on x86_64, x64, amd64 {all the same thing btw}).
 </p>
 <p>
   Make sure to download the ZIP file for easy cleanup when finished with lab.
