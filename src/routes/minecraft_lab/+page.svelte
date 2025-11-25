@@ -41,7 +41,8 @@
 
 <p>
   Choose the version for your operating system and CPU architecture (most people
-  in the IT class will use Windows on x86_64, x64, amd64 {all the same thing btw}).
+  in the IT class will use Windows on x86_64, x64, amd64 [all the same thing
+  btw]).
 </p>
 <p>
   Make sure to download the ZIP file for easy cleanup when finished with lab.
@@ -150,13 +151,18 @@
 </p>
 
 <ol>
-  <li>Create a file named run.bat in the server folder</li>
+  <li>Create a file named run.txt in the minecraft folder</li>
   <li>Edit with NotePad and add the following to the newly created file:</li>
   <pre>
 @echo off
 java -Xms6G -Xmx6G -jar server.jar
 pause
 </pre>
+  <li>
+    Then in file explorer goto, View >> Show >> and check "File Name Extensions"
+  </li>
+  <li>now rename the file to "run.bat"</li>
+  <li>Click yes</li>
   <li>Double click run.bat</li>
   <p>The server will start</p>
 </ol>
