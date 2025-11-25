@@ -214,6 +214,7 @@ pause
     rel="noopener noreferrer"
     href="https://ranoz.gg/file/cEF8PCDc">minecraft.7z file download</a
   >
+  <a>When downloading, right click the download button and open in new tab</a>
   <br />
   <a
     target="_blank"
@@ -227,6 +228,10 @@ pause
   Check with your teacher for premission to continue, they will provide the
   password for the encyrpted file.
 </p>
+
+<p>Download and instal 7zip for this archive</p>
+<p>right cick the file, click "show more options", 7zip >> open archive</p>
+<p>drag the file to C:/</p>
 
 <p>Once the file is downloaded and extracted:</p>
 <ol>
