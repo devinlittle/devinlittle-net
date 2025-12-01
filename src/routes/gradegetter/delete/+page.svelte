@@ -8,11 +8,14 @@
     const password = form.get("password");
     let apiUrl = "api.devinlittle.net";
 
-    const responseLogin = await fetch(`https://${apiUrl}:3000/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+    const responseLogin = await fetch(
+      `https://${apiUrl}/gradegetter/auth/login`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      },
+    );
 
     if (!responseLogin.ok) {
       console.error("Login failed");
@@ -21,13 +24,16 @@
 
     let token = await responseLogin.json();
 
-    const responseDelete = await fetch(`https://${apiUrl}:3000/auth/delete`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const responseDelete = await fetch(
+      `https://${apiUrl}/gradegetter/auth/delete`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     if (!responseDelete.ok) {
       console.error("Delete failed");

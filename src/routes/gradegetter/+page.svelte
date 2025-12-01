@@ -4,7 +4,7 @@
   let apiUrl = "api.devinlittle.net";
 
   let LoggedIn = $state(false);
-  let token;
+  let token = $state();
   let grades = $state({});
 
   let load = async () => {
@@ -18,7 +18,7 @@
 
   let fetchGrades = async () => {
     if (LoggedIn) {
-      const response = await fetch(`https://${apiUrl}:3000/grades`, {
+      const response = await fetch(`https://${apiUrl}/gradegetter/grades`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
