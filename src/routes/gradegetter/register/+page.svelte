@@ -33,7 +33,9 @@
       // 2. Login to get the token
       const loginRes = await fetch(`https://${apiUrl}/gradegetter/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ username, password }),
       });
 
@@ -53,9 +55,9 @@
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            token,
             schoology_email,
             schoology_password,
           }),
@@ -74,13 +76,11 @@
         const forwardRes = await fetch(
           `https://${apiUrl}/gradegetter/auth/forward`,
           {
-            method: "POST",
+            method: "GET",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({
-              token,
-            }),
           },
         );
       } finally {
