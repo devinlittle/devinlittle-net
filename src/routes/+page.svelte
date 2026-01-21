@@ -25,8 +25,8 @@
       </span>
     </h1>
     <div class="stats fade-in-delay">
-      <span>15 years old</span>
-      <span>5+ years learning</span>
+      <span>16 years old</span>
+      <span>6+ years learning</span>
       <span>15+ projects</span>
     </div>
   </div>
