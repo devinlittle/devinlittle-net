@@ -11,14 +11,14 @@
     if (localStorage.getItem("token") === null) {
       LoggedIn = false;
     } else {
-      LoggedIn = true;
       token = localStorage.getItem("token");
+      LoggedIn = true;
     }
   };
 
   let fetchGrades = async () => {
     if (LoggedIn) {
-      const response = await fetch(`https://${apiUrl}/gradegetter/grades`, {
+      const grades_req = await fetch(`https://${apiUrl}/gradegetter/grades`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -26,11 +26,28 @@
         },
       });
 
-      if (!response.ok) {
+      if (!grades_req.ok) {
         console.error("Failed to fetch grades");
+        let temp_token = localStorage.getItem("token");
+        const validate_req = await fetch(
+          `https://${apiUrl}/gradegetter/auth/validate`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${temp_token}`,
+            },
+          },
+        );
+
+        if (!validate_req.ok) {
+          localStorage.removeItem("token");
+          LoggedIn = false;
+          goto("/gradegetter");
+        }
         //     throw new Error(`Schoology registration failed: ${msg}`);
       } else {
-        const newGrades = await response.json();
+        const newGrades = await grades_req.json();
 
         for (const subject in newGrades) {
           grades[subject] = newGrades[subject];
