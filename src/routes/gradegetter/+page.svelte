@@ -1,87 +1,45 @@
 <script>
   import { onMount, onDestroy } from "svelte";
   import { goto } from "$app/navigation";
-  let apiUrl = "api.devinlittle.net";
+  import { API_URL, auth, authFetch } from "$lib/utils/auth.svelte.js";
 
-  let LoggedIn = $state(false);
-  let token = $state();
   let grades = $state({});
 
-  let load = async () => {
-    if (localStorage.getItem("token") === null) {
-      LoggedIn = false;
-    } else {
-      token = localStorage.getItem("token");
-      LoggedIn = true;
-    }
-  };
-
   let fetchGrades = async () => {
-    if (LoggedIn) {
-      const grades_req = await fetch(`https://${apiUrl}/gradegetter/grades`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    const response = await authFetch(`${API_URL}/gradegetter/grades`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.accessToken}`,
+      },
+    });
 
-      if (!grades_req.ok) {
-        console.error("Failed to fetch grades");
-        let temp_token = localStorage.getItem("token");
-        const validate_req = await fetch(
-          `https://${apiUrl}/gradegetter/auth/validate`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${temp_token}`,
-            },
-          },
-        );
+    if (!response.ok) {
+      console.error("Failed to fetch grades");
+      return;
+    }
 
-        if (!validate_req.ok) {
-          localStorage.removeItem("token");
-          LoggedIn = false;
-          goto("/gradegetter");
-        }
-        //     throw new Error(`Schoology registration failed: ${msg}`);
-      } else {
-        const newGrades = await grades_req.json();
-
-        for (const subject in newGrades) {
-          grades[subject] = newGrades[subject];
-        }
-
-        for (const subject in grades) {
-          if (!(subject in newGrades)) {
-            delete grades[subject];
-          }
-        }
-
-        console.log("ur in baby!");
-      } // if end here
+    const newGrades = await response.json();
+    for (const subject in newGrades) grades[subject] = newGrades[subject];
+    for (const subject in grades) {
+      if (!(subject in newGrades)) delete grades[subject];
     }
   };
 
-  async function logOut() {
-    localStorage.removeItem("token");
-    LoggedIn = false;
-    goto("/gradegetter");
-  }
+  $effect(() => {
+    if (!auth.ready) return;
 
-  onMount(() => {
-    load();
     fetchGrades();
 
-    const interval = setInterval(() => {
-      fetchGrades();
-    }, 5000); // every 5 seconds
+    const interval = setInterval(fetchGrades, 5000);
 
+    return () => clearInterval(interval);
+  });
+  /*  onMount(() => {
     onDestroy(() => {
       clearInterval(interval);
     });
-  });
+  }); */
 </script>
 
 <svelte:head>
@@ -89,31 +47,31 @@
   <meta name="description" content="Devin's gradegetter duh" />
 </svelte:head>
 
-{#if LoggedIn}
-  <button onclick={logOut} class="logoutButton">Log Out</button>
-
-  {#if Object.keys(grades).length === 0}
-    <p>Loading...</p>
+<main>
+  {#if auth.ready}
+    {#if Object.keys(grades).length === 0}
+      <p>Loading...</p>
+    {:else}
+      <div class="grades">
+        {#each Object.entries(grades) as [subject, scores]}
+          <h2>{subject}</h2>
+          <ul>
+            {#each scores as score, i}
+              <li>
+                <span>Q{i + 1}</span>
+                <span class={score !== null ? "score" : "na"}>
+                  {score !== null ? score.toFixed(2) : "N/A"}
+                </span>
+              </li>
+            {/each}
+          </ul>
+        {/each}
+      </div>
+    {/if}
   {:else}
-    <div class="grades">
-      {#each Object.entries(grades) as [subject, scores]}
-        <h2>{subject}</h2>
-        <ul>
-          {#each scores as score, i}
-            <li>
-              <span>Q{i + 1}</span>
-              <span class={score !== null ? "score" : "na"}>
-                {score !== null ? score.toFixed(2) : "N/A"}
-              </span>
-            </li>
-          {/each}
-        </ul>
-      {/each}
-    </div>
+    <h1>GradeGetter under some heat rn...</h1>
   {/if}
-{:else}
-  <h1>Logged Out...</h1>
-{/if}
+</main>
 
 <style>
   .logoutButton {

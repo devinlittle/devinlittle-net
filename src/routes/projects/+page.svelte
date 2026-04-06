@@ -27,7 +27,6 @@
 <Preview
   articleLink="/projects/gradegetter"
   articleTitle="My gradegetter project"
-  articleImage="beatuifulpicture.png"
 />
 
 <!-->Content Here!</!-->

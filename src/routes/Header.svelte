@@ -1,5 +1,7 @@
 <script>
   import { page } from "$app/state";
+
+  import { auth, authFetch, logout } from "$lib/utils/auth.svelte.js";
   import github from "$lib/images/github.svg";
 </script>
 
@@ -21,6 +23,13 @@
         <a href="/gradegetter">GradeGetter</a>
       </li>
     </ul>
+    <br />
+
+    {#if auth.ready === false}
+      <a href="/auth">Login/Sign Up</a>
+    {:else}
+      <button onclick={logout}>Log Out of account {auth.username}</button>
+    {/if}
   </nav>
 
   <div class="corner">
