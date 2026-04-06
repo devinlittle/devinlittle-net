@@ -1,11 +1,9 @@
 <script>
   import { goto } from "$app/navigation";
 
-  import { onAuthSuccess } from "$lib/utils/auth.svelte.js";
+  import { API_URL, onAuthSuccess } from "$lib/utils/auth.svelte.js";
 
   let tab = $state("login");
-
-  const apiUrl = "http://127.0.0.1:8082";
 
   let loginUsername = $state("");
   let loginPassword = $state("");
@@ -23,7 +21,7 @@
       return;
     }
 
-    const res = await fetch(`${apiUrl}/auth/login`, {
+    const res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -57,7 +55,7 @@
       return;
     }
 
-    const res = await fetch(`${apiUrl}/auth/register`, {
+    const res = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -70,7 +68,7 @@
       return;
     }
 
-    const login_res = await fetch(`${apiUrl}/auth/login`, {
+    const login_res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
