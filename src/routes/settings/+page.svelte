@@ -19,18 +19,21 @@
           : ua.includes("Safari")
             ? "Safari"
             : "Browser";
+
     const os =
       ua.includes("iPhone") || ua.includes("iPad")
         ? "iOS"
         : ua.includes("Android")
           ? "Android"
-          : ua.includes("Mac OS")
-            ? "macOS"
-            : ua.includes("Windows")
-              ? "Windows"
-              : ua.includes("Linux")
-                ? "Linux"
-                : "Unknown OS";
+          : ua.includes("CrOS")
+            ? "ChromeOS"
+            : ua.includes("Mac OS")
+              ? "macOS"
+              : ua.includes("Windows")
+                ? "Windows"
+                : ua.includes("Linux")
+                  ? "Linux"
+                  : "Unknown OS";
     const icon = os === "iOS" || os === "Android" ? "mobile" : "desktop";
     return { browser, os, icon };
   }
