@@ -63,7 +63,7 @@
     const res = await authFetch(`${API_URL}/auth/sessions/revoke/${id}`, {
       method: "DELETE",
     });
-    if (res.ok) sessions = sessions.filter((s) => s.id !== id);
+    if (res.ok) sessions = sessions.filter((s) => s.session_id !== id);
   }
 
   async function revokeAll() {
