@@ -10,7 +10,6 @@
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${auth.accessToken}`,
       },
     });
 
@@ -74,20 +73,6 @@
 </main>
 
 <style>
-  .logoutButton {
-    display: block;
-    margin: 2rem auto 3rem auto;
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-text);
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    transition: background 0.2s ease;
-    cursor: pointer;
-  }
-
   .grades {
     max-width: var(--column-width);
     margin: 2rem auto;
