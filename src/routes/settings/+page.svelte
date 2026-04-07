@@ -85,6 +85,11 @@
   }
 </script>
 
+<svelte:head>
+  <title>DevinLittle.net - Settings</title>
+  <meta name="description" content="The settings page of devinlittle.net" />
+</svelte:head>
+
 {#if auth.ready}
   <div class="wrap">
     <h1>Settings</h1>
