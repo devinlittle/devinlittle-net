@@ -15,6 +15,7 @@
     });
 
     if (!response.ok) {
+      forbiddon = true;
       if (response.status === 403) {
         // Response is Forbiddon
         forbiddon = true;
@@ -23,6 +24,8 @@
       console.error("Failed to fetch grades");
       return;
     }
+
+    forbiddon = false;
 
     const newGrades = await response.json();
     for (const subject in newGrades) grades[subject] = newGrades[subject];
@@ -40,11 +43,6 @@
 
     return () => clearInterval(interval);
   });
-  /*  onMount(() => {
-    onDestroy(() => {
-      clearInterval(interval);
-    });
-  }); */
 </script>
 
 <svelte:head>
@@ -54,28 +52,26 @@
 
 <main>
   {#if auth.ready}
-    {#if !forbiddon}
-      {#if Object.keys(grades).length === 0}
-        <p>Loading...</p>
-      {:else}
-        <div class="grades">
-          {#each Object.entries(grades) as [subject, scores]}
-            <h2>{subject}</h2>
-            <ul>
-              {#each scores as score, i}
-                <li>
-                  <span>Q{i + 1}</span>
-                  <span class={score !== null ? "score" : "na"}>
-                    {score !== null ? score.toFixed(2) : "N/A"}
-                  </span>
-                </li>
-              {/each}
-            </ul>
-          {/each}
-        </div>
-      {/if}
-    {:else}
+    {#if forbiddon}
       <h1>GradeGetter under some heat rn...</h1>
+    {:else if Object.keys(grades).length === 0}
+      <p>Loading...</p>
+    {:else}
+      <div class="grades">
+        {#each Object.entries(grades) as [subject, scores]}
+          <h2>{subject}</h2>
+          <ul>
+            {#each scores as score, i}
+              <li>
+                <span>Q{i + 1}</span>
+                <span class={score !== null ? "score" : "na"}>
+                  {score !== null ? score.toFixed(2) : "N/A"}
+                </span>
+              </li>
+            {/each}
+          </ul>
+        {/each}
+      </div>
     {/if}
   {:else}
     <h1>GradeGetter under some heat rn...</h1>
