@@ -79,7 +79,7 @@ export async function authFetch(input, init = {}) {
 
   let res = await fetch(input, { ...init, headers, credentials: "include" });
 
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     const ok = await refresh();
     if (ok) {
       headers.set("Authorization", `Bearer ${auth.accessToken}`);

@@ -4,6 +4,7 @@
   import { API_URL, auth, authFetch } from "$lib/utils/auth.svelte.js";
 
   let grades = $state({});
+  let forbiddon = $state(false);
 
   let fetchGrades = async () => {
     const response = await authFetch(`${API_URL}/gradegetter/grades`, {
@@ -14,6 +15,11 @@
     });
 
     if (!response.ok) {
+      if (response.status === 403) {
+        // Response is Forbiddon
+        forbiddon = true;
+        return;
+      }
       console.error("Failed to fetch grades");
       return;
     }
@@ -48,24 +54,28 @@
 
 <main>
   {#if auth.ready}
-    {#if Object.keys(grades).length === 0}
-      <p>Loading...</p>
+    {#if !forbiddon}
+      {#if Object.keys(grades).length === 0}
+        <p>Loading...</p>
+      {:else}
+        <div class="grades">
+          {#each Object.entries(grades) as [subject, scores]}
+            <h2>{subject}</h2>
+            <ul>
+              {#each scores as score, i}
+                <li>
+                  <span>Q{i + 1}</span>
+                  <span class={score !== null ? "score" : "na"}>
+                    {score !== null ? score.toFixed(2) : "N/A"}
+                  </span>
+                </li>
+              {/each}
+            </ul>
+          {/each}
+        </div>
+      {/if}
     {:else}
-      <div class="grades">
-        {#each Object.entries(grades) as [subject, scores]}
-          <h2>{subject}</h2>
-          <ul>
-            {#each scores as score, i}
-              <li>
-                <span>Q{i + 1}</span>
-                <span class={score !== null ? "score" : "na"}>
-                  {score !== null ? score.toFixed(2) : "N/A"}
-                </span>
-              </li>
-            {/each}
-          </ul>
-        {/each}
-      </div>
+      <h1>GradeGetter under some heat rn...</h1>
     {/if}
   {:else}
     <h1>GradeGetter under some heat rn...</h1>
