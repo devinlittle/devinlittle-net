@@ -143,12 +143,12 @@
             </div>
             <div class="session-meta">{expiresIn(session.expires_at)}</div>
           </div>
-          {#if !session.is_current}
-            <button
-              class="btn btn-danger"
-              onclick={() => revoke(session.session_id)}>Revoke</button
-            >
-          {/if}
+          <!--> {#if !session.is_current} <!-->
+          <button
+            class="btn btn-danger"
+            onclick={() => revoke(session.session_id)}>Revoke</button
+          >
+          <!--> {/if} <!-->
         </div>
       {/each}
 
