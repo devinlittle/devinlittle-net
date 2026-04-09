@@ -20,11 +20,11 @@ import { goto } from "$app/navigation";
 
 
 export const API_URL = "https://api.devinlittle.net";
-//export const API_URL = "http://127.0.0.1:8082";
+//export const API_URL = "http://10.10.10.10:8082";
 //export const API_URL = import.meta.env.API_URL;
 
 // this "auth" var is for state
-export let auth = $state({ username: null, accessToken: null, ready: false });
+export let auth = $state({ username: null, roles: null, accessToken: null, ready: false });
 
 function decode(token) {
   try {
@@ -37,6 +37,7 @@ function decode(token) {
 function setToken(token) {
   auth.accessToken = token;
   auth.username = decode(token)?.username ?? null;
+  auth.roles = decode(token)?.roles ?? null;
   localStorage.setItem("access_token", token);
   auth.ready = true;
 }
@@ -44,6 +45,7 @@ function setToken(token) {
 function clear() {
   auth.accessToken = null;
   auth.username = null;
+  auth.roles = null;
   auth.ready = false;
   localStorage.removeItem("access_token");
 }
