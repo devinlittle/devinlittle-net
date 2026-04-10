@@ -294,6 +294,12 @@
     });
   }
 
+  async function deleteUser(userId) {
+    await authFetch(`${API_URL}/auth/admin/users/${userId}/delete`, {
+      method: "DELETE",
+    });
+  }
+
   async function changeRole(userId, service, role) {
     await authFetch(`${API_URL}/auth/admin/users/${userId}/role`, {
       method: "PATCH",
@@ -309,6 +315,16 @@
   let zCounter = $state(100);
 
   let wins = $state({ ...defaultWins });
+
+  /*
+//  for future
+  $effect(() => {
+    console.log(`Jwt X: ${wins.jwt.x}`);
+    console.log(`Jwt Y: ${wins.jwt.y}`);
+    console.log(`Users X: ${wins.users.x}`);
+    console.log(`Users Y: ${wins.users.y}`);
+  });
+  */
 
   function closeWindow(id) {
     openWindows = openWindows.filter((w) => w !== id);
@@ -531,6 +547,13 @@
                 >
                   deauth</button
                 >
+                <button
+                  class="act-btn"
+                  onclick={() => deleteUser(selectedUser)}
+                >
+                  delete user</button
+                >
+
                 <!--><button
                   class="act-btn warn"
                   onclick={() => requestPasswordChange(selectedUser)}
@@ -553,7 +576,7 @@
         <div class="win-body">
           <div class="jwt-pill">
             <span class="role-badge"
-              >{getRole(decodedJwt?.roles, "gradegetter")}</span
+              >{getRole(decodedJwt?.roles, "global")}</span
             >
             <span class="exp-badge"
               >exp {new Date(decodedJwt?.exp * 1000).toLocaleTimeString()}</span
