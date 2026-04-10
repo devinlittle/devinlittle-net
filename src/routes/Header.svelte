@@ -27,6 +27,9 @@
       >
         <a href="/gradegetter">GradeGetter</a>
       </li>
+      <li aria-current={page.url.pathname === "/calc" ? "page" : undefined}>
+        <a href="/calc">Calculator</a>
+      </li>
     </ul>
 
     {#if !auth.ready || !auth.username}

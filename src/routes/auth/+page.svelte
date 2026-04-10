@@ -99,6 +99,7 @@
         type="password"
         placeholder="password"
         bind:value={loginPassword}
+        onkeydown={(e) => e.key === "Enter" && handleLogin()}
       />
       {#if loginError}<p class="error">{loginError}</p>{/if}
       <button onclick={handleLogin}>Sign in</button>
@@ -111,6 +112,7 @@
         type="password"
         placeholder="confirm password"
         bind:value={regConfirm}
+        onkeydown={(e) => e.key === "Enter" && handleRegister()}
       />
       {#if regError}<p class="error">{regError}</p>{/if}
       <button onclick={handleRegister}>Create account</button>

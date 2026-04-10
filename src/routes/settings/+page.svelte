@@ -1,6 +1,12 @@
 <script>
   import { onMount } from "svelte";
-  import { authFetch, API_URL, auth, logout } from "$lib/utils/auth.svelte.js";
+  import {
+    authFetch,
+    API_URL,
+    auth,
+    logout,
+    getRole,
+  } from "$lib/utils/auth.svelte.js";
   import { goto } from "$app/navigation";
 
   let sessions = $state([]);
@@ -82,6 +88,43 @@
       logout();
       goto("/");
     }
+  }
+
+  let schErr = $state("");
+  let schEmail = $state("");
+  let schPassword = $state("");
+
+  async function addSchoology() {
+    schErr = "";
+    if (!schEmail || !schPassword) {
+      schErr = "fill in all fields";
+      return;
+    }
+
+    const res = await authFetch(
+      `${API_URL}/gradegetter/auth/schoology/credentials`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          schoology_email: schEmail,
+          schoology_password: schPassword,
+        }),
+      },
+    );
+
+    if (!res.ok) {
+      schErr =
+        res.status === 409 ? "username already taken" : "something went wrong";
+      return;
+    }
+  }
+
+  async function deleteSchoology() {
+    await authFetch(`${API_URL}/gradegetter/auth/schoology/credentials`, {
+      method: "DELETE",
+    });
   }
 </script>
 
@@ -183,6 +226,30 @@
         </div>
       {/if}
     </div>
+  </div>
+
+  <div class="wrap">
+    {#if ["trusted", "devin", "owen"].includes(getRole(auth.roles, "gradegetter"))}
+      <div class="card">
+        <p class="card-title">Schoology Information</p>
+
+        <div class="form">
+          <input type="text" placeholder="email" bind:value={schEmail} />
+          <input
+            type="password"
+            placeholder="password"
+            bind:value={schPassword}
+            onkeydown={(e) => e.key === "Enter" && addSchoology()}
+          />
+          {#if schErr}<p class="error">{schErr}</p>{/if}
+          <button onclick={addSchoology}>Add Information</button>
+        </div>
+
+        <button class="btn btn-danger" onclick={deleteSchoology}
+          >Delete schoology information from my account</button
+        >
+      </div>
+    {/if}
   </div>
 {:else}
   <h1>Login to View Settings</h1>

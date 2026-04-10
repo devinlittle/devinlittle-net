@@ -20,7 +20,7 @@ import { goto } from "$app/navigation";
 
 
 export const API_URL = "https://api.devinlittle.net";
-//export const API_URL = "http://10.10.10.10:8082";
+//export const API_URL = "https://localhost:8082";
 //export const API_URL = import.meta.env.API_URL;
 
 // this "auth" var is for state
@@ -48,6 +48,10 @@ function clear() {
   auth.roles = null;
   auth.ready = false;
   localStorage.removeItem("access_token");
+}
+
+export function getRole(roles, service) {
+  return roles[service] ?? roles["global"] ?? "user";
 }
 
 // INFO: called once in +layout.svelte onMount

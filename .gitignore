@@ -7,6 +7,7 @@ node_modules
 .env.*
 !.env.example
 .output
+/certs
 *.tar.zst
 build.sh
 vite.config.js.timestamp-*
