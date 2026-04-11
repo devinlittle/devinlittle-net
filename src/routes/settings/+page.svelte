@@ -141,26 +141,25 @@
     //const wsUrl = `${API_URL.replace("https://", "wss://")}/gradegetter/auth/forward_ws/${auth.id}`;
     const socket = new WebSocket(wsUrl);
 
-    socket.onmessage = async (e) => {
+    socket.onmessage = (e) => {
       const raw = e.data.trim();
       const [label, numStr] = raw.split(",");
       const num = parseInt(numStr);
 
-      if (label.startsWith("ERROR")) {
-        wsStatus = "error";
-        schErr = label;
-        socket.close();
-        return;
-      }
-
-      wsSteps = [...wsSteps, label];
-      wsProgress = Math.round((num / 7) * 100);
-      await tick();
-
-      if (num >= 7) {
-        wsStatus = "done";
-        socket.close();
-      }
+      setTimeout(() => {
+        if (label.startsWith("ERROR")) {
+          wsStatus = "error";
+          schErr = label;
+          socket.close();
+          return;
+        }
+        wsSteps = [...wsSteps, label];
+        wsProgress = Math.round((num / 7) * 100);
+        if (num >= 7) {
+          wsStatus = "done";
+          socket.close();
+        }
+      }, 0);
     };
 
     socket.onerror = () => {
