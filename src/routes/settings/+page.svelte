@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import {
     authFetch,
     API_URL,
@@ -141,7 +141,7 @@
     //const wsUrl = `${API_URL.replace("https://", "wss://")}/gradegetter/auth/forward_ws/${auth.id}`;
     const socket = new WebSocket(wsUrl);
 
-    socket.onmessage = (e) => {
+    socket.onmessage = async (e) => {
       const raw = e.data.trim();
       const [label, numStr] = raw.split(",");
       const num = parseInt(numStr);
@@ -155,6 +155,7 @@
 
       wsSteps = [...wsSteps, label];
       wsProgress = Math.round((num / 7) * 100);
+      await tick();
 
       if (num >= 7) {
         wsStatus = "done";
