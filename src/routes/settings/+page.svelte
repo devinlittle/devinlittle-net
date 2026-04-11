@@ -90,9 +90,22 @@
     }
   }
 
-  let schErr = $state("");
   let schEmail = $state("");
   let schPassword = $state("");
+  let schErr = $state("");
+  let wsStatus = $state(null); // null = idle, "running", "done", "error"
+  let wsSteps = $state([]);
+  let wsProgress = $state(0);
+
+  const STEPS = [
+    "Started",
+    "Navigated to Schoology login",
+    "Typed in Email",
+    "Entered Email",
+    "Typed in Password",
+    "Enter Password",
+    "Finished",
+  ];
 
   async function addSchoology() {
     schErr = "";
@@ -119,6 +132,44 @@
         res.status === 409 ? "username already taken" : "something went wrong";
       return;
     }
+
+    await authFetch(`${API_URL}/gradegetter/auth/forward`, {
+      method: "GET",
+    });
+
+    const wsUrl = `${API_URL.replace("https://", "wss://").replace("http://", "ws://")}/gradegetter/auth/forward_ws/${auth.id}`;
+    //const wsUrl = `${API_URL.replace("https://", "wss://")}/gradegetter/auth/forward_ws/${auth.id}`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onmessage = (e) => {
+      const raw = e.data.trim();
+      const [label, numStr] = raw.split(",");
+      const num = parseInt(numStr);
+
+      if (label.startsWith("ERROR")) {
+        wsStatus = "error";
+        schErr = label;
+        socket.close();
+        return;
+      }
+
+      wsSteps = [...wsSteps, label];
+      wsProgress = Math.round((num / 7) * 100);
+
+      if (num >= 7) {
+        wsStatus = "done";
+        socket.close();
+      }
+    };
+
+    socket.onerror = () => {
+      wsStatus = "error";
+      schErr = "websocket connection failed";
+    };
+
+    socket.onclose = () => {
+      if (wsStatus === "running") wsStatus = "error";
+    };
   }
 
   async function deleteSchoology() {
@@ -233,21 +284,83 @@
       <div class="card">
         <p class="card-title">Schoology Information</p>
 
-        <div class="form">
-          <input type="text" placeholder="email" bind:value={schEmail} />
-          <input
-            type="password"
-            placeholder="password"
-            bind:value={schPassword}
-            onkeydown={(e) => e.key === "Enter" && addSchoology()}
-          />
-          {#if schErr}<p class="error">{schErr}</p>{/if}
-          <button onclick={addSchoology}>Add Information</button>
-        </div>
+        {#if wsStatus === null || wsStatus === "done" || wsStatus === "error"}
+          <div class="form">
+            <input type="text" placeholder="email" bind:value={schEmail} />
+            <input
+              type="password"
+              placeholder="password"
+              bind:value={schPassword}
+              onkeydown={(e) => e.key === "Enter" && addSchoology()}
+            />
+            {#if schErr}<p class="error">{schErr}</p>{/if}
+            <button onclick={addSchoology} disabled={wsStatus === "running"}>
+              Add Information
+            </button>
+          </div>
+        {/if}
 
-        <button class="btn btn-danger" onclick={deleteSchoology}
-          >Delete schoology information from my account</button
-        >
+        {#if wsStatus !== null}
+          <div class="ws-progress">
+            <!-- bar -->
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                class:done={wsStatus === "done"}
+                class:error={wsStatus === "error"}
+                style="width: {wsProgress}%"
+              ></div>
+            </div>
+
+            <!-- percent + status -->
+            <div class="progress-meta">
+              <span class="progress-pct">{wsProgress}%</span>
+              <span
+                class="progress-state"
+                class:done={wsStatus === "done"}
+                class:error={wsStatus === "error"}
+              >
+                {#if wsStatus === "running"}logging in...
+                {:else if wsStatus === "done"}done!
+                {:else}failed{/if}
+              </span>
+            </div>
+
+            <!-- step log -->
+            <div class="step-log">
+              {#each wsSteps as step, i}
+                <div class="step-item" class:latest={i === wsSteps.length - 1}>
+                  <span class="step-dot"></span>
+                  <span>{step}</span>
+                </div>
+              {/each}
+              {#if wsStatus === "running"}
+                <div class="step-item pending">
+                  <span class="step-dot pulse"></span>
+                  <span>{STEPS[wsSteps.length] ?? "..."}</span>
+                </div>
+              {/if}
+            </div>
+
+            {#if wsStatus === "done" || wsStatus === "error"}
+              <button
+                class="btn-reset"
+                onclick={() => {
+                  wsStatus = null;
+                  wsSteps = [];
+                  wsProgress = 0;
+                  schErr = "";
+                }}
+              >
+                ↩ reset
+              </button>
+            {/if}
+          </div>
+        {/if}
+
+        <button class="btn btn-danger" onclick={deleteSchoology}>
+          Delete schoology information from my account
+        </button>
       </div>
     {/if}
   </div>
@@ -354,6 +467,117 @@
     font-size: 0.85rem;
     color: #ff9090;
     margin-bottom: 1rem;
+  }
+  .ws-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0.5rem 0;
+  }
+  .progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--color-theme-1);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .progress-fill.done {
+    background: #6fcf97;
+  }
+  .progress-fill.error {
+    background: #ff9090;
+  }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+  }
+  .progress-pct {
+    font-family: var(--font-mono);
+    color: var(--color-theme-1);
+  }
+  .progress-state {
+    color: var(--color-subtle-text);
+  }
+  .progress-state.done {
+    color: #6fcf97;
+  }
+  .progress-state.error {
+    color: #ff9090;
+  }
+
+  .step-log {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-subtle-text);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+  .step-item.latest {
+    opacity: 1;
+    color: var(--color-text);
+  }
+  .step-item.pending {
+    opacity: 0.4;
+    font-style: italic;
+  }
+  .step-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-theme-1);
+    flex-shrink: 0;
+  }
+  .step-dot.pulse {
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.3;
+      transform: scale(0.7);
+    }
+  }
+
+  .btn-reset {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-border);
+    border-radius: 0.4rem;
+    color: var(--color-subtle-text);
+    cursor: pointer;
+    align-self: flex-start;
+    transition: background 0.15s;
+  }
+  .btn-reset:hover {
+    background: rgba(255, 255, 255, 0.1);
   }
   .confirm-box {
     display: flex;
