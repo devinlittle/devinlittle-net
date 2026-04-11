@@ -19,8 +19,8 @@ import { goto } from "$app/navigation";
 }; */
 
 
-export const API_URL = "https://api.devinlittle.net";
-//export const API_URL = "https://localhost:8082";
+//export const API_URL = "https://api.devinlittle.net";
+export const API_URL = "https://localhost:8082";
 //export const API_URL = import.meta.env.API_URL;
 
 // this "auth" var is for state

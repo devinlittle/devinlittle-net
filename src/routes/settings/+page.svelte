@@ -137,8 +137,11 @@
       method: "GET",
     });
 
+    wsStatus = "running";
+    wsSteps = [];
+    wsProgress = 0;
+
     const wsUrl = `${API_URL.replace("https://", "wss://").replace("http://", "ws://")}/gradegetter/auth/forward_ws/${auth.id}`;
-    //const wsUrl = `${API_URL.replace("https://", "wss://")}/gradegetter/auth/forward_ws/${auth.id}`;
     const socket = new WebSocket(wsUrl);
 
     socket.onmessage = (e) => {
@@ -146,20 +149,20 @@
       const [label, numStr] = raw.split(",");
       const num = parseInt(numStr);
 
-      setTimeout(() => {
-        if (label.startsWith("ERROR")) {
-          wsStatus = "error";
-          schErr = label;
-          socket.close();
-          return;
-        }
-        wsSteps = [...wsSteps, label];
-        wsProgress = Math.round((num / 7) * 100);
-        if (num >= 7) {
-          wsStatus = "done";
-          socket.close();
-        }
-      }, 0);
+      if (label.startsWith("ERROR")) {
+        wsStatus = "error";
+        schErr = label;
+        socket.close();
+        return;
+      }
+
+      wsSteps = [...wsSteps, label];
+      wsProgress = Math.round((num / 7) * 100);
+
+      if (num >= 7) {
+        wsStatus = "done";
+        socket.close();
+      }
     };
 
     socket.onerror = () => {
