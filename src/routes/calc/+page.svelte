@@ -1,4 +1,5 @@
 <script>
+  import { goto } from "$app/navigation";
   import {
     auth,
     authFetch,
@@ -15,13 +16,6 @@
   let isScientific = $state(false);
   let angleMode = $state("deg"); // deg | rad
 
-  // ── secret sequence state ─────────────────────────────────
-  // Devin L-shape: 7, 4, 1, 2, 3 (down left col, across bottom)
-  const DEVIN_SEQ = ["7", "4", "1", "2", "3"];
-  // Gloss L-shape: 3, 6, 9, 8, 7 (reserved for later)
-  const GLOSS_SEQ = ["3", "6", "9", "8", "7"];
-  let keyHistory = $state([]);
-
   // ── admin panel state ─────────────────────────────────────
   let showAdmin = $state(false);
   let adminSpring = $state(false);
@@ -37,6 +31,14 @@
       return null;
     }
   }
+
+  // ── secret sequence state ─────────────────────────────────
+  // Devin L-shape: 7, 4, 1, 2, 3
+  const DEVIN_SEQ = ["7", "4", "1", "2", "3"];
+  // Gloss L-shape: 7, 8, 9, 6, 3
+  const GLOSS_SEQ = ["7", "8", "9", "6", "3"];
+  const MAT_SEQ = ["8", "5", "2", "0", "0"];
+  let keyHistory = $state([]);
 
   // ── secret trigger ────────────────────────────────────────
   async function checkSequence(key) {
@@ -63,6 +65,26 @@
       triggerAdminSpring();
       await loadUsers();
       keyHistory = [];
+    } else if (last5.join(",") === GLOSS_SEQ.join(",")) {
+      if (!auth.accessToken) return;
+
+      const res = await authFetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+      });
+
+      if (!res.ok) return;
+
+      const { access_token } = await res.json();
+      onAuthSuccess(access_token);
+
+      const payload = decode(access_token);
+      const role = getRole(payload?.roles, "gloss");
+
+      if (role !== "devin" && role !== "owen" && role !== "trusted") return;
+
+      console.log("only authorized can see this");
+    } else if (last5.join(",") === MAT_SEQ.join(",")) {
+      goto("/calc/hi");
     }
   }
   const defaultWins = {
@@ -288,12 +310,6 @@
     );
   } */
 
-  async function evictUser(userId) {
-    await authFetch(`${API_URL}/auth/admin/users/${userId}/evict`, {
-      method: "POST",
-    });
-  }
-
   async function deleteUser(userId) {
     await authFetch(`${API_URL}/auth/admin/users/${userId}/delete`, {
       method: "DELETE",
@@ -306,6 +322,11 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ service, role }),
     });
+
+    await authFetch(`${API_URL}/auth/admin/users/${userId}/evict`, {
+      method: "POST",
+    });
+
     await loadUsers();
   }
 
@@ -538,9 +559,6 @@
 
               <p class="section-label" style="margin-top:1rem">actions</p>
               <div class="action-row">
-                <button class="act-btn" onclick={() => evictUser(selectedUser)}>
-                  evict</button
-                >
                 <button
                   class="act-btn"
                   onclick={() => deauthUser(selectedUser)}

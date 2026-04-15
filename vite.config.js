@@ -7,8 +7,8 @@ export default defineConfig({
   plugins: [sveltekit(), basicSsl()],
   server: {
     https: {
-      key: fs.readFileSync('./certs/localhost.key'),
-      cert: fs.readFileSync('./certs/localhost.crt'),
+      key: fs.readFileSync('./certs/localhost-key.pem'),
+      cert: fs.readFileSync('./certs/localhost.pem'),
     },
   }
 });
