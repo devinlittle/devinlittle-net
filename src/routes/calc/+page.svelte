@@ -37,10 +37,12 @@
   const DEVIN_SEQ = ["7", "4", "1", "2", "3"];
   // Gloss L-shape: 7, 8, 9, 6, 3
   const GLOSS_SEQ = ["7", "8", "9", "6", "3"];
-  const MAT_SEQ = ["8", "5", "2", "0", "0"];
+  // Cute Stright Line
+  const CUTE_SEQ = ["8", "5", "2", "0", "0"];
   let keyHistory = $state([]);
 
   // ── secret trigger ────────────────────────────────────────
+
   async function checkSequence(key) {
     keyHistory = [...keyHistory.slice(-4), key];
     const last5 = keyHistory.slice(-5);
@@ -83,13 +85,14 @@
       if (role !== "devin" && role !== "owen" && role !== "trusted") return;
 
       console.log("only authorized can see this");
-    } else if (last5.join(",") === MAT_SEQ.join(",")) {
+    } else if (last5.join(",") === CUTE_SEQ.join(",")) {
       goto("/calc/hi");
     }
   }
   const defaultWins = {
     users: { x: 80, y: 140, w: 420, z: 100, rot: 3 },
     jwt: { x: 180, y: 160, w: 320, z: 101, rot: -4 },
+    announce: { x: 200, y: 180, w: 320, z: 100, rot: 3 },
   };
 
   function triggerAdminSpring() {
@@ -102,6 +105,9 @@
     setTimeout(() => {
       openWindows = ["users", "jwt"];
     }, 120);
+    setTimeout(() => {
+      openWindows = ["users", "jwt", "announce"];
+    }, 180);
   }
 
   // ── calculator logic ──────────────────────────────────────
@@ -328,6 +334,24 @@
     });
 
     await loadUsers();
+  }
+
+  let announceTitle = $state("");
+  let announceContent = $state("");
+
+  async function sendAnnouncement() {
+    if (!announceTitle || !announceContent) return;
+    await authFetch(`${API_URL}/auth/admin/global_message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: announceTitle,
+        content: announceContent,
+        type: "global",
+      }),
+    });
+    announceTitle = "";
+    announceContent = "";
   }
 
   // ── window manager state ──────────────────────────────────
@@ -601,6 +625,24 @@
             >
           </div>
           <pre>{JSON.stringify(decodedJwt, null, 2)}</pre>
+        </div>
+      {/if}
+
+      {#if winId === "announce"}
+        <div class="win-body">
+          <input
+            type="text"
+            placeholder="Announcement title..."
+            bind:value={announceTitle}
+          />
+          <textarea
+            placeholder="Write your announcement..."
+            bind:value={announceContent}
+            rows="4"
+          ></textarea>
+          <button class="send-btn" onclick={sendAnnouncement}
+            >Send to everyone</button
+          >
         </div>
       {/if}
     </div>
@@ -1025,5 +1067,42 @@
   }
   .close-btn:hover {
     background: rgba(255, 100, 100, 0.18);
+  }
+
+  /* annouce window section */
+
+  textarea {
+    font-size: 0.85rem;
+    font-family: var(--font-body);
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text);
+    border-radius: 0.4rem;
+    transition: background 0.2s ease;
+    resize: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--color-theme-1);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .send-btn {
+    background: rgba(126, 156, 255, 0.15);
+    border: 1px solid rgba(126, 156, 255, 0.4);
+    color: var(--color-theme-1);
+    font-weight: 600;
+    border-radius: 0.4rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .send-btn:hover {
+    background: rgba(126, 156, 255, 0.3);
   }
 </style>

@@ -4,9 +4,14 @@
   import { onMount } from "svelte";
   import { initAuth, auth } from "$lib/utils/auth.svelte.js";
 
-  onMount(initAuth);
+  onMount(async () => {
+    await initAuth();
+    connectNotifications();
+  });
 
   import "./styles.css";
+  import { connectNotifications } from "$lib/utils/notifications.svelte";
+  import Notifications from "$lib/comps/Notifications.svelte";
   /**
    * @typedef {Object} Props
    * @property {import('svelte').Snippet} [children]
@@ -18,6 +23,7 @@
 
 <div class="app">
   <Header />
+  <Notifications />
 
   <main>
     {@render children()}

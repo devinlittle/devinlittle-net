@@ -15,16 +15,23 @@ import { goto } from "$app/navigation";
     })
   );
 
-  return allPosts;
+  return allPosts ;
 }; */
 
 
-export const API_URL = "https://api.devinlittle.net";
-//export const API_URL = "https://localhost:8082";
+//export const API_URL = "https://api.devinlittle.net";
+export const API_URL = "https://localhost:8082";
 //export const API_URL = import.meta.env.API_URL;
 
 // this "auth" var is for state
-export let auth = $state({ id: null, username: null, roles: null, accessToken: null, ready: false });
+export let auth = $state({
+  id: null,
+  session_id: null,
+  username: null,
+  roles: null,
+  accessToken: null,
+  ready: false
+});
 
 function decode(token) {
   try {
@@ -66,6 +73,15 @@ export async function initAuth() {
     if (res.ok) {
       const { access_token } = await res.json();
       setToken(access_token);
+      const sessions_req = await authFetch(`${API_URL}/auth/sessions/list_all`);
+      if (sessions_req.ok) {
+        let sessions = await sessions_req.json()
+        for (const session of sessions) {
+          if (session.is_current) {
+            auth.session_id = session.session_id;
+          }
+        }
+      }
     }
   } catch { /* server down */ }
 }
