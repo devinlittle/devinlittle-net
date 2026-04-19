@@ -298,8 +298,6 @@
     }
   }
 
-  //INFO: NEED TO IMPLEMENT THESE LATER
-
   async function deauthUser(userId) {
     await authFetch(`${API_URL}/auth/admin/revoke_all/${userId}`, {
       method: "DELETE",
@@ -641,7 +639,7 @@
             rows="4"
           ></textarea>
           <button class="send-btn" onclick={sendAnnouncement}
-            >Send to everyone</button
+            >Send Globaly</button
           >
         </div>
       {/if}
