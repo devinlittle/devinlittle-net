@@ -3,6 +3,7 @@
 
   import { onMount } from "svelte";
   import { initAuth, auth } from "$lib/utils/auth.svelte.js";
+  import { connectNotifications } from "$lib/utils/notifications.svelte";
 
   onMount(async () => {
     await initAuth();
@@ -10,7 +11,6 @@
   });
 
   import "./styles.css";
-  import { connectNotifications } from "$lib/utils/notifications.svelte";
   import Notifications from "$lib/comps/Notifications.svelte";
   /**
    * @typedef {Object} Props

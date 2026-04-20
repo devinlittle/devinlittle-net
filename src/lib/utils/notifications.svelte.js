@@ -35,8 +35,13 @@ export function connectNotifications() {
   if (socket?.readyState === WebSocket.OPEN) return;
   socket = new WebSocket(url);
 
+  let bootstrap_json = JSON.stringify({
+    token: auth.accessToken,
+    session_id: auth.session_id
+  })
+
   socket.onopen = () => {
-    if (isAuthed) socket.send(`BOOTSTRAP:${auth.accessToken}`);
+    if (isAuthed) socket.send(`BOOTSTRAP:${bootstrap_json}`);
   };
 
   socket.onmessage = (e) => {
