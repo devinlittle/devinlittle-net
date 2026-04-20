@@ -2,8 +2,8 @@
   import Header from "./Header.svelte";
 
   import { onMount } from "svelte";
-  import { initAuth, auth } from "$lib/utils/auth.svelte.js";
-  import { connectNotifications } from "$lib/utils/notifications.svelte";
+  import { initAuth, auth } from "$lib/utils/auth.svelte.ts";
+  import { connectNotifications } from "$lib/utils/notifications.svelte.ts";
 
   onMount(async () => {
     await initAuth();

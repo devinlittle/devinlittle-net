@@ -1,47 +1,15 @@
 <script>
-  import { onMount, onDestroy } from "svelte";
-  import { goto } from "$app/navigation";
-  import { API_URL, auth, authFetch } from "$lib/utils/auth.svelte.js";
-
-  let grades = $state({});
-  let forbiddon = $state(false);
-
-  let fetchGrades = async () => {
-    const response = await authFetch(`${API_URL}/gradegetter/grades`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      forbiddon = true;
-      if (response.status === 403) {
-        // Response is Forbiddon
-        forbiddon = true;
-        return;
-      }
-      console.error("Failed to fetch grades");
-      return;
-    }
-
-    forbiddon = false;
-
-    const newGrades = await response.json();
-    for (const subject in newGrades) grades[subject] = newGrades[subject];
-    for (const subject in grades) {
-      if (!(subject in newGrades)) delete grades[subject];
-    }
-  };
+  import { auth } from "$lib/utils/auth.svelte.ts";
+  import {
+    fetchGrades,
+    grades,
+    forbidden,
+  } from "$lib/utils/gradegetter.svelte";
 
   $effect(() => {
     if (!auth.ready) return;
 
     fetchGrades();
-
-    const interval = setInterval(fetchGrades, 5000);
-
-    return () => clearInterval(interval);
   });
 </script>
 
@@ -52,13 +20,13 @@
 
 <main>
   {#if auth.ready}
-    {#if forbiddon}
+    {#if forbidden.value}
       <h1>GradeGetter under some heat rn...</h1>
-    {:else if Object.keys(grades).length === 0}
+    {:else if Object.keys(grades.value).length === 0}
       <p>Loading...</p>
     {:else}
       <div class="grades">
-        {#each Object.entries(grades) as [subject, scores]}
+        {#each Object.entries(grades.value) as [subject, scores]}
           <h2>{subject}</h2>
           <ul>
             {#each scores as score, i}

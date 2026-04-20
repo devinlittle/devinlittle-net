@@ -1,7 +1,7 @@
 <script>
   import { goto } from "$app/navigation";
 
-  import { API_URL, onAuthSuccess } from "$lib/utils/auth.svelte.js";
+  import { API_URL, onAuthSuccess } from "$lib/utils/auth.svelte.ts";
 
   let tab = $state("login");
 

@@ -6,7 +6,7 @@
     onAuthSuccess,
     API_URL,
     getRole,
-  } from "$lib/utils/auth.svelte.js";
+  } from "$lib/utils/auth.svelte.ts";
 
   // ── calculator state ──────────────────────────────────────
   let display = $state("0");

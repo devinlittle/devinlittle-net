@@ -6,7 +6,7 @@
     auth,
     logout,
     getRole,
-  } from "$lib/utils/auth.svelte.js";
+  } from "$lib/utils/auth.svelte.ts";
   import { goto } from "$app/navigation";
 
   let sessions = $state([]);
