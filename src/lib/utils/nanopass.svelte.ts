@@ -57,7 +57,7 @@ function handleFileQuery(msg: NanoPassMessage) {
     type: 'FileQueryResponse',
     listing_id: payload.listing_id,
     host_session_id: auth.session_id!
-  }, msg.from_session_id)
+  }, msg.from_session_id, msg.from_user_id)
 
 }
 
@@ -72,7 +72,7 @@ function handleFileQueryResponse(msg: NanoPassMessage) {
     type: 'TransferRequest',
     listing_id: payload.listing_id,
     requester_session_id: auth.session_id!
-  }, payload.host_session_id)
+  }, payload.host_session_id, msg.from_user_id)
 }
 
 // --- transfer handshake ---
@@ -86,19 +86,19 @@ function handleTransferRequest(msg: NanoPassMessage) {
     listing,
     requester_session_id: payload.requester_session_id,
     onAccept: () => {
-      sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id)
+      sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
       // host creates offer
-      initWebRTCAsHost(payload.listing_id, msg.from_session_id)
+      initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
     },
     onDecline: () => {
-      sendNanoPass({ type: 'TransferDeclined', listing_id: payload.listing_id }, msg.from_session_id)
+      sendNanoPass({ type: 'TransferDeclined', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
     }
   })
 }
 
 function handleTransferAccepted(msg: NanoPassMessage) {
   const payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferAccepted' }>
-  initWebRTCAsRequester(payload.listing_id, msg.from_session_id)
+  initWebRTCAsRequester(payload.listing_id, msg.from_session_id, msg.from_user_id)
 }
 
 function handleTransferDeclined(msg: NanoPassMessage) {
@@ -134,7 +134,7 @@ async function handleSDPOffer(msg: NanoPassMessage) {
   const answer = await pc.createAnswer()
   await pc.setLocalDescription(answer)  // this should trigger ICE gathering
   console.log('gathering state after setLocalDescription:', pc.iceGatheringState)
-  sendNanoPass({ type: 'SDPAnswer', listing_id: payload.listing_id, sdp: answer.sdp! }, msg.from_session_id)
+  sendNanoPass({ type: 'SDPAnswer', listing_id: payload.listing_id, sdp: answer.sdp! }, msg.from_session_id, msg.from_user_id)
 }
 
 // setRemoteDescription
@@ -160,7 +160,7 @@ async function handleICECandidate(msg: NanoPassMessage) {
 
 const peerConnections = new Map<string, RTCPeerConnection>()
 
-function createPeerConnection(listing_id: string, target_session_id: string): RTCPeerConnection {
+function createPeerConnection(listing_id: string, target_session_id: string, target_user_id: String): RTCPeerConnection {
   const pc = new RTCPeerConnection({
     iceServers: [
       { urls: "stun:turn.devinlittle.net:3478" },
@@ -181,7 +181,7 @@ function createPeerConnection(listing_id: string, target_session_id: string): RT
       candidate: e.candidate.candidate,
       sdp_mid: e.candidate.sdpMid ?? null,
       sdp_mline_index: e.candidate.sdpMLineIndex ?? null
-    }, target_session_id)
+    }, target_session_id, target_user_id)
   }
 
   pc.oniceconnectionstatechange = () => {
@@ -194,17 +194,17 @@ function createPeerConnection(listing_id: string, target_session_id: string): RT
 
 
 
-async function initWebRTCAsRequester(listing_id: string, target_session_id: string) {
-  const pc = createPeerConnection(listing_id, target_session_id)
+async function initWebRTCAsRequester(listing_id: string, target_session_id: string, target_user_id: String) {
+  const pc = createPeerConnection(listing_id, target_session_id, target_user_id)
   const dc = pc.createDataChannel('filetransfer')
   receiveFileInChunks(dc, listing_id)
   const offer = await pc.createOffer()
   await pc.setLocalDescription(offer)
-  sendNanoPass({ type: 'SDPOffer', listing_id, sdp: offer.sdp! }, target_session_id)
+  sendNanoPass({ type: 'SDPOffer', listing_id, sdp: offer.sdp! }, target_session_id, target_user_id)
 }
 
-function initWebRTCAsHost(listing_id: string, target_session_id: string) {
-  const pc = createPeerConnection(listing_id, target_session_id)
+function initWebRTCAsHost(listing_id: string, target_session_id: string, target_user_id: String) {
+  const pc = createPeerConnection(listing_id, target_session_id, target_user_id)
   pc.ondatachannel = (e) => {
     e.channel.onopen = () => sendFileInChunks(listing_id, e.channel)
   }
@@ -220,18 +220,20 @@ export async function fetchListings() {
 }
 
 
-export function sendNanoPass(payload: NanoPassPayload, target_session_id: string | null = null) {
+export function sendNanoPass(payload: NanoPassPayload, target_session_id: string | null = null, target_user_id: String) {
   sendMessage(JSON.stringify({
     namespace: 'nanopass',
     id: crypto.randomUUID(),
     from_session_id: auth.session_id,
+    from_user_id: auth.id,
+    target_user_id,
     target_session_id,
     payload
-  }))
+  }), target_user_id)
 }
 
-export async function sendMessage(msg: String) {
-  await authFetch(`${API_URL}/notification/user_message/${auth.id}`, {
+export async function sendMessage(msg: String, target_user_id: String) {
+  await authFetch(`${API_URL}/notification/user_message/${target_user_id}`, {
     method: "POST",
     body: msg
   })

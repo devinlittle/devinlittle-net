@@ -124,6 +124,7 @@
         requester_session_id: auth.session_id,
       },
       null,
+      listing.owner_id,
     );
 
     console.log("initiating transfer for", listing.id);

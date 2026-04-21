@@ -23,6 +23,8 @@ export type FileListing = {
 export type NanoPassMessage = {
   id: string
   from_session_id: string
+  from_user_id: string
+  target_user_id: string
   target_session_id: string | null
   payload: NanoPassPayload
 }
