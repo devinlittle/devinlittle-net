@@ -25,6 +25,16 @@
     return `--ex: ${x}px; --ey: ${y}px; --erot: ${rot}deg;`;
   }
 
+  function handleAccept(n) {
+    if (n.onAccept) n.onAccept();
+    dismiss(n.id);
+  }
+
+  function handleDecline(n) {
+    if (n.onDecline) n.onDecline();
+    dismiss(n.id);
+  }
+
   onMount(() => {
     registerDismiss(dismiss);
   });
@@ -35,7 +45,7 @@
     <div
       class="notif"
       class:global={n.global}
-      class:offer={n.type === "offer"}
+      class:transfer={n.type === "transfer"}
       class:dying={dying.has(n.id)}
       style={exitStyle(n.id)}
     >
@@ -44,19 +54,45 @@
         {#if n.sender || n.global}
           <span class="notif-sender">{n.global ? "global" : n.sender}</span>
         {/if}
-        <button class="notif-close" onclick={() => dismiss(n.id)}>✕</button>
+        {#if n.type !== "transfer"}
+          <button class="notif-close" onclick={() => dismiss(n.id)}>✕</button>
+        {/if}
       </div>
+
       <p class="notif-body">{n.body}</p>
-      {#if n.type === "offer"}
+
+      {#if n.type === "transfer"}
+        <div class="transfer-meta">
+          <span class="transfer-filename">{n.filename}</span>
+          <span class="transfer-size">{n.filesize}</span>
+        </div>
         <div class="notif-actions">
-          <button
-            class="accept"
-            onclick={() => {
-              // TODO: webrtc answer
-              dismiss(n.id);
-            }}>Accept</button
-          >
-          <button class="deny" onclick={() => dismiss(n.id)}>Deny</button>
+          <button class="accept" onclick={() => handleAccept(n)}>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M2 8l4 4 8-8" />
+            </svg>
+            Accept
+          </button>
+          <button class="deny" onclick={() => handleDecline(n)}>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 3l10 10M13 3L3 13" />
+            </svg>
+            Decline
+          </button>
         </div>
       {/if}
     </div>
@@ -91,8 +127,9 @@
     border-left-color: #ff4444;
   }
 
-  .notif.offer {
+  .notif.transfer {
     border-left-color: var(--color-theme-2);
+    width: 20rem;
   }
 
   .notif.dying {
@@ -116,6 +153,10 @@
 
   .notif.global .notif-title {
     color: #ff6666;
+  }
+
+  .notif.transfer .notif-title {
+    color: var(--color-theme-2);
   }
 
   .notif-sender {
@@ -147,6 +188,34 @@
     line-height: 1.5;
   }
 
+  .transfer-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-border);
+    border-radius: 0.4rem;
+    padding: 0.4rem 0.65rem;
+    margin-top: 0.5rem;
+  }
+
+  .transfer-filename {
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70%;
+  }
+
+  .transfer-size {
+    font-size: 0.72rem;
+    color: var(--color-subtle-text);
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+  }
+
   .notif-actions {
     display: flex;
     gap: 0.4rem;
@@ -159,6 +228,10 @@
     font-size: 0.78rem;
     border-radius: 0.35rem;
     transition: background 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
   }
 
   .accept {

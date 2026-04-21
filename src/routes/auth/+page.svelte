@@ -1,5 +1,5 @@
 <script>
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
 
   import { API_URL, onAuthSuccess } from "$lib/utils/auth.svelte.ts";
 
@@ -78,6 +78,7 @@
     const { access_token } = await login_res.json();
 
     localStorage.setItem("access_token", access_token);
+    invalidateAll();
     goto("/");
   }
 </script>

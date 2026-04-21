@@ -27,6 +27,9 @@
       >
         <a href="/gradegetter">GradeGetter</a>
       </li>
+      <li aria-current={page.url.pathname === "/nanopass" ? "page" : undefined}>
+        <a href="/nanopass">NanoPass</a>
+      </li>
       <li aria-current={page.url.pathname === "/calc" ? "page" : undefined}>
         <a href="/calc">Calculator</a>
       </li>

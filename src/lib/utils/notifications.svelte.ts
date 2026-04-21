@@ -1,19 +1,26 @@
 import { auth, API_URL, refresh } from "./auth.svelte.js";
 import { fetchGrades } from "./gradegetter.svelte.js";
+import { handleNanoPass } from "./nanopass.svelte.js";
+import type { NanoPassMessage, NanoPassPayload } from "./nanopass.types.ts";
 
 // --- types ---
 
-type NotificationType = "global" | "info" | "offer"
 
-type Notification = {
-  id: string
-  type: NotificationType
-  title: string
-  body: string
-  global?: boolean
-  sender?: string | null
-  data?: unknown
-}
+type NotificationType = "global" | "info" | "transfer"
+
+type Notification =
+  {
+    id: string
+    type: 'info' | 'global' | "transfer"
+    title: string
+    body: string
+    global?: boolean
+    sender?: string | null
+    filename?: string
+    filesize?: string
+    onAccept?: () => void
+    onDecline?: () => void
+  }
 
 type MessageNamespace = "notification" | "nanopass" | "gradegetter"
 
@@ -41,16 +48,25 @@ export function registerDismiss(fn: (id: string) => void) {
   dismissFn = fn
 }
 
-function addNotification(notification: Omit<Notification, "id">) {
+export function addNotification(notification: Omit<Notification, "id">) {
   const id = crypto.randomUUID()
   const n: Notification = { id, ...notification }
   notifications.push(n)
-  if (n.type !== "offer") {
+  if (n.type !== "transfer") {
     setTimeout(() => {
       if (dismissFn) dismissFn(id)
     }, 5000)
   }
 }
+export function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+
 
 export function removeNotification(id: string) {
   const idx = notifications.findIndex(n => n.id === id)
@@ -78,10 +94,6 @@ function handleNotification(payload: NotificationPayload) {
   })
 }
 
-function handleNanoPass(payload: unknown) {
-  // TODO: implement NanoPass protocol logic
-}
-
 // --- socket ---
 
 function handleMessage(msg: IncomingMessage) {
@@ -90,7 +102,7 @@ function handleMessage(msg: IncomingMessage) {
       handleNotification(msg.payload as NotificationPayload)
       break
     case "nanopass":
-      handleNanoPass(msg.payload)
+      handleNanoPass(msg as NanoPassMessage)
       break
     case "gradegetter":
       fetchGrades();
@@ -129,8 +141,8 @@ export function connectNotifications() {
     socket = null
     console.error("WEBSOCKET CLOSED");
     if (auth.id) {
-      setTimeout(connectNotifications, 3000)
       refresh();
+      setTimeout(connectNotifications, 3000)
     }
   }
 

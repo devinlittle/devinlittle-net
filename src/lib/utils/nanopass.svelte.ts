@@ -1,14 +1,19 @@
-import { auth } from "./auth.svelte.js"
+import { API_URL, auth, authFetch } from "./auth.svelte.js"
 import type { NanoPassMessage, NanoPassPayload, FileListing } from "./nanopass.types.js"
+import { addNotification, formatBytes } from "./notifications.svelte.js"
 
 // --- state ---
 
-export let listings = $state<FileListing[]>([])
+export const nanopass = $state({
+  listings: [] as FileListing[],
+  transferProgress: new Map<string, number>()
+})
 
 // --- entry point called from notifications.svelte.ts ---
 
 export function handleNanoPass(msg: NanoPassMessage) {
-  // drop if WE sent this AND it was targeted broadcast
+  console.log(msg.payload.type, '| from:', msg.from_session_id, '| me:', auth.session_id, '| match:', msg.from_session_id === auth.session_id, '| target:', msg.target_session_id)
+  // drop if WE sent this AND it was targeted
   if (msg.from_session_id === auth.session_id && msg.target_session_id !== null) return
 
   // drop targeted messages not meant for this device
@@ -17,7 +22,7 @@ export function handleNanoPass(msg: NanoPassMessage) {
   const payload = msg.payload
   switch (payload.type) {
     case "ListingAdded": return handleListingAdded(payload.listing)
-    case "ListingRemoved": return handleListingRemoved(payload.listing_id)
+    case "ListingRemoved": return handleListingRemoved(payload.listing.id)
     case "FileQuery": return handleFileQuery(msg)
     case "FileQueryResponse": return handleFileQueryResponse(msg)
     case "TransferRequest": return handleTransferRequest(msg)
@@ -32,49 +37,295 @@ export function handleNanoPass(msg: NanoPassMessage) {
 // --- listings ---
 
 function handleListingAdded(listing: FileListing) {
-  if (listings.some(l => l.id === listing.id)) return
-  listings.push(listing)
+  if (nanopass.listings.some(l => l.id === listing.id)) return
+  nanopass.listings.push(listing)
 }
 
+
 function handleListingRemoved(listing_id: string) {
-  const idx = listings.findIndex(l => l.id === listing_id)
-  if (idx !== -1) listings.splice(idx, 1)
+  const idx = nanopass.listings.findIndex(l => l.id == listing_id)
+  if (idx !== -1) nanopass.listings.splice(idx, 1)
 }
 
 // --- ARP resolution ---
 
 function handleFileQuery(msg: NanoPassMessage) {
-  // TODO: check if we are hosting listing_id, if so respond with FileQueryResponse
+  const payload = msg.payload as Extract<NanoPassPayload, { type: 'FileQuery' }>
+  const hosted = hostedFiles.get(payload.listing_id)
+  if (!hosted) return // not our file; ignore
+  sendNanoPass({
+    type: 'FileQueryResponse',
+    listing_id: payload.listing_id,
+    host_session_id: auth.session_id!
+  }, msg.from_session_id)
+
 }
+
+const resolvedHosts = new Map<string, string>()
 
 function handleFileQueryResponse(msg: NanoPassMessage) {
   // TODO: store resolved host_session_id for this listing_id
+  const payload = msg.payload as Extract<NanoPassPayload, { type: 'FileQueryResponse' }>
+  resolvedHosts.set(payload.listing_id, payload.host_session_id)
+  // now we know who to send the TransferRequest to
+  sendNanoPass({
+    type: 'TransferRequest',
+    listing_id: payload.listing_id,
+    requester_session_id: auth.session_id!
+  }, payload.host_session_id)
 }
 
 // --- transfer handshake ---
 
+// this is the facetime like notifiation
 function handleTransferRequest(msg: NanoPassMessage) {
-  // TODO: show FaceTime style notification
+  const payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferRequest' }>
+  const listing = nanopass.listings.find(l => l.id === payload.listing_id)
+  if (!listing) return
+  addTransferNotification({
+    listing,
+    requester_session_id: payload.requester_session_id,
+    onAccept: () => {
+      sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id)
+      // host creates offer
+      initWebRTCAsHost(payload.listing_id, msg.from_session_id)
+    },
+    onDecline: () => {
+      sendNanoPass({ type: 'TransferDeclined', listing_id: payload.listing_id }, msg.from_session_id)
+    }
+  })
 }
 
 function handleTransferAccepted(msg: NanoPassMessage) {
-  // TODO: begin WebRTC signaling
+  const payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferAccepted' }>
+  initWebRTCAsRequester(payload.listing_id, msg.from_session_id)
 }
 
 function handleTransferDeclined(msg: NanoPassMessage) {
-  // TODO: notify user that transfer was declined
+  const payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferDeclined' }>
+  console.log('transfer declined for', payload.listing_id)
+}
+
+function addTransferNotification({ listing, requester_session_id, onAccept, onDecline }) {
+  addNotification({
+    type: 'transfer',
+    title: 'incoming file request',
+    body: `a device wants to download from you`,
+    filename: listing.filename,
+    filesize: formatBytes(listing.size_bytes),
+    onAccept,
+    onDecline,
+  })
 }
 
 // --- webrtc signaling ---
 
-function handleSDPOffer(msg: NanoPassMessage) {
-  // TODO: setRemoteDescription, createAnswer, setLocalDescription, send SDPAnswer
+
+// setRemoteDescription, createAnswer, setLocalDescription, send SDPAnswer
+async function handleSDPOffer(msg: NanoPassMessage) {
+  const payload = msg.payload as Extract<NanoPassPayload, { type: 'SDPOffer' }>
+  console.log('handleSDPOffer, pc exists:', !!peerConnections.get(payload.listing_id))
+  const pc = peerConnections.get(payload.listing_id)
+  if (!pc) {
+    console.error('NO PC FOUND for', payload.listing_id)
+    return
+  }
+  await pc.setRemoteDescription({ type: 'offer', sdp: payload.sdp })
+  const answer = await pc.createAnswer()
+  await pc.setLocalDescription(answer)  // this should trigger ICE gathering
+  console.log('gathering state after setLocalDescription:', pc.iceGatheringState)
+  sendNanoPass({ type: 'SDPAnswer', listing_id: payload.listing_id, sdp: answer.sdp! }, msg.from_session_id)
 }
 
-function handleSDPAnswer(msg: NanoPassMessage) {
-  // TODO: setRemoteDescription
+// setRemoteDescription
+async function handleSDPAnswer(msg: NanoPassMessage) {
+  const payload = msg.payload as Extract<NanoPassPayload, { type: 'SDPAnswer' }>
+  const pc = peerConnections.get(payload.listing_id)
+  if (!pc) return
+  await pc.setRemoteDescription({ type: 'answer', sdp: payload.sdp })
 }
 
-function handleICECandidate(msg: NanoPassMessage) {
-  // TODO: addIceCandidate
+// addIceCandidate
+async function handleICECandidate(msg: NanoPassMessage) {
+  const payload = msg.payload as Extract<NanoPassPayload, { type: 'ICECandidate' }>
+  const pc = peerConnections.get(payload.listing_id)
+  if (!pc) return
+  await pc.addIceCandidate({
+    candidate: payload.candidate,
+    sdpMid: payload.sdp_mid ?? undefined,
+    sdpMLineIndex: payload.sdp_mline_index ?? undefined
+  })
+
+}
+
+const peerConnections = new Map<string, RTCPeerConnection>()
+
+function createPeerConnection(listing_id: string, target_session_id: string): RTCPeerConnection {
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:turn.devinlittle.net:3478" },
+      {
+        urls: 'turn:turn.devinlittle.net:3478',
+        username: 'devin',
+        credential: 'little'
+      },
+    ]
+  })
+  peerConnections.set(listing_id, pc)
+  pc.onicecandidate = (e) => {
+    console.log('ICE candidate:', e.candidate)
+    if (!e.candidate) return
+    sendNanoPass({
+      type: 'ICECandidate',
+      listing_id,
+      candidate: e.candidate.candidate,
+      sdp_mid: e.candidate.sdpMid ?? null,
+      sdp_mline_index: e.candidate.sdpMLineIndex ?? null
+    }, target_session_id)
+  }
+
+  pc.oniceconnectionstatechange = () => {
+    console.log('ICE state:', pc.iceConnectionState)
+  }
+
+
+  return pc
+}
+
+
+
+async function initWebRTCAsRequester(listing_id: string, target_session_id: string) {
+  const pc = createPeerConnection(listing_id, target_session_id)
+  const dc = pc.createDataChannel('filetransfer')
+  receiveFileInChunks(dc, listing_id)
+  const offer = await pc.createOffer()
+  await pc.setLocalDescription(offer)
+  sendNanoPass({ type: 'SDPOffer', listing_id, sdp: offer.sdp! }, target_session_id)
+}
+
+function initWebRTCAsHost(listing_id: string, target_session_id: string) {
+  const pc = createPeerConnection(listing_id, target_session_id)
+  pc.ondatachannel = (e) => {
+    e.channel.onopen = () => sendFileInChunks(listing_id, e.channel)
+  }
+}
+
+// ---- data fetch/send functions ----
+
+export async function fetchListings() {
+  const response = await authFetch(`${API_URL}/nanopass/listings`)
+  if (!response.ok) return
+  const data: FileListing[] = await response.json()
+  nanopass.listings = data
+}
+
+
+export function sendNanoPass(payload: NanoPassPayload, target_session_id: string | null = null) {
+  sendMessage(JSON.stringify({
+    namespace: 'nanopass',
+    id: crypto.randomUUID(),
+    from_session_id: auth.session_id,
+    target_session_id,
+    payload
+  }))
+}
+
+export async function sendMessage(msg: String) {
+  await authFetch(`${API_URL}/notification/user_message/${auth.id}`, {
+    method: "POST",
+    body: msg
+  })
+}
+
+
+// --- file stuffies ---
+
+export const hostedFiles = new Map<string, File>()
+
+export function registerHostedFile(listing_id: string, file: File) {
+  hostedFiles.set(listing_id, file)
+}
+
+const CHUNK_SIZE = 16384 // 16kb standard WebRTC chunk size
+
+export function sendFileInChunks(listing_id: string, dc: RTCDataChannel) {
+  const file = hostedFiles.get(listing_id)
+  if (!file) return
+
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
+  let index = 0
+
+  function sendNext() {
+    if (index >= totalChunks) {
+      // signal done
+      dc.send(JSON.stringify({ done: true, total: totalChunks }))
+      return
+    }
+
+    // throttle — dont send if buffer is getting full
+    if (dc.bufferedAmount > CHUNK_SIZE * 8) {
+      setTimeout(sendNext, 50)
+      return
+    }
+
+    const offset = index * CHUNK_SIZE
+    const slice = file.slice(offset, offset + CHUNK_SIZE)
+    const reader = new FileReader()
+
+    reader.onload = (e) => {
+      dc.send(JSON.stringify({
+        index,
+        total: totalChunks,
+        filename: file.name,
+        mime_type: file.type || 'application/octet-stream',
+        data: Array.from(new Uint8Array(e.target!.result as ArrayBuffer))
+      }))
+      index++
+      sendNext()
+    }
+
+    reader.readAsArrayBuffer(slice)
+  }
+
+  sendNext()
+}
+
+export function receiveFileInChunks(dc: RTCDataChannel, listing_id: string) {
+  const chunks: ArrayBuffer[] = []
+  let filename = ''
+  let mimeType = ''
+  let total = 0
+
+  dc.onmessage = (e) => {
+    const msg = JSON.parse(e.data)
+
+    if (msg.done) {
+      const blob = new Blob(chunks, { type: mimeType })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.style.display = 'none'
+      document.body.appendChild(a)
+      a.click()
+      setTimeout(() => {
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, 1000)
+      nanopass.transferProgress.set(listing_id, 1)
+      peerConnections.get(listing_id)?.close()
+      peerConnections.delete(listing_id)
+      return
+    }
+
+    filename = msg.filename
+    mimeType = msg.mime_type
+    total = msg.total
+    // rebuild ArrayBuffer from the number array
+    chunks[msg.index] = new Uint8Array(msg.data).buffer
+
+    const received = chunks.filter(Boolean).length
+    nanopass.transferProgress.set(listing_id, received / total)
+    console.log(`progress: ${Math.round((received / total) * 100)}%`)
+  }
 }
