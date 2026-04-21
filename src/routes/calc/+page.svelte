@@ -416,6 +416,14 @@
   onmouseup={onMouseUp}
 />
 
+<svelte:head>
+  <title>DevinLittle.net - Calculator</title>
+  <meta
+    name="description"
+    content="Devin's calculator, this is my calculator...with secret codes"
+  />
+</svelte:head>
+
 <div class="page">
   <div class="calc-wrap">
     <!-- display -->

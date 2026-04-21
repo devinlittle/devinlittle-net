@@ -83,6 +83,14 @@
   }
 </script>
 
+<svelte:head>
+  <title>DevinLittle.net - Login/SignUp</title>
+  <meta
+    name="description"
+    content="Autenticate into DevinLittle.net!; Sign In or Sign Up"
+  />
+</svelte:head>
+
 <div class="wrapper">
   <div class="tabs">
     <button class:active={tab === "login"} onclick={() => (tab = "login")}

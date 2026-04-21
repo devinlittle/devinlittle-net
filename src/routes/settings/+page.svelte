@@ -184,7 +184,7 @@
 
 <svelte:head>
   <title>DevinLittle.net - Settings</title>
-  <meta name="description" content="The settings page of devinlittle.net" />
+  <meta name="description" content="The settings page of DevinLittle.net" />
 </svelte:head>
 
 {#if auth.ready}

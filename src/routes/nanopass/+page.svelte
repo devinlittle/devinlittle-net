@@ -136,6 +136,14 @@
   });
 </script>
 
+<svelte:head>
+  <title>DevinLittle.net - NanoPass</title>
+  <meta
+    name="description"
+    content="NanoPass, secure peer to peer file sharing"
+  />
+</svelte:head>
+
 <input
   bind:this={fileInput}
   type="file"
