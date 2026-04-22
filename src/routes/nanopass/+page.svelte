@@ -137,6 +137,27 @@
     ),
   );
 
+  let dragging = $state(false);
+
+  function onDragOver(e: DragEvent) {
+    e.preventDefault();
+    dragging = true;
+  }
+
+  function onDragLeave(e: DragEvent) {
+    if (e.relatedTarget === null) dragging = false;
+  }
+
+  function onDrop(e: DragEvent) {
+    e.preventDefault();
+    dragging = false;
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    pendingFile = file;
+    selectedVisibility = "Private";
+    showModal = true;
+  }
+
   beforeNavigate(({ cancel }) => {
     if (isTransferring) {
       if (
@@ -221,7 +242,32 @@
   </div>
 {/if}
 
-<div class="page">
+<div
+  class="page"
+  ondragover={onDragOver}
+  ondragleave={onDragLeave}
+  ondrop={onDrop}
+>
+  {#if dragging}
+    <div class="drop-overlay">
+      <div class="drop-box">
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        drop to share
+      </div>
+    </div>
+  {/if}
+
   <div class="top-row">
     <div>
       <h1>NanoPass</h1>
