@@ -262,6 +262,7 @@
     {:else}
       <div class="grid">
         {#each activeListings as listing (listing.id)}
+          {@const progress = nanopass.transferProgress[listing.id] ?? null}
           <div class="card">
             <div class="card-top">
               <span class="filename" title={listing.filename}
@@ -299,19 +300,46 @@
             <hr class="divider" />
             <button
               class="btn-download"
+              class:downloading={progress !== null && progress < 1}
+              class:done={progress !== null && progress >= 1}
+              disabled={progress !== null && progress < 1}
               onclick={() => initiateTransfer(listing)}
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-              >
-                <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
-              </svg>
-              request file
+              {#if progress !== null && progress >= 1}
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M2 8l4 4 8-8" />
+                </svg>
+                downloaded
+              {:else if progress !== null}
+                <span class="btn-progress-wrap">
+                  <span
+                    class="btn-progress-fill"
+                    style="width: {Math.round(progress * 100)}%"
+                  ></span>
+                  <span class="btn-progress-label"
+                    >{Math.round(progress * 100)}%</span
+                  >
+                </span>
+              {:else}
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
+                </svg>
+                request file
+              {/if}
             </button>
           </div>
         {/each}
@@ -536,7 +564,10 @@
     border-top: 1px solid var(--color-border);
     margin: 0;
   }
+
   .btn-download {
+    position: relative;
+    overflow: hidden;
     width: 100%;
     background: rgba(126, 156, 255, 0.08);
     border: 1px solid rgba(126, 156, 255, 0.25);
@@ -552,9 +583,42 @@
     justify-content: center;
     gap: 0.5rem;
   }
-  .btn-download:hover {
+  .btn-download:hover:not(:disabled) {
     background: rgba(126, 156, 255, 0.18);
     border-color: rgba(126, 156, 255, 0.45);
+  }
+  .btn-download:disabled {
+    cursor: not-allowed;
+  }
+  .btn-download.done {
+    background: rgba(93, 202, 165, 0.12);
+    border-color: rgba(93, 202, 165, 0.3);
+    color: #5dcaa5;
+  }
+
+  .btn-progress-wrap {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-progress-fill {
+    position: absolute;
+    left: -1rem;
+    top: -0.5rem;
+    height: calc(100% + 1rem);
+    background: rgba(126, 156, 255, 0.18);
+    border-radius: 0.3rem;
+    transition: width 0.15s ease;
+    pointer-events: none;
+  }
+  .btn-progress-label {
+    position: relative;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--color-theme-1);
+    z-index: 1;
   }
 
   /* modal */

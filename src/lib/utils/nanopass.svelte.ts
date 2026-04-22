@@ -6,7 +6,7 @@ import { addNotification, formatBytes } from "./notifications.svelte.js"
 
 export const nanopass = $state({
   listings: [] as FileListing[],
-  transferProgress: new Map<string, number>()
+  transferProgress: {} as Record<string, number>
 })
 
 // --- entry point called from notifications.svelte.ts ---
@@ -314,7 +314,7 @@ export function receiveFileInChunks(dc: RTCDataChannel, listing_id: string) {
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
       }, 1000)
-      nanopass.transferProgress.set(listing_id, 1)
+      nanopass.transferProgress[listing_id] = 1
       peerConnections.get(listing_id)?.close()
       peerConnections.delete(listing_id)
       return
@@ -327,7 +327,7 @@ export function receiveFileInChunks(dc: RTCDataChannel, listing_id: string) {
     chunks[msg.index] = new Uint8Array(msg.data).buffer
 
     const received = chunks.filter(Boolean).length
-    nanopass.transferProgress.set(listing_id, received / total)
+    nanopass.transferProgress[listing_id] = received / total
     console.log(`progress: ${Math.round((received / total) * 100)}%`)
   }
 }
