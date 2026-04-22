@@ -42,7 +42,6 @@
     const { access_token } = await res.json();
     onAuthSuccess(access_token);
     goto("/");
-    invalidateAll();
   }
 
   async function handleRegister() {
@@ -80,7 +79,6 @@
 
     localStorage.setItem("access_token", access_token);
     goto("/");
-    invalidateAll();
   }
 </script>
 

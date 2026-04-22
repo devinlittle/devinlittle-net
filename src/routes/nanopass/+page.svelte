@@ -9,6 +9,7 @@
   import { auth, API_URL, authFetch } from "$lib/utils/auth.svelte";
   import type { FileListing, Visibility } from "$lib/utils/nanopass.types";
   import { formatBytes } from "$lib/utils/notifications.svelte";
+  import { beforeNavigate } from "$app/navigation";
 
   let activeTab = $state<"mine" | "public" | "forme">("mine");
 
@@ -129,6 +130,24 @@
 
     console.log("initiating transfer for", listing.id);
   }
+
+  let isTransferring = $derived(
+    Object.values(nanopass.transferProgress).some(
+      (p) => p !== null && p > 0 && p < 1,
+    ),
+  );
+
+  beforeNavigate(({ cancel }) => {
+    if (isTransferring) {
+      if (
+        !confirm(
+          "A file transfer is in progress. Leaving now will cancel it. Continue?",
+        )
+      ) {
+        cancel();
+      }
+    }
+  });
 
   $effect(() => {
     if (!auth.ready) return;
@@ -791,6 +810,16 @@
     }
     .grid {
       grid-template-columns: 1fr;
+    }
+    .modal-backdrop {
+      align-items: flex-end;
+    }
+    .modal {
+      max-width: 100%;
+      width: 100%;
+      border-radius: 1rem 1rem 0 0;
+      max-height: 90vh;
+      overflow-y: auto;
     }
   }
 </style>

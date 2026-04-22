@@ -116,4 +116,17 @@
       border-color: transparent;
     }
   }
+
+  @media (max-width: 600px) {
+    h1 {
+      font-size: 2.2rem;
+    }
+    .stats {
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+    }
+    .stats span:not(:last-child)::after {
+      margin: 0 0.5rem;
+    }
+  }
 </style>
