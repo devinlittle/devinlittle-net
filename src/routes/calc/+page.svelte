@@ -90,9 +90,9 @@
     }
   }
   const defaultWins = {
-    users: { x: 80, y: 140, w: 420, z: 100, rot: 3 },
-    jwt: { x: 180, y: 160, w: 320, z: 101, rot: -4 },
-    announce: { x: 200, y: 180, w: 320, z: 100, rot: 3 },
+    users: { x: 75, y: 140, w: 420, z: 101, rot: 3 },
+    jwt: { x: 75, y: 160, w: 320, z: 100, rot: -4 },
+    announce: { x: 75, y: 180, w: 320, z: 100, rot: 3 },
   };
 
   function triggerAdminSpring() {
