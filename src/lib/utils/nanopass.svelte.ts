@@ -253,87 +253,107 @@ const HIGH_WATER_MARK = 8 * 1024 * 1024  // 8MB, buffer ceiling
 const LOW_WATER_MARK = 2 * 1024 * 1024  // 2MB, resume threshold
 
 export function sendFileInChunks(listing_id: string, dc: RTCDataChannel) {
-  const file = hostedFiles.get(listing_id)
-  if (!file) return
+  const file = hostedFiles.get(listing_id);
+  if (!file) return;
 
-  dc.bufferedAmountLowThreshold = LOW_WATER_MARK
+  dc.binaryType = 'arraybuffer';
+  dc.bufferedAmountLowThreshold = LOW_WATER_MARK;
 
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
-  let index = 0
-  let paused = false
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  let index = 0;
+  let paused = false;
 
   async function sendNext() {
     while (index < totalChunks) {
       if (dc.bufferedAmount >= HIGH_WATER_MARK) {
-        paused = true
-        return
+        paused = true;
+        return;
       }
-      const offset = index * CHUNK_SIZE
-      const buffer = await file.slice(offset, offset + CHUNK_SIZE).arrayBuffer()
+
+      const offset = index * CHUNK_SIZE;
+      const buffer = await file.slice(offset, offset + CHUNK_SIZE).arrayBuffer();
+
       dc.send(JSON.stringify({
         index,
         total: totalChunks,
         filename: file.name,
         mime_type: file.type || 'application/octet-stream',
-        size: buffer.byteLength,
-      }))
-      dc.send(buffer)
-      index++
+      }));
+
+      dc.send(buffer);
+      index++;
     }
-    dc.send(JSON.stringify({ done: true, total: totalChunks }))
+
+    const finalCheck = setInterval(() => {
+      if (dc.bufferedAmount === 0) {
+        clearInterval(finalCheck);
+        dc.send(JSON.stringify({ done: true }));
+        console.log("Sender: All bytes cleared from buffer and sent.");
+      }
+    }, 100);
   }
 
-  dc.addEventListener('bufferedamountlow', () => {
+  dc.onbufferedamountlow = () => {
     if (paused) {
-      paused = false
-      sendNext()
+      paused = false;
+      sendNext();
     }
-  })
+  };
 
-  sendNext()
+  sendNext();
 }
 
 export function receiveFileInChunks(dc: RTCDataChannel, listing_id: string) {
-  const chunks: ArrayBuffer[] = []
-  let pendingHeader: { index: number; total: number; filename: string; mime_type: string } | null = null
-  let filename = ''
-  let mimeType = ''
-  let total = 0
+  let chunks: ArrayBuffer[] = [];
+  let pendingHeader: { index: number; total: number; filename: string; mime_type: string } | null = null;
+  let filename = '';
+  let mimeType = '';
+  let total = 0;
+  let receivedCount = 0;
 
-  dc.binaryType = 'arraybuffer'
+  dc.binaryType = 'arraybuffer';
 
   dc.onmessage = (e) => {
     if (typeof e.data === 'string') {
-      const msg = JSON.parse(e.data)
+      const msg = JSON.parse(e.data);
+
       if (msg.done) {
-        const blob = new Blob(chunks, { type: mimeType })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        a.style.display = 'none'
-        document.body.appendChild(a)
-        a.click()
+        const blob = new Blob(chunks, { type: mimeType });
+
+        if (blob.size === 0) {
+          console.error("Blob is empty! Check chunk sequence.");
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+
         setTimeout(() => {
-          document.body.removeChild(a)
-          URL.revokeObjectURL(url)
-        }, 1000)
-        nanopass.transferProgress[listing_id] = 1
-        peerConnections.get(listing_id)?.close()
-        peerConnections.delete(listing_id)
-        return
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 2000);
+
+        nanopass.transferProgress[listing_id] = 1;
+        return;
       }
-      pendingHeader = msg
-      filename = msg.filename
-      mimeType = msg.mime_type
-      total = msg.total
+      pendingHeader = msg;
+      filename = msg.filename;
+      mimeType = msg.mime_type;
+      total = msg.total;
+      if (chunks.length === 0) {
+        chunks = new Array(total);
+      }
     } else {
-      if (!pendingHeader) return
-      chunks[pendingHeader.index] = e.data as ArrayBuffer
-      pendingHeader = null
-      const received = chunks.filter(Boolean).length
-      nanopass.transferProgress[listing_id] = received / total
-      console.log(`progress: ${Math.round((received / total) * 100)}%`)
+      if (!pendingHeader) return;
+      chunks[pendingHeader.index] = e.data as ArrayBuffer;
+      receivedCount++;
+      pendingHeader = null;
+      nanopass.transferProgress[listing_id] = receivedCount / total;
     }
-  }
+  };
 }
