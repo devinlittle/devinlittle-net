@@ -39,6 +39,8 @@
   const GLOSS_SEQ = ["7", "8", "9", "6", "3"];
   // Cute Stright Line
   const CUTE_SEQ = ["8", "5", "2", "0", "0"];
+  // Courtey Code: 0 0 6 0 0
+  const COURT_SEQ = ["0", "0", "6", "0", "0"];
   let keyHistory = $state([]);
 
   // ── secret trigger ────────────────────────────────────────
@@ -66,7 +68,6 @@
       decodedJwt = payload;
       triggerAdminSpring();
       await loadUsers();
-      keyHistory = [];
     } else if (last5.join(",") === GLOSS_SEQ.join(",")) {
       if (!auth.accessToken) return;
 
@@ -87,10 +88,28 @@
       console.log("only authorized can see this");
     } else if (last5.join(",") === CUTE_SEQ.join(",")) {
       goto("/calc/hi");
+    } else if (last5.join(",") === COURT_SEQ.join(",")) {
+      if (!auth.accessToken) return;
+
+      const res = await authFetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+      });
+
+      if (!res.ok) return;
+
+      const { access_token } = await res.json();
+      onAuthSuccess(access_token);
+
+      const payload = decode(access_token);
+      const role = getRole(payload?.roles, "global");
+
+      if (role !== "devin" && role !== "courtney") return;
+      //triggerAdminSpring();
+      triggerCourtneySpring();
     }
   }
   const defaultWins = {
-    users: { x: 75, y: 140, w: 420, z: 101, rot: 3 },
+    users: { x: 75, y: 140, w: 420, z: 100, rot: 3 },
     jwt: { x: 75, y: 160, w: 320, z: 100, rot: -4 },
     announce: { x: 75, y: 180, w: 320, z: 100, rot: 3 },
   };
@@ -108,6 +127,11 @@
     setTimeout(() => {
       openWindows = ["users", "jwt", "announce"];
     }, 180);
+  }
+
+  function triggerCourtneySpring() {
+    showAdmin = true;
+    openWindows = ["announce"];
   }
 
   // ── calculator logic ──────────────────────────────────────
@@ -318,6 +342,8 @@
     await authFetch(`${API_URL}/auth/admin/users/${userId}/delete`, {
       method: "DELETE",
     });
+
+    await loadUsers();
   }
 
   async function changeRole(userId, service, role) {
@@ -526,7 +552,6 @@
   </div>
 </div>
 
-<!-- ── ADMIN PANEL OVERLAY ── -->
 <!-- ── ADMIN PANEL ── -->
 {#if showAdmin}
   <button
@@ -582,6 +607,7 @@
                     <option value="user">user</option>
                     <option value="trusted">trusted</option>
                     <option value="devin">devin</option>
+                    <option value="courtney">courtney</option>
                     <option value="owen">owen</option>
                   </select>
                 </div>
