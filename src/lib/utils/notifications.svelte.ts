@@ -6,8 +6,6 @@ import type { NanoPassMessage, NanoPassPayload } from "./nanopass.types.ts";
 // --- types ---
 
 
-type NotificationType = "global" | "info" | "transfer"
-
 type Notification =
   {
     id: string
@@ -55,7 +53,7 @@ export function addNotification(notification: Omit<Notification, "id">) {
   if (n.type !== "transfer") {
     setTimeout(() => {
       if (dismissFn) dismissFn(id)
-    }, 5000)
+    }, 10000)
   }
 }
 export function formatBytes(bytes: number): string {
