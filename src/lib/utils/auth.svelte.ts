@@ -19,8 +19,8 @@ import { goto } from "$app/navigation";
 }; */
 
 
-export const API_URL = "https://api.devinlittle.net";
-//export const API_URL = "https://localhost:8082";
+//export const API_URL = "https://api.devinlittle.net";
+export const API_URL = "https://localhost:8082";
 //export const API_URL = import.meta.env.API_URL;
 
 // this "auth" var is for state
@@ -50,6 +50,18 @@ function setToken(token) {
   auth.ready = true;
 }
 
+async function setSessionId() {
+  const sessions_req = await authFetch(`${API_URL}/auth/sessions/list_all`);
+  if (sessions_req.ok) {
+    let sessions = await sessions_req.json()
+    for (const session of sessions) {
+      if (session.is_current) {
+        auth.session_id = session.session_id;
+      }
+    }
+  }
+}
+
 function clear() {
   auth.accessToken = null;
   auth.username = null;
@@ -73,15 +85,7 @@ export async function initAuth() {
     if (res.ok) {
       const { access_token } = await res.json();
       setToken(access_token);
-      const sessions_req = await authFetch(`${API_URL}/auth/sessions/list_all`);
-      if (sessions_req.ok) {
-        let sessions = await sessions_req.json()
-        for (const session of sessions) {
-          if (session.is_current) {
-            auth.session_id = session.session_id;
-          }
-        }
-      }
+      await setSessionId()
     }
   } catch { /* server down */ }
 }
@@ -94,6 +98,7 @@ export async function refresh() {
   if (!res.ok) { clear(); return false; }
   const { access_token } = await res.json();
   setToken(access_token);
+  await setSessionId();
   return true;
 }
 
