@@ -1,5 +1,4 @@
 <script>
-  import Preview from "$lib/comps/Preview.svelte";
   //  let { data } = $props();
 </script>
 
@@ -22,12 +21,13 @@
       <br />
     </div>
   {/each}
-</div>  <!-->
+</div>  
 
 <Preview
   articleLink="/projects/gradegetter"
   articleTitle="My gradegetter project"
 />
+<!-->
 
 <!-->Content Here!</!-->
 

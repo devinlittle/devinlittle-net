@@ -29,6 +29,7 @@ export let auth = $state({
   session_id: null,
   username: null,
   roles: null,
+  public_key: null,
   accessToken: null,
   ready: false
 });
@@ -46,12 +47,13 @@ function setToken(token) {
   auth.id = decode(token)?.sub ?? null;
   auth.username = decode(token)?.username ?? null;
   auth.roles = decode(token)?.roles ?? null;
+  auth.public_key = decode(token)?.public_key ?? null;
   localStorage.setItem("access_token", token);
   auth.ready = true;
 }
 
 async function setSessionId() {
-  const sessions_req = await authFetch(`${API_URL}/auth/sessions/list_all`);
+  const sessions_req = await authFetch(`${API_URL}/auth/me/sessions`);
   if (sessions_req.ok) {
     let sessions = await sessions_req.json()
     for (const session of sessions) {
@@ -86,8 +88,12 @@ export async function initAuth() {
       const { access_token } = await res.json();
       setToken(access_token);
       await setSessionId()
+      return true;
     }
-  } catch { /* server down */ }
+  } catch {
+    /* server down */
+    return false;
+  }
 }
 
 export async function refresh() {

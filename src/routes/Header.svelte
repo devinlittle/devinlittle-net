@@ -25,6 +25,7 @@
     { href: "/projects", label: "Projects" },
     { href: "/gradegetter", label: "GradeGetter" },
     { href: "/nanopass", label: "NanoPass" },
+    //    { href: "/smalltalk", label: "SmallTalk" },
     { href: "/calc", label: "Calculator" },
   ];
 </script>

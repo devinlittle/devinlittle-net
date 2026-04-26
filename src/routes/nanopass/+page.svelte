@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import {
     nanopass,
     fetchListings,
@@ -11,7 +10,7 @@
   import { formatBytes } from "$lib/utils/notifications.svelte";
   import { beforeNavigate } from "$app/navigation";
 
-  let activeTab = $state<"mine" | "public" | "forme">("mine");
+  let activeTab = $state<"mine" | "public">("mine");
 
   // --- upload state ---
   let showModal = $state(false);
@@ -207,7 +206,8 @@
         <div class="field-row">
           <label>visibility</label>
           <div class="vis-options">
-            {#each ["Private", "Public", "Restricted"] as v}
+            <!-->     {#each ["Private", "Public", "Restricted"] as v} <!-->
+            {#each ["Private", "Public"] as v}
               <button
                 class="vis-btn"
                 class:active={selectedVisibility === v}
@@ -297,6 +297,8 @@
             >{publicListings.length}</span
           >{/if}
       </button>
+
+      <!-->
       <button
         class="tab"
         class:active={activeTab === "forme"}
@@ -306,7 +308,7 @@
         {#if forMeListings.length > 0}<span class="count"
             >{forMeListings.length}</span
           >{/if}
-      </button>
+      </button> <!-->
     </div>
 
     {#if activeListings.length === 0}

@@ -1,7 +1,9 @@
-import { auth, API_URL, refresh } from "./auth.svelte.js";
+import { auth, API_URL, refresh, authFetch } from "./auth.svelte.js";
 import { fetchGrades } from "./gradegetter.svelte.js";
 import { handleNanoPass } from "./nanopass.svelte.js";
 import type { NanoPassMessage, NanoPassPayload } from "./nanopass.types.ts";
+import { handleKeySync } from "./smalltalk.svelte.ts";
+import type { KeySyncMessage } from "./smalltalk.types.ts";
 
 // --- types ---
 
@@ -9,7 +11,7 @@ import type { NanoPassMessage, NanoPassPayload } from "./nanopass.types.ts";
 type Notification =
   {
     id: string
-    type: 'info' | 'global' | "transfer"
+    type: 'info' | 'global' | "transfer" | "important_info"
     title: string
     body: string
     global?: boolean
@@ -20,7 +22,7 @@ type Notification =
     onDecline?: () => void
   }
 
-type MessageNamespace = "notification" | "nanopass" | "gradegetter"
+type MessageNamespace = "notification" | "nanopass" | "gradegetter" | "smalltalk_keysync"
 
 type IncomingMessage = {
   namespace: MessageNamespace
@@ -50,7 +52,7 @@ export function addNotification(notification: Omit<Notification, "id">) {
   const id = crypto.randomUUID()
   const n: Notification = { id, ...notification }
   notifications.push(n)
-  if (n.type !== "transfer") {
+  if (n.type !== "transfer" && n.type !== "important_info") {
     setTimeout(() => {
       if (dismissFn) dismissFn(id)
     }, 10000)
@@ -105,6 +107,9 @@ function handleMessage(msg: IncomingMessage) {
     case "gradegetter":
       fetchGrades();
       break
+    case "smalltalk_keysync":
+      handleKeySync(msg as KeySyncMessage)
+      break
   }
 }
 
@@ -150,4 +155,11 @@ export function connectNotifications() {
 export function disconnectNotifications() {
   socket?.close()
   socket = null
+}
+
+export async function sendMessage(msg: String, target_user_id: String) {
+  await authFetch(`${API_URL}/notification/user_message/${target_user_id}`, {
+    method: "POST",
+    body: msg
+  })
 }

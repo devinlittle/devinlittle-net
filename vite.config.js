@@ -10,5 +10,13 @@ export default defineConfig({
       key: fs.readFileSync('./certs/localhost-key.pem'),
       cert: fs.readFileSync('./certs/localhost.pem'),
     },
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp'
+    }
+  },
+
+  optimizeDeps: {
+    exclude: ['@sqlite.org/sqlite-wasm']
   }
 });

@@ -1,6 +1,6 @@
 import { API_URL, auth, authFetch } from "./auth.svelte.js"
 import type { NanoPassMessage, NanoPassPayload, FileListing } from "./nanopass.types.js"
-import { addNotification, formatBytes } from "./notifications.svelte.js"
+import { addNotification, formatBytes, sendMessage } from "./notifications.svelte.js"
 
 // --- state ---
 
@@ -231,14 +231,6 @@ export function sendNanoPass(payload: NanoPassPayload, target_session_id: string
     payload
   }), target_user_id)
 }
-
-export async function sendMessage(msg: String, target_user_id: String) {
-  await authFetch(`${API_URL}/notification/user_message/${target_user_id}`, {
-    method: "POST",
-    body: msg
-  })
-}
-
 
 // --- file stuffies ---
 

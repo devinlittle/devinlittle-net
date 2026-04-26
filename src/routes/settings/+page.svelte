@@ -8,6 +8,17 @@
     getRole,
   } from "$lib/utils/auth.svelte.ts";
   import { goto } from "$app/navigation";
+  import { db_state } from "$lib/utils/sqlite.svelte";
+
+  import {
+    keysync,
+    requestKeySync,
+    respondToChallenge,
+    cancelKeySync,
+    generate_recovery_words,
+    setup_recovery_phrase,
+    recover_with_phrase,
+  } from "$lib/utils/smalltalk.svelte";
 
   let sessions = $state([]);
   let confirmText = $state("");
@@ -53,7 +64,7 @@
   }
 
   async function fetch_sessions() {
-    const res = await authFetch(`${API_URL}/auth/sessions/list_all`);
+    const res = await authFetch(`${API_URL}/auth/me/sessions`);
     if (res.ok) sessions = await res.json();
   }
 
@@ -66,14 +77,14 @@
   onMount(async () => {});
 
   async function revoke(id) {
-    const res = await authFetch(`${API_URL}/auth/sessions/revoke/${id}`, {
+    const res = await authFetch(`${API_URL}/auth/me/session/${id}`, {
       method: "DELETE",
     });
     if (res.ok) sessions = sessions.filter((s) => s.session_id !== id);
   }
 
   async function revokeAll() {
-    const res = await authFetch(`${API_URL}/auth/sessions/revoke`, {
+    const res = await authFetch(`${API_URL}/auth/me/sessions`, {
       method: "DELETE",
     });
     if (res.ok) sessions = sessions.filter((s) => s.is_current);
@@ -81,12 +92,59 @@
 
   async function deleteAccount() {
     if (confirmText.toLowerCase() !== "delete") return;
-    const res = await authFetch(`${API_URL}/auth/delete`, {
+    const res = await authFetch(`${API_URL}/auth/me`, {
       method: "DELETE",
     });
     if (res.ok) {
       logout();
       goto("/");
+    }
+  }
+
+  async function startOnboarding() {
+    await generate_and_store_keypair();
+  }
+
+  let show_recovery_setup = $state(false);
+  let show_recovery_recover = $state(false);
+  let recovery_words = $state([]);
+  let recovery_input = $state(Array(12).fill(""));
+  let recovery_confirmed = $state(false);
+  let recovery_loading = $state(false);
+  let recovery_error = $state("");
+  let recovery_success = $state(false);
+
+  function startRecoverySetup() {
+    recovery_words = generate_recovery_words();
+    show_recovery_setup = true;
+    recovery_confirmed = false;
+  }
+
+  async function confirmRecoverySetup() {
+    recovery_loading = true;
+    try {
+      await setup_recovery_phrase(recovery_words);
+      show_recovery_setup = false;
+      recovery_words = [];
+      recovery_confirmed = false;
+    } finally {
+      recovery_loading = false;
+    }
+  }
+
+  async function attemptRecovery() {
+    recovery_loading = true;
+    recovery_error = "";
+    try {
+      const ok = await recover_with_phrase(recovery_input);
+      if (ok) {
+        recovery_success = true;
+        show_recovery_recover = false;
+      } else {
+        recovery_error = "incorrect recovery phrase, please try again";
+      }
+    } finally {
+      recovery_loading = false;
     }
   }
 
@@ -191,6 +249,256 @@
   <div class="wrap">
     <h1>Settings</h1>
 
+    <!-- ENCRYPTED MESSAGING CARD -->
+    {#if ["trusted", "devin", "owen"].includes(getRole(auth.roles, "smalltalk"))}
+      <div class="card">
+        <p class="card-title">Encrypted Messaging</p>
+        <p class="card-sub">
+          Manage your SmallTalk encryption key and recovery options.
+        </p>
+
+        {#if db_state.needs_onboarding}
+          <div class="info-banner">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+            </svg>
+            SmallTalk is not set up on this device yet.
+          </div>
+          <button class="btn btn-primary" onclick={startOnboarding}>
+            Set up encrypted messaging
+          </button>
+        {:else if db_state.needs_key_sync}
+          <div class="info-banner warn">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              /><path d="M12 9v4M12 17h.01" />
+            </svg>
+            No encryption key found on this device.
+          </div>
+
+          <!-- emoji handshake section -->
+          <div class="enc-section">
+            <p class="enc-label">Transfer from another device</p>
+            <p class="enc-hint">
+              Make sure another device with your key is online and logged in.
+            </p>
+
+            {#if keysync.status === "idle"}
+              <button class="btn" onclick={requestKeySync}>
+                Transfer key from online device
+              </button>
+            {:else if keysync.status === "requesting"}
+              <div class="emoji-status">
+                <span class="spinner"></span>
+                Waiting for another device to respond...
+              </div>
+              <button class="btn btn-ghost" onclick={cancelKeySync}
+                >Cancel</button
+              >
+            {:else if keysync.status === "pending_click"}
+              <p class="emoji-instruction">
+                Look at your other device and click the highlighted emoji:
+              </p>
+              <div class="emoji-grid">
+                {#each keysync.challenge_emojis as emoji}
+                  <button
+                    class="emoji-btn"
+                    onclick={() => respondToChallenge(emoji)}
+                  >
+                    {emoji}
+                  </button>
+                {/each}
+              </div>
+              <button class="btn btn-ghost" onclick={cancelKeySync}
+                >Cancel</button
+              >
+            {:else if keysync.status === "transferring"}
+              <div class="emoji-status">
+                <span class="spinner"></span>
+                Receiving key...
+              </div>
+            {:else if keysync.status === "complete"}
+              <div class="success-banner">
+                ✓ Key transferred successfully! Reload to continue.
+              </div>
+            {:else if keysync.status === "failed"}
+              <div class="error-banner">Incorrect emoji. Try again.</div>
+              <button class="btn" onclick={requestKeySync}>Try again</button>
+            {:else if keysync.status === "expired"}
+              <div class="error-banner">Challenge expired. Try again.</div>
+              <button class="btn" onclick={requestKeySync}>Try again</button>
+            {/if}
+          </div>
+
+          <div class="divider-row"><span>or</span></div>
+
+          <!-- recovery phrase section -->
+          <div class="enc-section">
+            <p class="enc-label">Recover with phrase</p>
+            <p class="enc-hint">
+              Enter your 12 word recovery phrase to restore your key.
+            </p>
+
+            {#if !show_recovery_recover}
+              <button
+                class="btn"
+                onclick={() => (show_recovery_recover = true)}
+              >
+                Recover with 12 word phrase
+              </button>
+            {:else}
+              <div class="word-grid">
+                {#each recovery_input as _, i}
+                  <div class="word-input-wrap">
+                    <span class="word-num">{i + 1}</span>
+                    <input
+                      type="text"
+                      bind:value={recovery_input[i]}
+                      placeholder="word"
+                      class="word-input"
+                    />
+                  </div>
+                {/each}
+              </div>
+              {#if recovery_error}
+                <div class="error-banner">{recovery_error}</div>
+              {/if}
+              <div class="btn-row">
+                <button
+                  class="btn btn-ghost"
+                  onclick={() => {
+                    show_recovery_recover = false;
+                    recovery_error = "";
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  class="btn btn-primary"
+                  onclick={attemptRecovery}
+                  disabled={recovery_loading}
+                >
+                  {recovery_loading ? "recovering..." : "Recover key"}
+                </button>
+              </div>
+            {/if}
+          </div>
+        {:else if db_state.ready}
+          <!-- key is ready, show management options -->
+          <div class="enc-status">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#5dcaa5"
+              stroke-width="2.5"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+            Encryption key active on this device
+          </div>
+
+          <!-- trusted device: show emoji challenge if another device requested -->
+          {#if keysync.status === "challenging"}
+            <div class="enc-section highlight">
+              <p class="enc-label">Another device wants your key</p>
+              <p class="emoji-instruction">
+                The highlighted emoji will appear on your other device. It is:
+              </p>
+              <div class="emoji-grid">
+                {#each keysync.challenge_emojis as emoji}
+                  <div
+                    class="emoji-display"
+                    class:correct={emoji === keysync.correct_emoji}
+                  >
+                    {emoji}
+                  </div>
+                {/each}
+              </div>
+              <p class="enc-hint">
+                Waiting for the other device to click the correct emoji...
+              </p>
+              <button class="btn btn-ghost" onclick={cancelKeySync}
+                >Cancel</button
+              >
+            </div>
+          {/if}
+
+          {#if keysync.status === "complete"}
+            <div class="success-banner">
+              ✓ Key transferred to other device successfully!
+            </div>
+          {/if}
+
+          <div class="enc-section">
+            <p class="enc-label">Recovery phrase</p>
+            <p class="enc-hint">
+              Set up a 12 word recovery phrase in case you lose access to all
+              your devices.
+            </p>
+
+            {#if !show_recovery_setup}
+              <button class="btn" onclick={startRecoverySetup}>
+                Set up recovery phrase
+              </button>
+            {:else}
+              <div class="warn">
+                Write these words down and store them safely. We will never show
+                them again.
+              </div>
+              <div class="word-grid display">
+                {#each recovery_words as word, i}
+                  <div class="word-display">
+                    <span class="word-num">{i + 1}</span>
+                    <span class="word-val">{word}</span>
+                  </div>
+                {/each}
+              </div>
+              <label class="checkbox-row">
+                <input type="checkbox" bind:checked={recovery_confirmed} />
+                I've written these down and stored them safely
+              </label>
+              <div class="btn-row">
+                <button
+                  class="btn btn-ghost"
+                  onclick={() => {
+                    show_recovery_setup = false;
+                    recovery_words = [];
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  class="btn btn-primary"
+                  onclick={confirmRecoverySetup}
+                  disabled={!recovery_confirmed || recovery_loading}
+                >
+                  {recovery_loading ? "saving..." : "Save recovery phrase"}
+                </button>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- ACTIVE SESSIONS CARD -->
     <div class="card">
       <p class="card-title">Active sessions</p>
       <p class="card-sub">All devices currently signed in to your account.</p>
@@ -200,7 +508,6 @@
         <div class="session-row">
           <div class="session-icon">
             {#if icon === "mobile"}
-              <!-- mobile svg -->
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -217,7 +524,6 @@
                 />
               </svg>
             {:else}
-              <!-- desktop svg -->
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -240,12 +546,10 @@
             </div>
             <div class="session-meta">{expiresIn(session.expires_at)}</div>
           </div>
-          <!--> {#if !session.is_current} <!-->
           <button
             class="btn btn-danger"
             onclick={() => revoke(session.session_id)}>Revoke</button
           >
-          <!--> {/if} <!-->
         </div>
       {/each}
 
@@ -254,15 +558,16 @@
       </button>
     </div>
 
+    <!-- DELETE ACCOUNT CARD -->
     <div class="card">
       <p class="card-title">Delete account</p>
       <p class="card-sub">Permanently remove your account and all data.</p>
       <div class="warn">This cannot be undone.</div>
 
       {#if !showConfirm}
-        <button class="btn btn-danger" onclick={() => (showConfirm = true)}
-          >Delete my account</button
-        >
+        <button class="btn btn-danger" onclick={() => (showConfirm = true)}>
+          Delete my account
+        </button>
       {:else}
         <p class="confirm-label">Type <strong>delete</strong> to confirm</p>
         <input type="text" bind:value={confirmText} placeholder="delete" />
@@ -280,9 +585,9 @@
         </div>
       {/if}
     </div>
-  </div>
 
-  <div class="wrap">
+    <br />
+
     {#if ["trusted", "devin", "owen"].includes(getRole(auth.roles, "gradegetter"))}
       <div class="card">
         <p class="card-title">Schoology Information</p>
@@ -368,18 +673,26 @@
     {/if}
   </div>
 {:else}
-  <h1>Login to View Settings</h1>
+  <h1 style="text-align:center; margin-top: 4rem;">Login to View Settings</h1>
 {/if}
 
 <style>
   .wrap {
     max-width: var(--column-width);
     margin: var(--column-margin-top) auto;
-    padding: 0 1rem;
+    padding: 0 1rem 4rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
   }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--color-theme-1);
+    margin: 0;
+  }
+
   .card {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--color-border);
@@ -387,20 +700,234 @@
     padding: 1.5rem;
     backdrop-filter: blur(6px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
+
   .card-title {
-    font-size: 1.4rem;
-    font-weight: 500;
+    font-size: 1.1rem;
+    font-weight: 600;
     color: var(--color-theme-2);
     border-bottom: 1px solid var(--color-border);
-    padding-bottom: 0.5rem;
-    margin: 0 0 0.5rem;
+    padding-bottom: 0.6rem;
+    margin: 0;
   }
+
   .card-sub {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: var(--color-subtle-text);
-    margin: 0 0 1rem;
+    margin: 0;
   }
+
+  /* banners */
+  .info-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(126, 156, 255, 0.08);
+    border: 1px solid rgba(126, 156, 255, 0.2);
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+    color: var(--color-theme-1);
+  }
+
+  .info-banner.warn {
+    background: rgba(239, 159, 39, 0.08);
+    border-color: rgba(239, 159, 39, 0.2);
+    color: #ef9f27;
+  }
+
+  .success-banner {
+    background: rgba(93, 202, 165, 0.1);
+    border: 1px solid rgba(93, 202, 165, 0.25);
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+    color: #5dcaa5;
+  }
+
+  .error-banner {
+    background: rgba(255, 100, 100, 0.08);
+    border: 1px solid rgba(255, 100, 100, 0.2);
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+    color: #ff9090;
+  }
+
+  .enc-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: #5dcaa5;
+  }
+
+  /* enc sections */
+  .enc-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .enc-section.highlight {
+    border-color: rgba(126, 156, 255, 0.3);
+    background: rgba(126, 156, 255, 0.04);
+  }
+
+  .enc-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .enc-hint {
+    font-size: 0.78rem;
+    color: var(--color-subtle-text);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .divider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--color-subtle-text);
+    font-size: 0.8rem;
+  }
+
+  .divider-row::before,
+  .divider-row::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+  }
+
+  /* emoji ui */
+  .emoji-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-subtle-text);
+  }
+
+  .emoji-instruction {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .emoji-grid {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .emoji-btn {
+    font-size: 1.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1;
+  }
+
+  .emoji-btn:hover {
+    background: rgba(126, 156, 255, 0.12);
+    border-color: rgba(126, 156, 255, 0.4);
+    transform: scale(1.1);
+  }
+
+  .emoji-display {
+    font-size: 1.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    line-height: 1;
+    transition: all 0.15s ease;
+  }
+
+  .emoji-display.correct {
+    background: rgba(126, 156, 255, 0.18);
+    border-color: rgba(126, 156, 255, 0.5);
+    box-shadow: 0 0 12px rgba(126, 156, 255, 0.3);
+    transform: scale(1.12);
+  }
+
+  /* word grid */
+  .word-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+
+  .word-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--color-border);
+    border-radius: 0.4rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .word-num {
+    font-size: 0.7rem;
+    color: var(--color-subtle-text);
+    font-family: var(--font-mono);
+    min-width: 1rem;
+    flex-shrink: 0;
+  }
+
+  .word-input {
+    background: none;
+    border: none;
+    color: var(--color-text);
+    font-size: 0.82rem;
+    font-family: var(--font-mono);
+    width: 100%;
+    padding: 0;
+    outline: none;
+  }
+
+  .word-grid.display .word-display {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--color-border);
+    border-radius: 0.4rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .word-val {
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    color: var(--color-theme-1);
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--color-subtle-text);
+    cursor: pointer;
+  }
+
+  /* sessions */
   .session-row {
     display: flex;
     align-items: center;
@@ -408,12 +935,13 @@
     background: rgba(255, 255, 255, 0.04);
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
     transition: background 0.2s ease;
   }
+
   .session-row:hover {
     background: rgba(255, 255, 255, 0.07);
   }
+
   .session-icon {
     width: 36px;
     height: 36px;
@@ -426,10 +954,12 @@
     flex-shrink: 0;
     color: var(--color-subtle-text);
   }
+
   .session-info {
     flex: 1;
     min-width: 0;
   }
+
   .session-name {
     font-size: 0.9rem;
     font-weight: 500;
@@ -438,11 +968,13 @@
     align-items: center;
     gap: 0.5rem;
   }
+
   .session-meta {
     font-size: 0.8rem;
     color: var(--color-subtle-text);
     margin-top: 2px;
   }
+
   .badge {
     font-size: 0.7rem;
     padding: 1px 7px;
@@ -451,17 +983,118 @@
     color: var(--color-theme-1);
     border: 1px solid rgba(126, 156, 255, 0.3);
   }
+
+  /* buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.4rem;
+    font-size: 0.875rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text);
+    align-self: flex-start;
+  }
+
+  .btn:hover {
+    background: rgba(255, 255, 255, 0.09);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: rgba(126, 156, 255, 0.15);
+    border-color: rgba(126, 156, 255, 0.4);
+    color: var(--color-theme-1);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: rgba(126, 156, 255, 0.25);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-subtle-text);
+  }
+
   .btn-danger {
     border-color: rgba(255, 100, 100, 0.3);
     color: #ff9090;
   }
+
   .btn-danger:hover {
     background: rgba(255, 100, 100, 0.1);
   }
   .btn-full {
     width: 100%;
-    margin-top: 0.75rem;
   }
+
+  .btn-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  /* misc */
+  .warn {
+    background: rgba(255, 100, 100, 0.07);
+    border: 1px solid rgba(255, 100, 100, 0.2);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    color: #ff9090;
+  }
+
+  .confirm-label {
+    font-size: 0.85rem;
+    color: var(--color-subtle-text);
+    margin: 0;
+  }
+
+  .confirm-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(126, 156, 255, 0.2);
+    border-top-color: var(--color-theme-1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .word-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .emoji-grid {
+      gap: 0.35rem;
+    }
+    .btn-row {
+      flex-direction: column;
+    }
+    .btn-row .btn {
+      width: 100%;
+    }
+  }
+
   .warn {
     background: rgba(255, 100, 100, 0.07);
     border: 1px solid rgba(255, 100, 100, 0.2);
@@ -566,36 +1199,5 @@
       opacity: 0.3;
       transform: scale(0.7);
     }
-  }
-
-  .btn-reset {
-    font-size: 0.8rem;
-    padding: 0.3rem 0.75rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--color-border);
-    border-radius: 0.4rem;
-    color: var(--color-subtle-text);
-    cursor: pointer;
-    align-self: flex-start;
-    transition: background 0.15s;
-  }
-  .btn-reset:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  .confirm-box {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-border);
-  }
-  .confirm-row {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .revoked {
-    opacity: 0.35;
-    pointer-events: none;
   }
 </style>
