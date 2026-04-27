@@ -2,6 +2,10 @@
   import { goto, invalidateAll } from "$app/navigation";
 
   import { API_URL, onAuthSuccess } from "$lib/utils/auth.svelte.ts";
+  import {
+    connectNotifications,
+    disconnectNotifications,
+  } from "$lib/utils/notifications.svelte";
 
   let tab = $state("login");
 
@@ -42,6 +46,8 @@
     const { access_token } = await res.json();
     onAuthSuccess(access_token);
     goto("/");
+    disconnectNotifications();
+    connectNotifications();
   }
 
   async function handleRegister() {
@@ -79,6 +85,8 @@
 
     localStorage.setItem("access_token", access_token);
     goto("/");
+    disconnectNotifications();
+    connectNotifications();
   }
 </script>
 

@@ -3,11 +3,7 @@
 
   import { onMount } from "svelte";
   import { initAuth, auth } from "$lib/utils/auth.svelte.ts";
-  import {
-    db_state,
-    generate_and_store_keypair,
-    mountDB,
-  } from "$lib/utils/sqlite.svelte";
+  import { db_state, mountDB } from "$lib/utils/sqlite.svelte";
   import {
     addNotification,
     connectNotifications,
@@ -29,9 +25,7 @@
         });
       } else if (db_state.needs_onboarding) {
         // generate keys
-        await generate_and_store_keypair();
       }
-
       connectNotifications();
     } else {
       // Loading global notifications, no db ever initalized

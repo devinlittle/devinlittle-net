@@ -142,11 +142,26 @@ export function connectNotifications() {
 
   socket.onclose = () => {
     socket = null
-    console.error("WEBSOCKET CLOSED");
-    if (auth.id) {
-      refresh();
-      setTimeout(connectNotifications, 3000)
-    }
+    setTimeout(() => {
+      addNotification({
+        type: "important_info",
+        title: "Notification",
+        body: "Connection interrupted. Please reload the page to stay connected.",
+        sender: "DevinLittle.Net",
+        global: false,
+      });
+      /*
+            if (auth.id) {
+              refresh();
+              setTimeout(connectNotifications, 3000)
+            } else {
+              setTimeout(connectNotifications, 3000)
+            }
+      
+      */
+      console.error("WEBSOCKET CLOSED");
+    }, 1000)
+
   }
 
   socket.onerror = () => socket?.close()

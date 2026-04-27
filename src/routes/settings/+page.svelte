@@ -8,7 +8,10 @@
     getRole,
   } from "$lib/utils/auth.svelte.ts";
   import { goto } from "$app/navigation";
-  import { db_state } from "$lib/utils/sqlite.svelte";
+  import {
+    db_state,
+    generate_and_store_keypair,
+  } from "$lib/utils/sqlite.svelte";
 
   import {
     keysync,
@@ -19,6 +22,7 @@
     setup_recovery_phrase,
     recover_with_phrase,
   } from "$lib/utils/smalltalk.svelte";
+  import { addNotification } from "$lib/utils/notifications.svelte";
 
   let sessions = $state([]);
   let confirmText = $state("");
@@ -103,6 +107,13 @@
 
   async function startOnboarding() {
     await generate_and_store_keypair();
+    addNotification({
+      type: "important_info",
+      title: "Notification",
+      body: "Encryption Key added! Refresh the page for changes to take place.",
+      sender: "DevinLittle.Net",
+      global: false,
+    });
   }
 
   let show_recovery_setup = $state(false);
@@ -140,6 +151,13 @@
       if (ok) {
         recovery_success = true;
         show_recovery_recover = false;
+        addNotification({
+          type: "important_info",
+          title: "Notification",
+          body: "Encryption Key added! Refresh the page for changes to take place.",
+          sender: "DevinLittle.Net",
+          global: false,
+        });
       } else {
         recovery_error = "incorrect recovery phrase, please try again";
       }
