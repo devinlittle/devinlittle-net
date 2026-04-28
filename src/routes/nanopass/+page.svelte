@@ -404,7 +404,7 @@
                   <span class="meta-value">
                     {listing.owner_id === auth.id
                       ? truncateId(listing.session_id)
-                      : truncateId(listing.owner_id)}
+                      : listing.owner_username}
                   </span>
                 </div>
               </div>

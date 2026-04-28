@@ -10,6 +10,7 @@ export type Visibility =
 export type FileListing = {
   id: string
   owner_id: string
+  owner_username: string
   session_id: string
   filename: string
   size_bytes: number
