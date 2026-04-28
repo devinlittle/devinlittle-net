@@ -402,9 +402,20 @@
                     >{listing.owner_id === auth.id ? "device" : "from"}</span
                   >
                   <span class="meta-value">
-                    {listing.owner_id === auth.id
-                      ? truncateId(listing.session_id)
-                      : listing.owner_username}
+                    {(() => {
+                      // if listing wasn't made but current device
+                      if (listing.owner_id !== auth.id)
+                        return listing.owner_username;
+
+                      switch (true) {
+                        case listing.session_id === auth.session_id:
+                          return "Current Device";
+                        default:
+                          // TODO:: make it show device os, example:
+                          // device: Windows
+                          return truncateId(listing.session_id);
+                      }
+                    })()}
                   </span>
                 </div>
               </div>

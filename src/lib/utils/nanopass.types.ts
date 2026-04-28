@@ -35,7 +35,7 @@ export type NanoPassMessage = {
 export type NanoPassPayload =
   | { type: "FileQuery"; listing_id: string; requester_session_id: string }
   | { type: "FileQueryResponse"; listing_id: string; host_session_id: string }
-  | { type: "TransferRequest"; listing_id: string; requester_session_id: string }
+  | { type: "TransferRequest"; listing_id: string; requester_session_id: string, requester_username: string }
   | { type: "TransferAccepted"; listing_id: string }
   | { type: "TransferDeclined"; listing_id: string }
   | { type: "SDPOffer"; listing_id: string; sdp: string }

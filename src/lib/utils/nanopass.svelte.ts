@@ -64,14 +64,14 @@ function handleFileQuery(msg: NanoPassMessage) {
 const resolvedHosts = new Map<string, string>()
 
 function handleFileQueryResponse(msg: NanoPassMessage) {
-  // TODO: store resolved host_session_id for this listing_id
   const payload = msg.payload as Extract<NanoPassPayload, { type: 'FileQueryResponse' }>
   resolvedHosts.set(payload.listing_id, payload.host_session_id)
   // now we know who to send the TransferRequest to
   sendNanoPass({
     type: 'TransferRequest',
     listing_id: payload.listing_id,
-    requester_session_id: auth.session_id!
+    requester_session_id: auth.session_id!,
+    requester_username: auth.username,
   }, payload.host_session_id, msg.from_user_id)
 }
 
@@ -85,6 +85,7 @@ function handleTransferRequest(msg: NanoPassMessage) {
   addTransferNotification({
     listing,
     requester_session_id: payload.requester_session_id,
+    requester_username: payload.requester_username,
     onAccept: () => {
       sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
       // host creates offer
@@ -106,11 +107,20 @@ function handleTransferDeclined(msg: NanoPassMessage) {
   console.log('transfer declined for', payload.listing_id)
 }
 
-function addTransferNotification({ listing, requester_session_id, onAccept, onDecline }) {
+function addTransferNotification({ listing, requester_session_id, requester_username, onAccept, onDecline }) {
+  let body = (() => {
+    if (requester_username === auth.username) {
+      return "one of your devices wants to download from you"
+    } else {
+      return `${requester_username} wants to download a file from you`
+    }
+
+  })()
+
   addNotification({
     type: 'transfer',
     title: 'incoming file request',
-    body: `a device wants to download from you`,
+    body,
     filename: listing.filename,
     filesize: formatBytes(listing.size_bytes),
     onAccept,
