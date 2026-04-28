@@ -4,6 +4,7 @@
     fetchListings,
     registerHostedFile,
     sendNanoPass,
+    unregisterHostedFile,
   } from "$lib/utils/nanopass.svelte";
   import { auth, API_URL, authFetch } from "$lib/utils/auth.svelte";
   import type { FileListing, Visibility } from "$lib/utils/nanopass.types";
@@ -107,6 +108,20 @@
       }
     } finally {
       uploading = false;
+    }
+  }
+
+  async function removeListing(id: string) {
+    let res = await authFetch(`${API_URL}/nanopass/listings`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        listing_id: id,
+      }),
+    });
+    if (res.ok) {
+      unregisterHostedFile(id);
     }
   }
 
@@ -346,6 +361,24 @@
                 >
                   {visibilityLabel(listing)}
                 </span>
+                {#if activeTab === "mine"}
+                  <button
+                    class="remove-btn"
+                    onclick={() => removeListing(listing.id)}
+                    title="remove listing"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path d="M2 2l12 12M14 2L2 14" />
+                    </svg>
+                  </button>
+                {/if}
               </div>
               <div class="meta">
                 <div class="meta-row">
@@ -583,12 +616,40 @@
     font-size: 0.82rem;
     color: var(--color-subtle-text);
   }
+
   .card-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 0.5rem;
   }
+
+  .card-top-right {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 100, 100, 0.4);
+    cursor: pointer;
+    padding: 0.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    transition: all 0.15s ease;
+    line-height: 1;
+  }
+
+  .remove-btn:hover {
+    color: #ff9090;
+    background: rgba(255, 100, 100, 0.1);
+  }
+
   .filename {
     font-size: 0.9rem;
     font-weight: 500;
