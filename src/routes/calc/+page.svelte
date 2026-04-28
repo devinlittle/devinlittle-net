@@ -39,8 +39,8 @@
   const GLOSS_SEQ = ["7", "8", "9", "6", "3"];
   // Cute Stright Line
   const CUTE_SEQ = ["8", "5", "2", "0", "0"];
-  // Courtey Code: 0 0 6 0 0
-  const COURT_SEQ = ["0", "0", "6", "0", "0"];
+  // Courtey's Code (the announce one): 0 0 6 0 0
+  const ANNOUNCE_SEQ = ["0", "0", "6", "0", "0"];
   let keyHistory = $state([]);
 
   // ── secret trigger ────────────────────────────────────────
@@ -88,7 +88,7 @@
       console.log("only authorized can see this");
     } else if (last5.join(",") === CUTE_SEQ.join(",")) {
       goto("/calc/hi");
-    } else if (last5.join(",") === COURT_SEQ.join(",")) {
+    } else if (last5.join(",") === ANNOUNCE_SEQ.join(",")) {
       if (!auth.accessToken) return;
 
       const res = await authFetch(`${API_URL}/auth/refresh`, {
@@ -103,9 +103,9 @@
       const payload = decode(access_token);
       const role = getRole(payload?.roles, "global");
 
-      if (role !== "devin" && role !== "courtney") return;
+      if (role !== "devin" && role !== "owen" && role !== "trusted") return;
       //triggerAdminSpring();
-      triggerCourtneySpring();
+      triggerAnnounceSpring();
     }
   }
   const defaultWins = {
@@ -129,7 +129,7 @@
     }, 180);
   }
 
-  function triggerCourtneySpring() {
+  function triggerAnnounceSpring() {
     showAdmin = true;
     openWindows = ["announce"];
   }
@@ -607,7 +607,6 @@
                     <option value="user">user</option>
                     <option value="trusted">trusted</option>
                     <option value="devin">devin</option>
-                    <option value="courtney">courtney</option>
                     <option value="owen">owen</option>
                   </select>
                 </div>
