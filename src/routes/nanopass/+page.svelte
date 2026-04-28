@@ -191,114 +191,120 @@
   onchange={onFileChosen}
 />
 
-{#if showModal && pendingFile}
-  <div class="modal-backdrop" onclick={cancelModal}>
-    <div class="modal" onclick={(e) => e.stopPropagation()}>
-      <div class="modal-header">
-        <span>share file</span>
-        <button class="modal-close" onclick={cancelModal}>✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="file-preview">
-          <span class="file-preview-name">{pendingFile.name}</span>
-          <span class="file-preview-size">{formatBytes(pendingFile.size)}</span>
+{#if auth.ready}
+  {#if showModal && pendingFile}
+    <div class="modal-backdrop" onclick={cancelModal}>
+      <div class="modal" onclick={(e) => e.stopPropagation()}>
+        <div class="modal-header">
+          <span>share file</span>
+          <button class="modal-close" onclick={cancelModal}>✕</button>
         </div>
-        <div class="field-row">
-          <label>visibility</label>
-          <div class="vis-options">
-            <!-->     {#each ["Private", "Public", "Restricted"] as v} <!-->
-            {#each ["Private", "Public"] as v}
-              <button
-                class="vis-btn"
-                class:active={selectedVisibility === v}
-                onclick={() =>
-                  (selectedVisibility = v as typeof selectedVisibility)}
-                >{v.toLowerCase()}</button
-              >
-            {/each}
+        <div class="modal-body">
+          <div class="file-preview">
+            <span class="file-preview-name">{pendingFile.name}</span>
+            <span class="file-preview-size"
+              >{formatBytes(pendingFile.size)}</span
+            >
           </div>
-          <p class="vis-hint">
-            {#if selectedVisibility === "Private"}
-              only your own devices can request this file
-            {:else if selectedVisibility === "Public"}
-              anyone on NanoPass can see and request this file
-            {:else}
-              only users you allowlist can see this file
-            {/if}
-          </p>
+          <div class="field-row">
+            <label>visibility</label>
+            <div class="vis-options">
+              <!-->     {#each ["Private", "Public", "Restricted"] as v} <!-->
+              {#each ["Private", "Public"] as v}
+                <button
+                  class="vis-btn"
+                  class:active={selectedVisibility === v}
+                  onclick={() =>
+                    (selectedVisibility = v as typeof selectedVisibility)}
+                  >{v.toLowerCase()}</button
+                >
+              {/each}
+            </div>
+            <p class="vis-hint">
+              {#if selectedVisibility === "Private"}
+                only your own devices can request this file
+              {:else if selectedVisibility === "Public"}
+                anyone on NanoPass can see and request this file
+              {:else}
+                only users you allowlist can see this file
+              {/if}
+            </p>
+          </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-ghost" onclick={cancelModal}>cancel</button>
-        <button
-          class="btn-confirm"
-          onclick={confirmListing}
-          disabled={uploading}
-        >
-          {uploading ? "listing..." : "list file"}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<div
-  class="page"
-  ondragover={onDragOver}
-  ondragleave={onDragLeave}
-  ondrop={onDrop}
->
-  {#if dragging}
-    <div class="drop-overlay">
-      <div class="drop-box">
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
-        drop to share
+        <div class="modal-footer">
+          <button class="btn-ghost" onclick={cancelModal}>cancel</button>
+          <button
+            class="btn-confirm"
+            onclick={confirmListing}
+            disabled={uploading}
+          >
+            {uploading ? "listing..." : "list file"}
+          </button>
+        </div>
       </div>
     </div>
   {/if}
 
-  <div class="top-row">
-    <div>
-      <h1>NanoPass</h1>
-      <p class="subtitle">peer-to-peer file sharing</p>
+  <div
+    class="page"
+    ondragover={onDragOver}
+    ondragleave={onDragLeave}
+    ondrop={onDrop}
+  >
+    {#if dragging}
+      <div class="drop-overlay">
+        <div class="drop-box">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          drop to share
+        </div>
+      </div>
+    {/if}
+
+    <div class="top-row">
+      <div>
+        <h1>NanoPass</h1>
+        <p class="subtitle">peer-to-peer file sharing</p>
+      </div>
+      <button class="btn-primary" onclick={openFilePicker}
+        >+ share a file</button
+      >
     </div>
-    <button class="btn-primary" onclick={openFilePicker}>+ share a file</button>
-  </div>
 
-  <div class="panel">
-    <div class="tabs">
-      <button
-        class="tab"
-        class:active={activeTab === "mine"}
-        onclick={() => (activeTab = "mine")}
-      >
-        my listings
-        {#if myListings.length > 0}<span class="count">{myListings.length}</span
-          >{/if}
-      </button>
-      <button
-        class="tab"
-        class:active={activeTab === "public"}
-        onclick={() => (activeTab = "public")}
-      >
-        public
-        {#if publicListings.length > 0}<span class="count"
-            >{publicListings.length}</span
-          >{/if}
-      </button>
+    <div class="panel">
+      <div class="tabs">
+        <button
+          class="tab"
+          class:active={activeTab === "mine"}
+          onclick={() => (activeTab = "mine")}
+        >
+          my listings
+          {#if myListings.length > 0}<span class="count"
+              >{myListings.length}</span
+            >{/if}
+        </button>
+        <button
+          class="tab"
+          class:active={activeTab === "public"}
+          onclick={() => (activeTab = "public")}
+        >
+          public
+          {#if publicListings.length > 0}<span class="count"
+              >{publicListings.length}</span
+            >{/if}
+        </button>
 
-      <!-->
+        <!-->
       <button
         class="tab"
         class:active={activeTab === "forme"}
@@ -309,118 +315,126 @@
             >{forMeListings.length}</span
           >{/if}
       </button> <!-->
-    </div>
-
-    {#if activeListings.length === 0}
-      <div class="empty">
-        <p>
-          {#if activeTab === "mine"}
-            you haven't listed any files yet —
-            <button class="inline-link" onclick={openFilePicker}
-              >share one now</button
-            >
-          {:else if activeTab === "public"}
-            no public files available right now
-          {:else}
-            no files shared with you yet
-          {/if}
-        </p>
       </div>
-    {:else}
-      <div class="grid">
-        {#each activeListings as listing (listing.id)}
-          {@const progress = nanopass.transferProgress[listing.id] ?? null}
-          <div class="card">
-            <div class="card-top">
-              <span class="filename" title={listing.filename}
-                >{listing.filename}</span
+
+      {#if activeListings.length === 0}
+        <div class="empty">
+          <p>
+            {#if activeTab === "mine"}
+              you haven't listed any files yet —
+              <button class="inline-link" onclick={openFilePicker}
+                >share one now</button
               >
-              <span class="badge badge-{listing.visibility.type.toLowerCase()}">
-                {visibilityLabel(listing)}
-              </span>
-            </div>
-            <div class="meta">
-              <div class="meta-row">
-                <span class="meta-label">size</span>
-                <span class="meta-value">{formatBytes(listing.size_bytes)}</span
+            {:else if activeTab === "public"}
+              no public files available right now
+            {:else}
+              no files shared with you yet
+            {/if}
+          </p>
+        </div>
+      {:else}
+        <div class="grid">
+          {#each activeListings as listing (listing.id)}
+            {@const progress = nanopass.transferProgress[listing.id] ?? null}
+            <div class="card">
+              <div class="card-top">
+                <span class="filename" title={listing.filename}
+                  >{listing.filename}</span
                 >
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">type</span>
-                <span class="meta-value">{listing.mime_type}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">listed</span>
-                <span class="meta-value">{formatDate(listing.created_at)}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label"
-                  >{listing.owner_id === auth.id ? "device" : "from"}</span
+                <span
+                  class="badge badge-{listing.visibility.type.toLowerCase()}"
                 >
-                <span class="meta-value">
-                  {listing.owner_id === auth.id
-                    ? truncateId(listing.session_id)
-                    : truncateId(listing.owner_id)}
+                  {visibilityLabel(listing)}
                 </span>
               </div>
-            </div>
-            <hr class="divider" />
-            <button
-              class="btn-download"
-              class:downloading={progress !== null && progress < 1}
-              class:done={progress !== null && progress >= 1}
-              disabled={progress !== null && progress < 1}
-              onclick={() => initiateTransfer(listing)}
-            >
-              {#if progress !== null && progress >= 1}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M2 8l4 4 8-8" />
-                </svg>
-                downloaded
-              {:else if progress !== null}
-                <span class="btn-progress-wrap">
-                  <span
-                    class="btn-progress-fill"
-                    style="width: {Math.round(progress * 100)}%"
-                  ></span>
-                  <span class="btn-progress-label"
-                    >{Math.round(progress * 100)}%</span
+              <div class="meta">
+                <div class="meta-row">
+                  <span class="meta-label">size</span>
+                  <span class="meta-value"
+                    >{formatBytes(listing.size_bytes)}</span
                   >
-                </span>
-              {:else}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                >
-                  <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
-                </svg>
-                request file
-              {/if}
-            </button>
-          </div>
-        {/each}
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label">type</span>
+                  <span class="meta-value">{listing.mime_type}</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label">listed</span>
+                  <span class="meta-value"
+                    >{formatDate(listing.created_at)}</span
+                  >
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label"
+                    >{listing.owner_id === auth.id ? "device" : "from"}</span
+                  >
+                  <span class="meta-value">
+                    {listing.owner_id === auth.id
+                      ? truncateId(listing.session_id)
+                      : truncateId(listing.owner_id)}
+                  </span>
+                </div>
+              </div>
+              <hr class="divider" />
+              <button
+                class="btn-download"
+                class:downloading={progress !== null && progress < 1}
+                class:done={progress !== null && progress >= 1}
+                disabled={progress !== null && progress < 1}
+                onclick={() => initiateTransfer(listing)}
+              >
+                {#if progress !== null && progress >= 1}
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M2 8l4 4 8-8" />
+                  </svg>
+                  downloaded
+                {:else if progress !== null}
+                  <span class="btn-progress-wrap">
+                    <span
+                      class="btn-progress-fill"
+                      style="width: {Math.round(progress * 100)}%"
+                    ></span>
+                    <span class="btn-progress-label"
+                      >{Math.round(progress * 100)}%</span
+                    >
+                  </span>
+                {:else}
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
+                  </svg>
+                  request file
+                {/if}
+              </button>
+            </div>
+          {/each}
 
-        {#if activeTab === "mine"}
-          <button class="card card-add" onclick={openFilePicker}>
-            <span class="add-icon">+</span>
-            <span class="add-label">share a new file</span>
-          </button>
-        {/if}
-      </div>
-    {/if}
+          {#if activeTab === "mine"}
+            <button class="card card-add" onclick={openFilePicker}>
+              <span class="add-icon">+</span>
+              <span class="add-label">share a new file</span>
+            </button>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
-</div>
+{:else}
+  <h1>Log In to use NanoPass</h1>
+{/if}
 
 <style>
   .page {
