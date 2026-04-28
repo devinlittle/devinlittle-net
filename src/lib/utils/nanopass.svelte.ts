@@ -240,6 +240,10 @@ export function registerHostedFile(listing_id: string, file: File) {
   hostedFiles.set(listing_id, file)
 }
 
+export function unregisterHostedFile(listing_id: string) {
+  hostedFiles.delete(listing_id);
+}
+
 const CHUNK_SIZE = 256 * 1024             // 256KB
 const HIGH_WATER_MARK = 8 * 1024 * 1024  // 8MB, buffer ceiling
 const LOW_WATER_MARK = 2 * 1024 * 1024  // 2MB, resume threshold
