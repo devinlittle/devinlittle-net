@@ -26,6 +26,7 @@
       } else if (db_state.needs_onboarding) {
         // generate keys
       }
+
       connectNotifications();
     } else {
       // Loading global notifications, no db ever initalized
