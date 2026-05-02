@@ -111,7 +111,8 @@
   const defaultWins = {
     users: { x: 75, y: 140, w: 420, z: 100, rot: 3 },
     jwt: { x: 75, y: 160, w: 320, z: 100, rot: -4 },
-    announce: { x: 75, y: 180, w: 320, z: 100, rot: 3 },
+    announce_global: { x: 75, y: 180, w: 320, z: 100, rot: 3 },
+    announce_user: { x: 75, y: 180, w: 320, z: 100, rot: -4 },
   };
 
   function triggerAdminSpring() {
@@ -125,13 +126,13 @@
       openWindows = ["users", "jwt"];
     }, 120);
     setTimeout(() => {
-      openWindows = ["users", "jwt", "announce"];
+      openWindows = ["users", "jwt", "announce_global", "announce_user"];
     }, 180);
   }
 
   function triggerAnnounceSpring() {
     showAdmin = true;
-    openWindows = ["announce"];
+    openWindows = ["announce_global", "announce_user"];
   }
 
   // ── calculator logic ──────────────────────────────────────
@@ -363,7 +364,7 @@
   let announceTitle = $state("");
   let announceContent = $state("");
 
-  async function sendAnnouncement() {
+  async function sendGlobalAnnouncement() {
     if (!announceTitle || !announceContent) return;
     await authFetch(`${API_URL}/auth/admin/global_message`, {
       method: "POST",
@@ -376,6 +377,69 @@
     });
     announceTitle = "";
     announceContent = "";
+  }
+
+  let search = $state("");
+  let search_results = $state([]);
+  let searching = $state(false);
+  let selected = $state([]);
+  let show_search = $state(false);
+  let title = $state("");
+  let body = $state("");
+
+  async function searchUsers(q) {
+    if (!q.trim()) {
+      search_results = [];
+      return;
+    }
+    searching = true;
+    try {
+      const res = await authFetch(
+        `${API_URL}/auth/users/search?q=${encodeURIComponent(q)}`,
+      );
+      if (res.ok) search_results = await res.json();
+    } finally {
+      searching = false;
+    }
+  }
+
+  let search_timeout;
+  function onSearchInput() {
+    clearTimeout(search_timeout);
+    search_timeout = setTimeout(() => searchUsers(search), 300);
+  }
+
+  function selectUser(user) {
+    if (selected.find((s) => s.id === user.id)) return;
+    selected = [...selected, user];
+    search = "";
+    search_results = [];
+    show_search = false;
+  }
+
+  function removeUser(id) {
+    selected = selected.filter((s) => s.id !== id);
+  }
+
+  async function sendAnnounceUser() {
+    if (!selected.length || !title.trim() || !body.trim()) return;
+    for (const user of selected) {
+      await authFetch(`${API_URL}/notification/user_message/${user.id}`, {
+        method: "POST",
+        body: JSON.stringify({
+          namespace: "notification",
+          payload: {
+            title,
+            content: body,
+            sender_username: auth.username,
+            type: "user",
+          },
+        }),
+      });
+    }
+    title = "";
+    body = "";
+    selected = [];
   }
 
   // ── window manager state ──────────────────────────────────
@@ -659,7 +723,7 @@
         </div>
       {/if}
 
-      {#if winId === "announce"}
+      {#if winId === "announce_global"}
         <div class="win-body">
           <input
             type="text"
@@ -671,9 +735,94 @@
             bind:value={announceContent}
             rows="4"
           ></textarea>
-          <button class="send-btn" onclick={sendAnnouncement}
+          <button class="send-btn" onclick={sendGlobalAnnouncement}
             >Send Globaly</button
           >
+        </div>
+      {/if}
+
+      {#if winId === "announce_user"}
+        <div class="win-body">
+          <div class="compose-row">
+            <span class="compose-label">to</span>
+            <div class="pills">
+              {#each selected as user}
+                <div class="pill">
+                  <span>{user.username}</span>
+                  <button
+                    class="pill-remove"
+                    onclick={() => removeUser(user.id)}
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path d="M2 2l12 12M14 2L2 14" />
+                    </svg>
+                  </button>
+                </div>
+              {/each}
+              <button
+                class="add-btn"
+                onclick={() => (show_search = !show_search)}>+ add</button
+              >
+            </div>
+          </div>
+
+          {#if show_search}
+            <div class="search-wrap">
+              <input
+                type="text"
+                bind:value={search}
+                oninput={onSearchInput}
+                placeholder="search users..."
+                class="search-input"
+              />
+              {#if searching}
+                <div class="search-status">searching...</div>
+              {:else if search && search_results.length === 0}
+                <div class="search-status">no users found</div>
+              {:else}
+                {#each search_results as user}
+                  <button
+                    class="search-result"
+                    onclick={() => selectUser(user)}
+                  >
+                    <div class="user-avatar">
+                      {user.username.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div class="user-info">
+                      <span class="user-name">{user.username}</span>
+                      {#if user.bio}<span class="user-bio">{user.bio}</span
+                        >{/if}
+                    </div>
+                  </button>
+                {/each}
+              {/if}
+            </div>
+          {/if}
+
+          <div class="compose-row">
+            <span class="compose-label">title</span>
+            <input
+              type="text"
+              bind:value={title}
+              placeholder="message title..."
+              class="compose-title"
+            />
+          </div>
+
+          <textarea
+            bind:value={body}
+            placeholder="write your message..."
+            rows="4"
+          ></textarea>
+
+          <button class="send-btn" onclick={sendAnnounceUser}>send</button>
         </div>
       {/if}
     </div>
@@ -1135,5 +1284,190 @@
 
   .send-btn:hover {
     background: rgba(126, 156, 255, 0.3);
+  }
+
+  .compose {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    backdrop-filter: blur(6px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .compose-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    min-height: 48px;
+  }
+
+  .compose-label {
+    font-size: 0.78rem;
+    color: var(--color-subtle-text);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    min-width: 2rem;
+  }
+
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(126, 156, 255, 0.12);
+    border: 1px solid rgba(126, 156, 255, 0.25);
+    border-radius: 2rem;
+    padding: 0.2rem 0.6rem 0.2rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--color-theme-1);
+  }
+
+  .pill-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(126, 156, 255, 0.5);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+  }
+
+  .pill-remove:hover {
+    color: #ff9090;
+  }
+
+  .add-btn {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 2rem;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.78rem;
+    color: var(--color-subtle-text);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+  }
+
+  .add-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--color-text);
+  }
+
+  .search-wrap {
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-input {
+    margin: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-border);
+    border-radius: 0.4rem;
+    padding: 0.45rem 0.75rem;
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  .search-input:focus {
+    border-color: rgba(126, 156, 255, 0.4);
+  }
+
+  .search-status {
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: var(--color-subtle-text);
+    text-align: center;
+  }
+
+  .search-result {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-body);
+    transition: background 0.15s;
+  }
+
+  .search-result:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .user-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(126, 156, 255, 0.15);
+    border: 1px solid rgba(126, 156, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-theme-1);
+    flex-shrink: 0;
+  }
+
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .user-name {
+    font-size: 0.875rem;
+    color: var(--color-text);
+    font-weight: 500;
+  }
+  .user-bio {
+    font-size: 0.75rem;
+    color: var(--color-subtle-text);
+  }
+
+  .compose-title {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+  }
+
+  .compose-title::placeholder {
+    color: var(--color-subtle-text);
+    opacity: 0.5;
+  }
+
+  .send-btn {
+    align-self: flex-end;
+    margin: 0 1rem 1rem;
+    background: rgba(126, 156, 255, 0.15);
+    border: 1px solid rgba(126, 156, 255, 0.35);
+    color: var(--color-theme-1);
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.4rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: all 0.2s;
   }
 </style>
