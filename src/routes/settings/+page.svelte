@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount, tick } from "svelte";
   import {
     authFetch,
@@ -6,6 +6,7 @@
     auth,
     logout,
     getRole,
+    VAPID_PUBLIC_KEY,
   } from "$lib/utils/auth.svelte.ts";
   import { goto } from "$app/navigation";
   import {
@@ -71,12 +72,6 @@
     const res = await authFetch(`${API_URL}/auth/me/sessions`);
     if (res.ok) sessions = await res.json();
   }
-
-  $effect(() => {
-    if (!auth.ready) return;
-
-    fetch_sessions();
-  });
 
   onMount(async () => {});
 
@@ -256,6 +251,114 @@
       method: "DELETE",
     });
   }
+
+  type PermissionState = "granted" | "denied" | "default" | "unsupported";
+  let notificationPermission: PermissionState = $state("default");
+  let notificationSubscribed = $state(false);
+  let notificationLoading = $state(false);
+  let notificationError = $state("");
+
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  }
+
+  async function postSubscription(subscription: PushSubscription) {
+    const res = await authFetch(`${API_URL}/notification/subscribe`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(subscription.toJSON()),
+    });
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+  }
+
+  async function enableNotifications() {
+    notificationError = "";
+    notificationLoading = true;
+
+    try {
+      // 1. Force the permission prompt (Chrome requirement for user gesture)
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        throw new Error(
+          "Permission denied. Please enable notifications in your browser settings.",
+        );
+      }
+
+      // 2. Wait for the Service Worker
+      const reg = await navigator.serviceWorker.ready;
+
+      // 3. CLEANUP: Unsubscribe any existing subscription to prevent "hanging"
+      const existingSub = await reg.pushManager.getSubscription();
+      if (existingSub) {
+        await existingSub.unsubscribe();
+      }
+
+      // 4. Try to subscribe
+      // Ensure VAPID_PUBLIC_KEY is a clean string without whitespace
+      const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY.trim());
+
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedKey,
+      });
+
+      // 5. Sync with your backend
+      await postSubscription(subscription);
+
+      localStorage.setItem("notifications_allowed", "true");
+      notificationPermission = "granted";
+      notificationSubscribed = true;
+
+      console.log("Subscription successful!");
+    } catch (e: any) {
+      console.error("Full Subscription Error:", e);
+      notificationError =
+        e.name === "AbortError"
+          ? "Subscription timed out or was blocked by Chrome."
+          : e.message;
+      notificationPermission = Notification.permission as PermissionState;
+    } finally {
+      notificationLoading = false;
+    }
+  }
+
+  $effect(() => {
+    if (!auth.ready) return;
+
+    fetch_sessions();
+  });
+
+  onMount(async () => {
+    if (
+      typeof Notification === "undefined" ||
+      !("serviceWorker" in navigator)
+    ) {
+      notificationPermission = "unsupported";
+      return;
+    }
+
+    notificationPermission = Notification.permission as PermissionState;
+
+    // check if already subscribed at browser level
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+
+    if (existing && Notification.permission === "granted") {
+      // re-POST to backend in case localStorage was cleared
+      if (localStorage.getItem("notifications_allowed") !== "true") {
+        await postSubscription(existing);
+      }
+      notificationSubscribed = true;
+      localStorage.setItem("notifications_allowed", "true");
+    }
+  });
 </script>
 
 <svelte:head>
@@ -266,6 +369,58 @@
 {#if auth.ready}
   <div class="wrap">
     <h1>Settings</h1>
+
+    {#if notificationPermission === "unsupported"}
+      <div class="card">
+        <p class="card-title">Notifications</p>
+        <p class="card-sub">
+          Receieve Notifications even when off the website!
+        </p>
+        <br />
+        <p>Your browser does not support push notifications.</p>
+      </div>
+    {:else if notificationPermission === "denied"}
+      <div class="card">
+        <p class="card-title">Notifications</p>
+        <p class="card-sub">
+          Receieve Notifications even when off the website!
+        </p>
+        <br />
+        <p>
+          Notifications are blocked. Please enable them in your browser
+          settings.
+        </p>
+      </div>
+    {:else if notificationSubscribed}
+      <div class="card">
+        <p class="card-title">Notifications</p>
+        <p class="card-sub">
+          Receieve Notifications even when off the website!
+        </p>
+        <br />
+        <p>Notifications are enabled.</p>
+
+        <!-- <button
+          onclick={() => {
+            localStorage.removeItem("notifications_allowed");
+          }}>Reset notifications</button
+        > !-->
+      </div>
+    {:else}
+      <div class="card">
+        <p class="card-title">Notifications</p>
+        <p class="card-sub">
+          Receieve Notifications even when off the website!
+        </p>
+        <br />
+        <button onclick={enableNotifications} disabled={notificationLoading}>
+          {notificationLoading ? "Enabling..." : "Enable notifications"}
+        </button>
+        {#if notificationError}
+          <p>{notificationError}</p>
+        {/if}
+      </div>
+    {/if}
 
     <!-- ENCRYPTED MESSAGING CARD -->
     {#if ["trusted", "devin", "owen"].includes(getRole(auth.roles, "smalltalk"))}
