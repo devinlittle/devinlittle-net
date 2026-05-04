@@ -43,9 +43,10 @@ self.addEventListener('push', (event) => {
 
     const title = data?.payload?.title ?? data?.title ?? 'Notification';
     const content = data?.payload?.content ?? data?.body ?? '';
+    const sender_username = data?.payload?.sender_username ?? '';
 
     event.waitUntil(
-      self.registration.showNotification(title, {
+      self.registration.showNotification(`${title} - ${sender_username}`, {
         body: content,
         icon: '/favicon.png',
         badge: '/favicon.png',
