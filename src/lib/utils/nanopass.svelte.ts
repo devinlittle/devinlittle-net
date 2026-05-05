@@ -170,7 +170,7 @@ async function handleICECandidate(msg: NanoPassMessage) {
 
 const peerConnections = new Map<string, RTCPeerConnection>()
 
-import { TURN_USERNAME, TURN_PASSWORD } from "$env/static/private"
+import { PUBLIC_TURN_USERNAME, PUBLIC_TURN_PASSWORD } from "$env/static/public"
 
 function createPeerConnection(listing_id: string, target_session_id: string, target_user_id: String): RTCPeerConnection {
   const pc = new RTCPeerConnection({
@@ -178,8 +178,8 @@ function createPeerConnection(listing_id: string, target_session_id: string, tar
       { urls: "stun:turn.devinlittle.net:3478" },
       {
         urls: 'turn:turn.devinlittle.net:3478',
-        username: TURN_USERNAME,
-        credential: TURN_PASSWORD,
+        username: PUBLIC_TURN_USERNAME,
+        credential: PUBLIC_TURN_PASSWORD,
       },
     ]
   })
