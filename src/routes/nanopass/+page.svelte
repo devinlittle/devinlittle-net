@@ -19,6 +19,7 @@
   let selectedVisibility = $state<"Private" | "Public" | "Restricted">(
     "Private",
   );
+  let selectedAutoAcceptState = $state(false);
   let uploading = $state(false);
   let fileInput: HTMLInputElement;
 
@@ -97,6 +98,7 @@
           created_at: Math.round(Date.now() / 1000),
           mime_type: pendingFile.type || "application/octet-stream",
           visibility,
+          auto_accept: selectedAutoAcceptState,
         }),
       });
       if (res.ok) {
@@ -243,6 +245,18 @@
               {:else}
                 only users you allowlist can see this file
               {/if}
+            </p>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <input type="checkbox" bind:checked={selectedAutoAcceptState} />
+              Auto Accept?
+            </label>
+            <p class="vis-hint">
+              Enabling this will auto download the file and <strong
+                >WILL NOT</strong
+              > prompt you for a confirmation.
             </p>
           </div>
         </div>
@@ -460,7 +474,9 @@
                   >
                     <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
                   </svg>
-                  request file
+                  {listing.auto_accept === true
+                    ? "download file"
+                    : "request file"}
                 {/if}
               </button>
             </div>

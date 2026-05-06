@@ -82,19 +82,25 @@ function handleTransferRequest(msg: NanoPassMessage) {
   const payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferRequest' }>
   const listing = nanopass.listings.find(l => l.id === payload.listing_id)
   if (!listing) return
-  addTransferNotification({
-    listing,
-    requester_session_id: payload.requester_session_id,
-    requester_username: payload.requester_username,
-    onAccept: () => {
-      sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
-      // host creates offer
-      initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
-    },
-    onDecline: () => {
-      sendNanoPass({ type: 'TransferDeclined', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
-    }
-  })
+
+  if (listing.auto_accept == true) {
+    sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
+    initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
+  } else {
+    addTransferNotification({
+      listing,
+      requester_session_id: payload.requester_session_id,
+      requester_username: payload.requester_username,
+      onAccept: () => {
+        sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
+        // host creates offer
+        initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
+      },
+      onDecline: () => {
+        sendNanoPass({ type: 'TransferDeclined', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
+      }
+    })
+  }
 }
 
 function handleTransferAccepted(msg: NanoPassMessage) {

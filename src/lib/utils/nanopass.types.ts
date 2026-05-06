@@ -17,6 +17,7 @@ export type FileListing = {
   mime_type: string
   created_at: string
   visibility: Visibility
+  auto_accept: boolean
 }
 
 // --- envelope ---
