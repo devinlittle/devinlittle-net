@@ -86,6 +86,20 @@ function handleTransferRequest(msg: NanoPassMessage) {
   if (listing.auto_accept == true) {
     sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
     initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
+
+    addNotification({
+      type: "info",
+      title: "Notification",
+      body:
+        payload.requester_username === auth.username ?
+          "one of your devices downloaded from you"
+          :
+          `${payload.requester_username} just downloaded a file from you`
+      ,
+      sender: payload.requester_username,
+      global: false,
+    });
+
   } else {
     addTransferNotification({
       listing,
