@@ -22,6 +22,7 @@ export function handleNanoPass(msg: NanoPassMessage) {
   const payload = msg.payload
   switch (payload.type) {
     case "ListingAdded": return handleListingAdded(payload.listing)
+    case "ListingModified": return handleListingModified(payload.listing)
     case "ListingRemoved": return handleListingRemoved(payload.listing.id)
     case "FileQuery": return handleFileQuery(msg)
     case "FileQueryResponse": return handleFileQueryResponse(msg)
@@ -41,6 +42,10 @@ function handleListingAdded(listing: FileListing) {
   nanopass.listings.push(listing)
 }
 
+function handleListingModified(listing: FileListing) {
+  const idx = nanopass.listings.findIndex(l => l.id == listing.id)
+  if (idx !== -1) nanopass.listings.splice(idx, 1, listing)
+}
 
 function handleListingRemoved(listing_id: string) {
   const idx = nanopass.listings.findIndex(l => l.id == listing_id)

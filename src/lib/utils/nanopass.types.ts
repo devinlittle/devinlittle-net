@@ -43,4 +43,5 @@ export type NanoPassPayload =
   | { type: "SDPAnswer"; listing_id: string; sdp: string }
   | { type: "ICECandidate"; listing_id: string; candidate: string; sdp_mid: string | null; sdp_mline_index: number | null }
   | { type: "ListingAdded"; listing: FileListing }
+  | { type: "ListingModified"; listing: FileListing }
   | { type: "ListingRemoved"; listing: FileListing }

@@ -11,13 +11,14 @@ import type { KeySyncMessage } from "./smalltalk.types.ts";
 type Notification =
   {
     id: string
-    type: 'info' | 'global' | "transfer" | "important_info"
+    type: 'info' | 'global' | "transfer" | "important_info" | "fast_info"
     title: string
     body: string
     global?: boolean
     sender?: string | null
     filename?: string
     filesize?: string
+    dismissTime?: number
     onAccept?: () => void
     onDecline?: () => void
   }
@@ -52,6 +53,14 @@ export function addNotification(notification: Omit<Notification, "id">) {
   const id = crypto.randomUUID()
   const n: Notification = { id, ...notification }
   notifications.push(n)
+
+  if (n.type === "fast_info") {
+    setTimeout(() => {
+      if (dismissFn) dismissFn(id)
+    }, n.dismissTime || 2000)
+
+  }
+
   if (n.type !== "transfer" && n.type !== "important_info") {
     setTimeout(() => {
       if (dismissFn) dismissFn(id)
@@ -76,6 +85,14 @@ export function removeNotification(id: string) {
 // --- namespace handlers ---
 
 function handleNotification(payload: NotificationPayload) {
+  if (document.visibilityState === 'hidden') {
+    new Notification(`${payload.title} ${payload.sender_username ? `- ${payload.sender_username}` : ``}`, {
+      body: payload.content,
+      icon: '/favicon.png'
+    })
+    return
+  }
+
   if (payload.type === "global") {
     addNotification({
       type: "global",
@@ -113,12 +130,43 @@ function handleMessage(msg: IncomingMessage) {
   }
 }
 
+let socketState = $state<"connected" | "connecting" | "disconnected">("disconnected");
+
+function updateSocketState(newStatus: "connected" | "connecting" | "disconnected") {
+  socketState = newStatus;
+
+  switch (newStatus) {
+    case "disconnected":
+      console.error("disconnected");
+      break;
+    case "connecting":
+      console.log("connecting");
+      break;
+    case "connected":
+      console.log("connected to websocket");
+      addNotification({
+        type: "fast_info",
+        title: "Notification",
+        body: "connected to live session successfully",
+        sender: "DevinLittle.Net",
+        dismissTime: 750,
+        global: false,
+      });
+      break;
+  }
+}
+
+
 export function connectNotifications() {
   const isAuthed = auth.id !== null
   const path = isAuthed ? `/ws/${auth.id}` : `/ws/global`
   const url = `${API_URL.replace("https://", "wss://").replace("http://", "ws://")}/notification${path}`
   if (socket?.readyState === WebSocket.OPEN) return
   socket = new WebSocket(url)
+
+  if (socket?.readyState === WebSocket.CONNECTING) {
+    updateSocketState("connecting");
+  }
 
   const bootstrap_json = JSON.stringify({
     token: auth.accessToken,
@@ -127,6 +175,7 @@ export function connectNotifications() {
 
   socket.onopen = () => {
     if (isAuthed) socket!.send(`BOOTSTRAP:${bootstrap_json}`)
+    updateSocketState("connected");
   }
 
   socket.onmessage = (e: MessageEvent) => {
@@ -142,23 +191,17 @@ export function connectNotifications() {
 
   socket.onclose = () => {
     socket = null
+    updateSocketState("disconnected");
     setTimeout(() => {
+      // TODO: add button to notification to reconnect
       addNotification({
-        type: "important_info",
+        type: "fast_info",
         title: "Notification",
         body: "Connection interrupted. Please reload the page to stay connected.",
         sender: "DevinLittle.Net",
+        dismissTime: 5000,
         global: false,
       });
-      /*
-            if (auth.id) {
-              refresh();
-              setTimeout(connectNotifications, 3000)
-            } else {
-              setTimeout(connectNotifications, 3000)
-            }
-      
-      */
       console.error("WEBSOCKET CLOSED");
     }, 1000)
 
@@ -167,9 +210,14 @@ export function connectNotifications() {
   socket.onerror = () => socket?.close()
 }
 
+export function getSocket() {
+  return socket;
+}
+
 export function disconnectNotifications() {
   socket?.close()
   socket = null
+  updateSocketState("disconnected");
 }
 
 export async function sendMessage(msg: String, target_user_id: String) {

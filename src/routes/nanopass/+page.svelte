@@ -10,11 +10,13 @@
   import type { FileListing, Visibility } from "$lib/utils/nanopass.types";
   import { formatBytes } from "$lib/utils/notifications.svelte";
   import { beforeNavigate } from "$app/navigation";
+  import { db_exec, db_run } from "$lib/utils/sqlite.svelte";
 
-  let activeTab = $state<"mine" | "public">("mine");
+  let activeTab = $state<"mine" | "public" | "forme">("mine");
 
   // --- upload state ---
-  let showModal = $state(false);
+  let showFileUploadModal = $state(false);
+  let showEditFileModal = $state(false);
   let pendingFile = $state<File | null>(null);
   let selectedVisibility = $state<"Private" | "Public" | "Restricted">(
     "Private",
@@ -75,14 +77,17 @@
     if (!file) return;
     pendingFile = file;
     selectedVisibility = "Private";
-    showModal = true;
+    showFileUploadModal = true;
     input.value = "";
   }
 
   async function confirmListing() {
     if (!pendingFile || !auth.session_id || !auth.accessToken) return;
     uploading = true;
-    const visibility: Visibility = { type: selectedVisibility };
+    const visibility: Visibility = {
+      type: selectedVisibility,
+      ...(selectedVisibility === "Restricted" && { allowlist: [] }),
+    } as Visibility;
     try {
       const res = await authFetch(`${API_URL}/nanopass/listings`, {
         method: "POST",
@@ -104,7 +109,7 @@
       if (res.ok) {
         const listing: FileListing = await res.json();
         registerHostedFile(listing.id, pendingFile);
-        showModal = false;
+        showFileUploadModal = false;
         pendingFile = null;
         activeTab = "mine";
       }
@@ -128,8 +133,143 @@
   }
 
   function cancelModal() {
-    showModal = false;
+    showFileUploadModal = false;
     pendingFile = null;
+  }
+
+  let pendingEditListing: FileListing = $state(null);
+  let pendingEditUsersList = $state([]);
+
+  let search = $state("");
+  let search_results = $state([]);
+  let searching = $state(false);
+  let selected = $state([]);
+  let show_search = $state(false);
+
+  async function showEditFile() {
+    if (pendingEditListing.visibility.type === "Restricted") {
+      const allowlist = pendingEditListing.visibility.allowlist;
+
+      const resolved = {};
+      const missing = [];
+
+      for (const id of allowlist) {
+        const rows = await db_exec(
+          `SELECT user_id, username FROM contacts WHERE user_id = ?`,
+          [id],
+        );
+        if (rows[0]) {
+          resolved[id] = rows[0];
+        } else {
+          missing.push(id);
+        }
+      }
+
+      if (missing.length > 0) {
+        const res = await authFetch(`${API_URL}/auth/users/by-ids`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${auth.accessToken}`,
+          },
+          body: JSON.stringify({ ids: missing }),
+        });
+
+        if (res.ok) {
+          const users = await res.json();
+          for (const user of users) {
+            await db_run(
+              `INSERT OR REPLACE INTO contacts (user_id, username) VALUES (?, ?)`,
+              [user.id, user.username],
+            );
+            resolved[user.id] = user;
+          }
+        }
+      }
+
+      pendingEditUsersList = allowlist;
+      selected = allowlist.map((id) => resolved[id] ?? { id, username: id });
+    }
+    showEditFileModal = true;
+  }
+
+  async function confirmEditFile() {
+    const visibility: Visibility = {
+      type: selectedVisibility,
+      ...(selectedVisibility === "Restricted" && {
+        allowlist: pendingEditUsersList,
+      }),
+    } as Visibility;
+
+    const res = await authFetch(`${API_URL}/nanopass/listings`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.accessToken}`,
+      },
+      body: JSON.stringify({
+        id: pendingEditListing.id,
+        owner_id: pendingEditListing.owner_id,
+        owner_username: pendingEditListing.owner_username,
+        session_id: pendingEditListing.session_id,
+        filename: pendingEditListing.filename,
+        size_bytes: pendingEditListing.size_bytes,
+        created_at: pendingEditListing.created_at,
+        mime_type: pendingEditListing.mime_type,
+        visibility: visibility,
+        auto_accept: selectedAutoAcceptState,
+      }),
+    });
+
+    if (res.ok) {
+      pendingEditListing = null;
+      pendingEditUsersList = [];
+      selected = [];
+      showEditFileModal = false;
+    }
+  }
+
+  function cancelEditFile() {
+    pendingEditListing = null;
+    pendingEditUsersList = [];
+    selected = [];
+    showEditFileModal = false;
+  }
+
+  async function searchUsers(q) {
+    if (!q.trim()) {
+      search_results = [];
+      return;
+    }
+    searching = true;
+    try {
+      const res = await authFetch(
+        `${API_URL}/auth/users/search?q=${encodeURIComponent(q)}`,
+      );
+      if (res.ok) search_results = await res.json();
+    } finally {
+      searching = false;
+    }
+  }
+
+  let search_timeout;
+  function onSearchInput() {
+    clearTimeout(search_timeout);
+    search_timeout = setTimeout(() => searchUsers(search), 300);
+  }
+
+  function selectUser(user) {
+    if (selected.find((s) => s.id === user.id)) return;
+    selected = [...selected, user];
+    pendingEditUsersList = [...pendingEditUsersList, user.id];
+    search = "";
+    search_results = [];
+    show_search = false;
+  }
+
+  function removeUser(id) {
+    pendingEditUsersList = pendingEditUsersList.filter((i) => i !== id);
+    selected = selected.filter((s) => s.id !== id);
   }
 
   function initiateTransfer(listing: FileListing) {
@@ -171,7 +311,7 @@
     if (!file) return;
     pendingFile = file;
     selectedVisibility = "Private";
-    showModal = true;
+    showFileUploadModal = true;
   }
 
   beforeNavigate(({ cancel }) => {
@@ -209,7 +349,7 @@
 />
 
 {#if auth.ready}
-  {#if showModal && pendingFile}
+  {#if showFileUploadModal && pendingFile}
     <div class="modal-backdrop" onclick={cancelModal}>
       <div class="modal" onclick={(e) => e.stopPropagation()}>
         <div class="modal-header">
@@ -226,8 +366,7 @@
           <div class="field-row">
             <label>visibility</label>
             <div class="vis-options">
-              <!-->     {#each ["Private", "Public", "Restricted"] as v} <!-->
-              {#each ["Private", "Public"] as v}
+              {#each ["Private", "Public", "Restricted"] as v}
                 <button
                   class="vis-btn"
                   class:active={selectedVisibility === v}
@@ -268,6 +407,126 @@
             disabled={uploading}
           >
             {uploading ? "listing..." : "list file"}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if showEditFileModal && pendingEditListing}
+    <div class="modal-backdrop" onclick={cancelEditFile}>
+      <div class="modal" onclick={(e) => e.stopPropagation()}>
+        <div class="modal-header">
+          <span>Edit file properties</span>
+          <button class="modal-close" onclick={cancelEditFile}>✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="file-preview">
+            <span class="file-preview-name">{pendingEditListing.filename}</span>
+            <span class="file-preview-size"
+              >{formatBytes(pendingEditListing.size_bytes)}</span
+            >
+          </div>
+          <div class="field-row">
+            <label>visibility</label>
+            <div class="vis-options">
+              {#each ["Private", "Public", "Restricted"] as v}
+                <button
+                  class="vis-btn"
+                  class:active={selectedVisibility === v}
+                  onclick={() =>
+                    (selectedVisibility = v as typeof selectedVisibility)}
+                  >{v.toLowerCase()}</button
+                >
+              {/each}
+            </div>
+            {#if selectedVisibility === "Restricted"}
+              <div class="search-wrap">
+                <input
+                  type="text"
+                  bind:value={search}
+                  oninput={onSearchInput}
+                  placeholder="search users..."
+                  class="search-input"
+                />
+                {#if searching}
+                  <div class="search-status">searching...</div>
+                {:else if search && search_results.length === 0}
+                  <div class="search-status">no users found</div>
+                {:else}
+                  {#each search_results as user}
+                    <button
+                      class="search-result"
+                      onclick={() => selectUser(user)}
+                    >
+                      <div class="user-avatar">
+                        {user.username.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div class="user-info">
+                        <span class="user-name">{user.username}</span>
+                        {#if user.bio}<span class="user-bio">{user.bio}</span
+                          >{/if}
+                      </div>
+                    </button>
+                  {/each}
+                {/if}
+              </div>
+
+              <br />
+
+              {#each selected as user}
+                <div class="pill">
+                  <span>{user.username}</span>
+                  <button
+                    class="pill-remove"
+                    onclick={() => removeUser(user.id)}
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path d="M2 2l12 12M14 2L2 14" />
+                    </svg>
+                  </button>
+                </div>
+              {/each}
+            {/if}
+
+            <p class="vis-hint">
+              {#if selectedVisibility === "Private"}
+                only your own devices can request this file
+              {:else if selectedVisibility === "Public"}
+                anyone on NanoPass can see and request this file
+              {:else}
+                only users you allowlist can see this file
+              {/if}
+            </p>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <input type="checkbox" bind:checked={selectedAutoAcceptState} />
+              Auto Accept?
+            </label>
+            <p class="vis-hint">
+              Enabling this will auto download the file and <strong
+                >WILL NOT</strong
+              > prompt you for a confirmation.
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-ghost" onclick={cancelEditFile}>cancel</button>
+          <button
+            class="btn-confirm"
+            onclick={confirmEditFile}
+            disabled={uploading}
+          >
+            {uploading ? "applying..." : "apply changes"}
           </button>
         </div>
       </div>
@@ -332,18 +591,16 @@
               >{publicListings.length}</span
             >{/if}
         </button>
-
-        <!-->
-      <button
-        class="tab"
-        class:active={activeTab === "forme"}
-        onclick={() => (activeTab = "forme")}
-      >
-        for me
-        {#if forMeListings.length > 0}<span class="count"
-            >{forMeListings.length}</span
-          >{/if}
-      </button> <!-->
+        <button
+          class="tab"
+          class:active={activeTab === "forme"}
+          onclick={() => (activeTab = "forme")}
+        >
+          for me
+          {#if forMeListings.length > 0}<span class="count"
+              >{forMeListings.length}</span
+            >{/if}
+        </button>
       </div>
 
       {#if activeListings.length === 0}
@@ -376,6 +633,14 @@
                   {visibilityLabel(listing)}
                 </span>
                 {#if activeTab === "mine"}
+                  <button
+                    class="remove-btn"
+                    onclick={() => {
+                      pendingEditListing = listing;
+                      showEditFile();
+                    }}>Edit</button
+                  >
+
                   <button
                     class="remove-btn"
                     onclick={() => removeListing(listing.id)}
@@ -971,5 +1236,163 @@
       max-height: 90vh;
       overflow-y: auto;
     }
+  }
+
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(126, 156, 255, 0.12);
+    border: 1px solid rgba(126, 156, 255, 0.25);
+    border-radius: 2rem;
+    padding: 0.2rem 0.6rem 0.2rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--color-theme-1);
+  }
+
+  .pill-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(126, 156, 255, 0.5);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+  }
+
+  .pill-remove:hover {
+    color: #ff9090;
+  }
+
+  .add-btn {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 2rem;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.78rem;
+    color: var(--color-subtle-text);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+  }
+
+  .add-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--color-text);
+  }
+
+  .search-wrap {
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-input {
+    margin: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-border);
+    border-radius: 0.4rem;
+    padding: 0.45rem 0.75rem;
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  .search-input:focus {
+    border-color: rgba(126, 156, 255, 0.4);
+  }
+
+  .search-status {
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: var(--color-subtle-text);
+    text-align: center;
+  }
+
+  .search-result {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-body);
+    transition: background 0.15s;
+  }
+
+  .search-result:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .user-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(126, 156, 255, 0.15);
+    border: 1px solid rgba(126, 156, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-theme-1);
+    flex-shrink: 0;
+  }
+
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .user-name {
+    font-size: 0.875rem;
+    color: var(--color-text);
+    font-weight: 500;
+  }
+  .user-bio {
+    font-size: 0.75rem;
+    color: var(--color-subtle-text);
+  }
+
+  .compose-title {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+  }
+
+  .compose-title::placeholder {
+    color: var(--color-subtle-text);
+    opacity: 0.5;
+  }
+
+  .send-btn {
+    align-self: flex-end;
+    margin: 0 1rem 1rem;
+    background: rgba(126, 156, 255, 0.15);
+    border: 1px solid rgba(126, 156, 255, 0.35);
+    color: var(--color-theme-1);
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.4rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: all 0.2s;
   }
 </style>

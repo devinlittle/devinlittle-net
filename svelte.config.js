@@ -3,6 +3,9 @@ import { enhancedImages } from "@sveltejs/enhanced-img"
 import { mdsvex } from 'mdsvex';
 
 export default {
+  compilerOptions: {
+    warningFilter: (warning) => !warning.code.startsWith('a11y')
+  },
   kit: {
     adapter: adapter({
       out: 'build',
@@ -18,5 +21,5 @@ export default {
     mdsvex({
       extensions: ['.md', '.svx']
     })
-  ]
+  ],
 };

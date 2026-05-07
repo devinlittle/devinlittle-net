@@ -1,4 +1,5 @@
 import { auth, API_URL, authFetch, refresh } from './auth.svelte.js'
+import { getDb } from './sqlite.js'
 
 // --- state ---
 
@@ -12,83 +13,82 @@ let db: any = null  // sqlite db instance
 
 // --- migrations ---
 
-const MIGRATIONS: string[] = [
-  `
+const MIGRATIONS: string[][] = [
+  [`
   CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
-  );
-
+  )`,
+    `
   CREATE TABLE IF NOT EXISTS contacts (
     user_id TEXT PRIMARY KEY,
     username TEXT NOT NULL,
     public_key TEXT,
-    last_seen TEXT,
-    is_online INTEGER DEFAULT 0
-  );
+    last_seen TEXT
+  )`,],
 
-  CREATE TABLE IF NOT EXISTS conversations (
-    id TEXT PRIMARY KEY,
-    partner_id TEXT NOT NULL,
-    partner_username TEXT NOT NULL,
-    partner_public_key TEXT,
-    created_at TEXT NOT NULL
-  );
+  // maybe add "is_online INTEGER DEFAULT 0" to contacts?
 
-  CREATE TABLE IF NOT EXISTS group_chats (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    owner_id TEXT NOT NULL,
-    created_at TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS group_keys (
-    gc_id TEXT NOT NULL,
-    group_key TEXT NOT NULL,
-    version INTEGER NOT NULL,
-    PRIMARY KEY (gc_id, version)
-  );
-
-  CREATE TABLE IF NOT EXISTS messages (
-    id TEXT PRIMARY KEY,
-    conversation_id TEXT,
-    gc_id TEXT,
-    sender_id TEXT NOT NULL,
-    sender_username TEXT NOT NULL,
-    plaintext TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    edited_at TEXT,
-    deleted INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'delivered'
-  );
-
-  INSERT OR IGNORE INTO meta (key, value) VALUES ('last_synced_at', '1970-01-01T00:00:00Z');
-  `
+  /* `CREATE TABLE IF NOT EXISTS conversations (
+     id TEXT PRIMARY KEY,
+     partner_id TEXT NOT NULL,
+     partner_username TEXT NOT NULL,
+     partner_public_key TEXT,
+     created_at TEXT NOT NULL
+   );
+ 
+   CREATE TABLE IF NOT EXISTS group_chats (
+     id TEXT PRIMARY KEY,
+     name TEXT NOT NULL,
+     owner_id TEXT NOT NULL,
+     created_at TEXT NOT NULL
+   );
+ 
+   CREATE TABLE IF NOT EXISTS group_keys (
+     gc_id TEXT NOT NULL,
+     group_key TEXT NOT NULL,
+     version INTEGER NOT NULL,
+     PRIMARY KEY (gc_id, version)
+   );
+ 
+   CREATE TABLE IF NOT EXISTS messages (
+     id TEXT PRIMARY KEY,
+     conversation_id TEXT,
+     gc_id TEXT,
+     sender_id TEXT NOT NULL,
+     sender_username TEXT NOT NULL,
+     plaintext TEXT NOT NULL,
+     created_at TEXT NOT NULL,
+     edited_at TEXT,
+     deleted INTEGER DEFAULT 0,
+     status TEXT DEFAULT 'delivered'
+   );`, */
+  [
+    `INSERT OR IGNORE INTO meta (key, value) VALUES ('last_synced_at', '1970-01-01T00:00:00Z');`
+  ],
 ]
 
 async function run_migrations() {
   let current_version = 0
   try {
-    const rows = db.exec({
-      sql: `SELECT value FROM meta WHERE key = 'db_version'`,
-      returnValue: 'resultRows',
-      rowMode: 'object'
-    })
+    const rows = await db.exec(
+      `SELECT value FROM meta WHERE key = 'db_version'`
+    )
     if (rows.length > 0) {
       current_version = parseInt(rows[0].value)
     }
   } catch {
-    // meta table doesnt exist yet, first run
     current_version = 0
   }
 
   for (let i = current_version; i < MIGRATIONS.length; i++) {
-    console.log(`running migration ${i + 1}`)
-    db.exec(MIGRATIONS[i])
-    db.exec({
-      sql: `INSERT OR REPLACE INTO meta (key, value) VALUES ('db_version', ?)`,
-      bind: [String(i + 1)]
-    })
+    for (const sql of MIGRATIONS[i]) {
+      await db.exec(sql)
+    }
+    await db.exec(
+      `INSERT OR REPLACE INTO meta (key, value) VALUES ('db_version', ?)`,
+      [String(i + 1)]
+    )
     console.log(`migration ${i + 1} done`)
   }
 }
@@ -204,27 +204,11 @@ export async function generate_and_store_keypair(): Promise<{ public_key: string
 // --- main mountDB function ---
 
 export async function mountDB() {
-  const { default: sqlite3InitModule } = await import('@sqlite.org/sqlite-wasm')
-
-  console.log('Init 1')
-  const sqlite3 = await sqlite3InitModule()
-
-  if (sqlite3.capi.sqlite3_vfs_find('opfs')) {
-    console.log('using OPFS for persistent sqlite storage')
-    db = new sqlite3.oo1.OpfsDb('/smalltalk.sqlite3')
-  } else {
-    console.warn('OPFS not available, falling back to in-memory sqlite')
-    db = new sqlite3.oo1.DB('/smalltalk.sqlite3', 'ct')
-  }
-
-  console.log('Init 2')
+  db = await getDb();
   await run_migrations()
 
-
-  console.log('Init 3')
   const key_status = await check_private_key()
 
-  console.log('Init 4')
   if (key_status === 'needs_onboarding') {
     db_state.needs_onboarding = true
     db_state.ready = false
@@ -243,18 +227,21 @@ export async function mountDB() {
 
   // all good!
   db_state.ready = true
+
+  const contacts = await db_exec(`SELECT * FROM contacts`)
+  console.log('contacts on mount:', contacts)
 }
 
 // --- sqlite query helpers ---
 
-export function db_exec(sql: string, params: any[] = []) {
+export async function db_exec(sql: string, params: any[] = []) {
   if (!db) throw new Error('db not mounted')
-  return db.exec({ sql, bind: params, returnValue: 'resultRows', rowMode: 'object' })
+  return db.exec(sql, params)
 }
 
-export function db_run(sql: string, params: any[] = []) {
+export async function db_run(sql: string, params: any[] = []) {
   if (!db) throw new Error('db not mounted')
-  db.exec({ sql, bind: params })
+  return db.run(sql, params)
 }
 
 // --- contact helpers ---
@@ -284,6 +271,7 @@ export function upsert_contact(contact: {
   )
 }
 
+// TODO: implement the set online in notifications and the frontent websocket router
 export function set_contact_online(user_id: string, is_online: boolean) {
   db_run(
     `UPDATE contacts SET is_online = ? WHERE user_id = ?`,
@@ -291,6 +279,7 @@ export function set_contact_online(user_id: string, is_online: boolean) {
   )
 }
 
+// TODO: implement the set online in notifications and the frontent websocket router
 export function set_contact_last_seen(user_id: string, last_seen: string) {
   db_run(
     `UPDATE contacts SET last_seen = ?, is_online = 0 WHERE user_id = ?`,
@@ -299,7 +288,7 @@ export function set_contact_last_seen(user_id: string, last_seen: string) {
 }
 
 // --- message helpers ---
-
+/* 
 export function upsert_message(msg: {
   id: string
   conversation_id: string | null
@@ -387,3 +376,5 @@ export function get_latest_group_key(gc_id: string): { group_key: string, versio
   )
   return rows[0] ?? null
 }
+
+*/

@@ -7,6 +7,7 @@
   import {
     addNotification,
     connectNotifications,
+    getSocket,
   } from "$lib/utils/notifications.svelte.ts";
 
   onMount(async () => {
@@ -28,14 +29,18 @@
       }
 
       connectNotifications();
+
+      document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible" && getSocket() === null) {
+          await initAuth();
+          connectNotifications();
+        }
+      });
     } else {
       // Loading global notifications, no db ever initalized
       connectNotifications();
     }
   });
-
-  $inspect(db_state);
-  $inspect(auth);
 
   import "./styles.css";
   import Notifications from "$lib/comps/Notifications.svelte";
