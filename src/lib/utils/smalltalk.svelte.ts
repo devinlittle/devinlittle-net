@@ -51,9 +51,10 @@ export const keysync = $state({
   status: 'idle' as KeySyncStatus,
   challenge_emojis: [] as string[],
   correct_emoji: null as string | null, // only known by TD, never sent
+  ephemeral_public_key_b64: null as string | null,
+  ephemeral_private_key: null as CryptoKey | null,
   pending_challenge: null as PendingChallenge | null,
 })
-
 
 export function handleKeySync(msg: KeySyncMessage) {
   // drop if WE sent this AND it was targeted
@@ -64,10 +65,10 @@ export function handleKeySync(msg: KeySyncMessage) {
 
   const payload = msg.payload;
   switch (payload.type) {
-    case 'KeySyncRequest': return handleKeySyncRequest(msg.from_session_id)
+    case 'KeySyncRequest': return handleKeySyncRequest(msg)
     case 'KeySyncChallenge': return handleKeySyncChallenge(payload.emojis)
     case 'KeySyncResponse': return handleKeySyncResponse(payload.chosen, msg.from_session_id)
-    case 'KeySyncHandover': return handleKeySyncHandover(payload.private_key)
+    case 'KeySyncHandover': return handleKeySyncHandover(payload.private_key, payload.td_ephemeral_public_key)
     case 'KeySyncFailed': return handleKeySyncFailed()
     case 'KeySyncComplete': return handleKeySyncComplete()
     case 'KeySyncExpired': return handleKeySyncExpired()
@@ -95,9 +96,23 @@ function base64_to_arraybuffer(b64: string): ArrayBuffer {
 // --- new device side ---
 
 // ND: broadcast to all user devices that we need a key
-export function requestKeySync() {
+export async function requestKeySync() {
   keysync.status = 'requesting'
-  sendKeySync({ type: 'KeySyncRequest' })
+
+  let ephemeral_keypair = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    ['deriveKey', 'deriveBits']
+  )
+
+  const public_key_buffer = await crypto.subtle.exportKey('spki', ephemeral_keypair.publicKey);
+  let public_key = arraybuffer_to_base64(public_key_buffer);
+
+  keysync.ephemeral_private_key = ephemeral_keypair.privateKey;
+
+  sendKeySync({
+    type: 'KeySyncRequest', nd_ephemeral_public_key: public_key
+  })
 }
 
 // ND: received emojis from TD, show them to user
@@ -111,25 +126,53 @@ export function respondToChallenge(emoji: string) {
   if (keysync.status !== 'pending_click') return
   sendKeySync({
     type: 'KeySyncResponse',
-    chosen: emoji
+    chosen: emoji,
   }, keysync.pending_challenge?.requester_session_id ?? null)
 }
 
 // ND: received the private key from TD
-async function handleKeySyncHandover(private_key_b64: string) {
+async function handleKeySyncHandover(private_key_b64: string, ephemeral_public_key_b64: string) {
   keysync.status = 'transferring'
   try {
-    const key_buffer = base64_to_arraybuffer(private_key_b64)
+    const ephemeral_private_key = keysync.ephemeral_private_key;
+    if (!ephemeral_private_key) throw new Error('no ephemeral private key')
 
-    const private_key = await crypto.subtle.importKey(
+    const td_pub_buffer = base64_to_arraybuffer(ephemeral_public_key_b64)
+    const td_public_key = await crypto.subtle.importKey(
+      'spki',
+      td_pub_buffer,
+      { name: 'ECDH', namedCurve: 'P-256' },
+      true,
+      []
+    )
+
+    const aes_key = await crypto.subtle.deriveKey(
+      { name: 'ECDH', public: td_public_key },
+      ephemeral_private_key,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['decrypt']
+    )
+
+    const combined = new Uint8Array(base64_to_arraybuffer(private_key_b64))
+    const iv = combined.slice(0, 12)
+    const ciphertext = combined.slice(12).buffer
+
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      aes_key,
+      ciphertext
+    )
+
+    const new_private_key = await crypto.subtle.importKey(
       'pkcs8',
-      key_buffer,
+      decrypted,
       { name: 'ECDH', namedCurve: 'P-256' },
       true,
       ['deriveKey', 'deriveBits']
     )
 
-    await store_private_key_in_indexeddb(private_key)
+    await store_private_key_in_indexeddb(new_private_key)
 
     sendKeySync({ type: 'KeySyncComplete' })
     keysync.status = 'complete'
@@ -155,18 +198,23 @@ function handleKeySyncExpired() {
 // --- trusted device side ---
 
 // TD: received a sync request from another device
-function handleKeySyncRequest(requester_session_id: string) {
+function handleKeySyncRequest(msg: KeySyncMessage) {
+  const payload = msg.payload as Extract<KeySyncPayload, { type: "KeySyncRequest" }>
   const emojis = pick_random_emojis(5)
   const correct_emoji = emojis[Math.floor(Math.random() * emojis.length)]
 
   const timeout_id = setTimeout(() => {
     if (keysync.pending_challenge) {
-      sendKeySync({ type: 'KeySyncExpired' }, requester_session_id)
+      sendKeySync({ type: 'KeySyncExpired' }, msg.from_session_id)
       keysync.pending_challenge = null
       keysync.status = 'idle'
       keysync.correct_emoji = null
+      keysync.ephemeral_public_key_b64 = null;
     }
   }, 60000) // 60 second expiry
+
+
+  let requester_session_id = msg.from_session_id;
 
   keysync.pending_challenge = {
     correct_emoji,
@@ -179,12 +227,13 @@ function handleKeySyncRequest(requester_session_id: string) {
   keysync.correct_emoji = correct_emoji  // shown highlighted on TD screen
   keysync.challenge_emojis = emojis      // shown on TD screen too
   keysync.status = 'challenging'
+  keysync.ephemeral_public_key_b64 = payload.nd_ephemeral_public_key
 
   // send emojis to ND (correct one NOT included)
   sendKeySync({
     type: 'KeySyncChallenge',
     emojis
-  }, requester_session_id)
+  }, msg.from_session_id)
 }
 
 // TD: ND clicked an emoji, validate it
@@ -216,13 +265,49 @@ async function handleKeySyncResponse(chosen: string, requester_session_id: strin
       return
     }
 
-    // export to ArrayBuffer → base64
     const exported = await crypto.subtle.exportKey('pkcs8', private_key)
-    const b64 = arraybuffer_to_base64(exported)
+
+    const nd_public_key_buffer = base64_to_arraybuffer(keysync.ephemeral_public_key_b64)
+    const nd_public_key = await crypto.subtle.importKey(
+      'spki',
+      nd_public_key_buffer,
+      { name: 'ECDH', namedCurve: 'P-256' },
+      true,
+      []
+    )
+
+    const td_ephemeral = await crypto.subtle.generateKey(
+      { name: 'ECDH', namedCurve: 'P-256' },
+      true,
+      ['deriveKey']
+    )
+
+    const aes_key = await crypto.subtle.deriveKey(
+      { name: 'ECDH', public: nd_public_key },
+      td_ephemeral.privateKey,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt']
+    )
+
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      aes_key,
+      exported
+    )
+
+    const td_ephemeral_pub_buffer = await crypto.subtle.exportKey('spki', td_ephemeral.publicKey)
+    const td_ephemeral_pub_b64 = arraybuffer_to_base64(td_ephemeral_pub_buffer)
+
+    const combined = new Uint8Array(12 + encrypted.byteLength)
+    combined.set(iv, 0)
+    combined.set(new Uint8Array(encrypted), 12)
 
     sendKeySync({
       type: 'KeySyncHandover',
-      private_key: b64
+      private_key: arraybuffer_to_base64(combined.buffer),
+      td_ephemeral_public_key: td_ephemeral_pub_b64,
     }, requester_session_id)
 
   } catch (e) {
@@ -235,6 +320,7 @@ async function handleKeySyncResponse(chosen: string, requester_session_id: strin
 // TD: ND confirmed they got the key
 function handleKeySyncComplete() {
   keysync.status = 'complete'
+  keysync.ephemeral_public_key_b64 = null;
   keysync.challenge_emojis = []
   // UI shows "key transferred successfully"
   // reset after a few seconds

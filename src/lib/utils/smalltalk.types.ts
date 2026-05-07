@@ -13,10 +13,10 @@ export type KeySyncStatus =
   | 'expired'
 
 export type KeySyncPayload =
-  | { type: 'KeySyncRequest' }
+  | { type: 'KeySyncRequest'; nd_ephemeral_public_key: string }
   | { type: 'KeySyncChallenge'; emojis: string[] }
-  | { type: 'KeySyncResponse'; chosen: string }
-  | { type: 'KeySyncHandover'; private_key: string }
+  | { type: 'KeySyncResponse'; chosen: string; }
+  | { type: 'KeySyncHandover'; private_key: string; td_ephemeral_public_key: string, }
   | { type: 'KeySyncFailed' }
   | { type: 'KeySyncComplete' }
   | { type: 'KeySyncExpired' }

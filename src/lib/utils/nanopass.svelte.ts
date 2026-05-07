@@ -92,18 +92,33 @@ function handleTransferRequest(msg: NanoPassMessage) {
     sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
     initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
 
-    addNotification({
-      type: "info",
-      title: "Notification",
-      body:
-        payload.requester_username === auth.username ?
-          "one of your devices downloaded from you"
-          :
-          `${payload.requester_username} just downloaded a file from you`
-      ,
-      sender: payload.requester_username,
-      global: false,
-    });
+    sendMessage(
+      JSON.stringify({
+        "namespace": "notification",
+        "payload": {
+          "type": "user",
+          "title": "Notification",
+          "content": payload.requester_username === auth.username ?
+            "one of your devices downloaded from you"
+            :
+            `${payload.requester_username} just downloaded a file from you`
+          ,
+        }
+      }), auth.id
+    )
+
+    /*    addNotification({
+          type: "info",
+          title: "Notification",
+          body:
+            payload.requester_username === auth.username ?
+              "one of your devices downloaded from you"
+              :
+              `${payload.requester_username} just downloaded a file from you`
+          ,
+          sender: payload.requester_username,
+          global: false,
+        });*/
 
   } else {
     addTransferNotification({

@@ -10,7 +10,7 @@
   import type { FileListing, Visibility } from "$lib/utils/nanopass.types";
   import { formatBytes } from "$lib/utils/notifications.svelte";
   import { beforeNavigate } from "$app/navigation";
-  import { db_exec, db_run } from "$lib/utils/sqlite.svelte";
+  import { db_exec, db_run, upsert_contact } from "$lib/utils/sqlite.svelte";
 
   let activeTab = $state<"mine" | "public" | "forme">("mine");
 
@@ -178,10 +178,12 @@
         if (res.ok) {
           const users = await res.json();
           for (const user of users) {
-            await db_run(
-              `INSERT OR REPLACE INTO contacts (user_id, username) VALUES (?, ?)`,
-              [user.id, user.username],
-            );
+            upsert_contact({
+              user_id: user.user_id,
+              username: user.username,
+              public_key: user.public_key,
+              last_seen: user.last_seen,
+            });
             resolved[user.id] = user;
           }
         }
@@ -378,11 +380,11 @@
             </div>
             <p class="vis-hint">
               {#if selectedVisibility === "Private"}
-                only your own devices can request this file
+                only your own devices can access this file
               {:else if selectedVisibility === "Public"}
-                anyone on NanoPass can see and request this file
+                anyone on NanoPass can access this file
               {:else}
-                only users you allowlist can see this file
+                only users on this allowlist can access this file
               {/if}
             </p>
           </div>
