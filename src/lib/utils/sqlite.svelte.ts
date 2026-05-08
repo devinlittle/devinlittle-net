@@ -227,9 +227,6 @@ export async function mountDB() {
 
   // all good!
   db_state.ready = true
-
-  const contacts = await db_exec(`SELECT * FROM contacts`)
-  console.log('contacts on mount:', contacts)
 }
 
 // --- sqlite query helpers ---
@@ -251,22 +248,19 @@ export function upsert_contact(contact: {
   username: string
   public_key?: string | null
   last_seen?: string | null
-  is_online?: boolean
 }) {
   db_run(
-    `INSERT INTO contacts (user_id, username, public_key, last_seen, is_online)
-     VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO contacts (user_id, username, public_key, last_seen)
+     VALUES (?, ?, ?, ?)
      ON CONFLICT(user_id) DO UPDATE SET
        username = excluded.username,
        public_key = COALESCE(excluded.public_key, contacts.public_key),
-       last_seen = COALESCE(excluded.last_seen, contacts.last_seen),
-       is_online = excluded.is_online`,
+       last_seen = COALESCE(excluded.last_seen, contacts.last_seen);`,
     [
       contact.user_id,
       contact.username,
       contact.public_key ?? null,
       contact.last_seen ?? null,
-      contact.is_online ? 1 : 0
     ]
   )
 }

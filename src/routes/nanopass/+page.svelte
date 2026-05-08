@@ -179,7 +179,7 @@
           const users = await res.json();
           for (const user of users) {
             upsert_contact({
-              user_id: user.user_id,
+              user_id: user.id,
               username: user.username,
               public_key: user.public_key,
               last_seen: user.last_seen,

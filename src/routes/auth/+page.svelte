@@ -83,7 +83,7 @@
 
     const { access_token } = await login_res.json();
 
-    localStorage.setItem("access_token", access_token);
+    onAuthSuccess(access_token);
     goto("/");
     disconnectNotifications();
     connectNotifications();
