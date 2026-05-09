@@ -43,7 +43,7 @@
       </div>
     {/if}
   {:else}
-    <h1>GradeGetter under some heat rn...</h1>
+    <h1>To use GradeGetter, Register an account</h1>
   {/if}
 </main>
 
