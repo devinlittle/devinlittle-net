@@ -673,89 +673,89 @@
 
     <!-- SCHOOLOGY/GRADEGETTER CARD -->
 
-    {#if ["trusted", "devin", "owen"].includes(getRole(auth.roles, "gradegetter"))}
-      <div class="card">
-        <p class="card-title">Schoology Information</p>
+    <!--    {#if ["trusted", "devin", "owen"].includes(getRole(auth.roles, "gradegetter"))} -->
+    <div class="card">
+      <p class="card-title">Schoology Information</p>
 
-        {#if wsStatus === null || wsStatus === "done" || wsStatus === "error"}
-          <div class="form">
-            <input type="text" placeholder="email" bind:value={schEmail} />
-            <input
-              type="password"
-              placeholder="password"
-              bind:value={schPassword}
-              onkeydown={(e) => e.key === "Enter" && addSchoology()}
-            />
-            {#if schErr}<p class="error">{schErr}</p>{/if}
-            <button onclick={addSchoology} disabled={wsStatus === "running"}>
-              Add Information
-            </button>
+      {#if wsStatus === null || wsStatus === "done" || wsStatus === "error"}
+        <div class="form">
+          <input type="text" placeholder="email" bind:value={schEmail} />
+          <input
+            type="password"
+            placeholder="password"
+            bind:value={schPassword}
+            onkeydown={(e) => e.key === "Enter" && addSchoology()}
+          />
+          {#if schErr}<p class="error">{schErr}</p>{/if}
+          <button onclick={addSchoology} disabled={wsStatus === "running"}>
+            Add Information
+          </button>
+        </div>
+      {/if}
+
+      {#if wsStatus !== null}
+        <div class="ws-progress">
+          <!-- bar -->
+          <div class="progress-track">
+            <div
+              class="progress-fill"
+              class:done={wsStatus === "done"}
+              class:error={wsStatus === "error"}
+              style="width: {wsProgress}%"
+            ></div>
           </div>
-        {/if}
 
-        {#if wsStatus !== null}
-          <div class="ws-progress">
-            <!-- bar -->
-            <div class="progress-track">
-              <div
-                class="progress-fill"
-                class:done={wsStatus === "done"}
-                class:error={wsStatus === "error"}
-                style="width: {wsProgress}%"
-              ></div>
-            </div>
+          <!-- percent + status -->
+          <div class="progress-meta">
+            <span class="progress-pct">{wsProgress}%</span>
+            <span
+              class="progress-state"
+              class:done={wsStatus === "done"}
+              class:error={wsStatus === "error"}
+            >
+              {#if wsStatus === "running"}logging in...
+              {:else if wsStatus === "done"}done!
+              {:else}failed{/if}
+            </span>
+          </div>
 
-            <!-- percent + status -->
-            <div class="progress-meta">
-              <span class="progress-pct">{wsProgress}%</span>
-              <span
-                class="progress-state"
-                class:done={wsStatus === "done"}
-                class:error={wsStatus === "error"}
-              >
-                {#if wsStatus === "running"}logging in...
-                {:else if wsStatus === "done"}done!
-                {:else}failed{/if}
-              </span>
-            </div>
-
-            <!-- step log -->
-            <div class="step-log">
-              {#each wsSteps as step, i}
-                <div class="step-item" class:latest={i === wsSteps.length - 1}>
-                  <span class="step-dot"></span>
-                  <span>{step}</span>
-                </div>
-              {/each}
-              {#if wsStatus === "running"}
-                <div class="step-item pending">
-                  <span class="step-dot pulse"></span>
-                  <span>{STEPS[wsSteps.length] ?? "..."}</span>
-                </div>
-              {/if}
-            </div>
-
-            {#if wsStatus === "done" || wsStatus === "error"}
-              <button
-                class="btn-reset"
-                onclick={() => {
-                  wsStatus = null;
-                  wsSteps = [];
-                  wsProgress = 0;
-                  schErr = "";
-                }}
-              >
-                ↩ reset
-              </button>
+          <!-- step log -->
+          <div class="step-log">
+            {#each wsSteps as step, i}
+              <div class="step-item" class:latest={i === wsSteps.length - 1}>
+                <span class="step-dot"></span>
+                <span>{step}</span>
+              </div>
+            {/each}
+            {#if wsStatus === "running"}
+              <div class="step-item pending">
+                <span class="step-dot pulse"></span>
+                <span>{STEPS[wsSteps.length] ?? "..."}</span>
+              </div>
             {/if}
           </div>
-        {/if}
 
-        <button class="btn btn-danger" onclick={deleteSchoology}>
-          Delete schoology information from my account
-        </button>
-      </div>
-    {/if}
+          {#if wsStatus === "done" || wsStatus === "error"}
+            <button
+              class="btn-reset"
+              onclick={() => {
+                wsStatus = null;
+                wsSteps = [];
+                wsProgress = 0;
+                schErr = "";
+              }}
+            >
+              ↩ reset
+            </button>
+          {/if}
+        </div>
+      {/if}
+
+      <button class="btn btn-danger" onclick={deleteSchoology}>
+        Delete schoology information from my account
+      </button>
+    </div>
+    <!-- {/if} -->
 
     <!-- ACTIVE SESSIONS CARD -->
     <div class="card">

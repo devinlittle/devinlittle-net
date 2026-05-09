@@ -21,7 +21,8 @@
 <main>
   {#if auth.ready}
     {#if forbidden.value}
-      <h1>GradeGetter under some heat rn...</h1>
+      <h1>Naviate to your settings page to setup gradegetter</h1>
+      <!--  <h1>GradeGetter under some heat rn...</h1> -->
     {:else if Object.keys(grades.value).length === 0}
       <p>Loading...</p>
     {:else}
