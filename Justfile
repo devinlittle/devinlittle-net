@@ -1,0 +1,11 @@
+stable-all:
+    TAG=stable docker buildx bake --push
+
+dev-all:
+    TAG=dev docker buildx bake --push
+
+build service:
+    docker buildx bake {{service}} --push
+
+clean:
+    docker builder prune --filter type=exec.cachemount

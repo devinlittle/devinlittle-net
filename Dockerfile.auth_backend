@@ -10,9 +10,10 @@ WORKDIR /app
 COPY . .
 
 RUN apk add --no-cache clang lld musl-dev git perl make curl
+ENV RUSTFLAGS="-C link-arg=-fuse-ld=lld"
 
 ENV SQLX_OFFLINE=true
-RUN --mount=type=cache,target=/app/target/ \
+RUN --mount=type=cache,target=/app/target/,id=${APP_NAME} \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
 cargo build --locked --release --bin auth_backend && \
