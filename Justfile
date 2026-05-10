@@ -7,5 +7,8 @@ dev-all:
 build service:
     docker buildx bake {{service}} --push
 
+build-stable service:
+    TAG=stable docker buildx bake {{service}} --push
+
 clean:
     docker builder prune --filter type=exec.cachemount

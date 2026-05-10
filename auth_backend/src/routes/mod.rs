@@ -39,6 +39,8 @@ mod user;
         crate::routes::admin::change_role,
         crate::routes::admin::revoke_all_from_id,
         crate::routes::admin::evict_from_hashset,
+        crate::routes::admin::delete_by_id,
+        crate::routes::admin::global_message,
         // Internal Paths
         crate::routes::internal::get_user_roles
     ),

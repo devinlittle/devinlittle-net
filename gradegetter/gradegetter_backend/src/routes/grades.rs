@@ -1,7 +1,6 @@
 use axum::{extract::State, Extension, Json};
 use crypto_utils::decrypt_string;
 use hyper::StatusCode;
-use serde_json::Value;
 use tracing::info;
 
 use crate::routes::AppState;
@@ -25,7 +24,7 @@ use common::{gradegetter::GradesHashMap, AuthenticatedUser};
 pub async fn grades_handler(
     State(state): State<AppState>,
     Extension(user): Extension<AuthenticatedUser>,
-) -> Result<Json<Value>, StatusCode> {
+) -> Result<Json<GradesHashMap>, StatusCode> {
     // WARN: this commented code below me is bugged bc it uses the old string'd roles
     /* if user.role != "devin" && user.role != "owen" && user.role != "trusted" {
         return Err(StatusCode::FORBIDDEN);
@@ -49,7 +48,7 @@ pub async fn grades_handler(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let grades: serde_json::Value = serde_json::from_str(&grades).map_err(|err| {
+    let grades: GradesHashMap = serde_json::from_str(&grades).map_err(|err| {
         tracing::error!("failed to parse grades JSON: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
