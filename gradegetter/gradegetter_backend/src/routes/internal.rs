@@ -15,8 +15,11 @@ use common::gradegetter::{ForwardMessage, ForwardStatus};
     params(
         ("uuid", description = "pretty easy to understand what this means.")
     ),
+    security(
+        ("internal_auth" = []),
+    ),
     responses(
-        (status = 200, description = "Removes uuid from HashSet defined in state, forces checks on next request", body = String),
+        (status = 200, description = "Removes uuid from HashSet defined in state, forces checks on next request"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"
@@ -47,8 +50,11 @@ pub async fn invalidate_user(
     params(
         ("uuid", description = "pretty easy to understand what this means.")
     ),
+    security(
+        ("internal_auth" = []),
+    ),
     responses(
-        (status = 200, description = "removes user from the lazily created db", body = String),
+        (status = 200, description = "removes user from the lazily created db"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"
@@ -77,8 +83,11 @@ pub async fn delete_handler(
     get,
     path = "/internal/forward_ws",
     request_body = ForwardMessage,
+    security(
+        ("internal_auth" = []),
+    ),
     responses(
-        (status = 200, description = "adding information from gradegetter", body = String),
+        (status = 200, description = "adding information from gradegetter"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"

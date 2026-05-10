@@ -20,7 +20,7 @@ use crate::routes::AppState;
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 204, description = "Encrypts schoology info and inserts into database", body = String),
+        (status = 204, description = "Encrypts schoology info and inserts into database"),
         (status = 401, description = "Credentials Incorrect"),
         (status = 500, description = "Internal Server Error")
     ),
@@ -65,7 +65,7 @@ pub async fn add_schoology_credentials_handler(
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 204, description = "Encrypts schoology info and inserts into database", body = String),
+        (status = 204, description = "Encrypts schoology info and inserts into database"),
         (status = 401, description = "Credentials Incorrect"),
         (status = 500, description = "Internal Server Error")
     ),
@@ -101,7 +101,7 @@ pub async fn delete_schoology_credentials_handler(
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 204, description = "Initilized User on GradeGetter", body = String),
+        (status = 204, description = "Initilized User on GradeGetter"),
         (status = 401, description = "Credentials Incorrect"),
         (status = 500, description = "Interal Server Error")
     ),
@@ -147,7 +147,7 @@ pub async fn foward_to_gradegetter(
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 204, description = "giving status boy", body = String),
+        (status = 204, description = "giving status boy"),
         (status = 401, description = "Credentials Incorrect"),
         (status = 500, description = "Interal Server Error")
     ),

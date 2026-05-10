@@ -17,7 +17,7 @@ use uuid::Uuid;
         ("internal_auth" = []),
     ),
     responses(
-        (status = 200, description = "sends back in json the users roles", body = String),
+        (status = 200, description = "sends back in json the users roles", body = UserRoles),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"

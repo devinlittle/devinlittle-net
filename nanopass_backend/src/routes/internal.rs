@@ -12,10 +12,10 @@ use crate::{
     path = "/internal/session_cleanup",
     request_body = RemoveSessionInternalInput,
     security(
-        ("bearer_auth" = []),
+        ("internal_auth" = []),
     ),
     responses(
-        (status = 200, description = "all listing removed from a specific session_id", body = String),
+        (status = 200, description = "all listing removed from a specific session_id"),
         (status = 500, description = "uhmmm...failed", body = String),
     ),
     tag = "file_listings"

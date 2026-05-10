@@ -36,7 +36,7 @@ use common::{
         ("String", description = "contains 'global' or a uuid")
     ),
     responses(
-        (status = 101, description = "swithcing to websockets", body = String),
+        (status = 101, description = "swithcing to websockets"),
     )
 )]
 pub async fn notify(
@@ -302,9 +302,9 @@ pub async fn notify(
         ("bearer_auth" = []),
     ),
     responses(
-        (status = 200, description = "message sent to channel", body = String),
-        (status = 401, description = "uuid can't be parsed; JWT error", body = String),
-        (status = 500, description = "some server error or whatever", body = String),
+        (status = 200, description = "message sent to channel"),
+        (status = 401, description = "uuid can't be parsed; JWT error"),
+        (status = 500, description = "some server error or whatever"),
     )
 )]
 pub async fn user_message(
@@ -371,8 +371,8 @@ async fn push_to_browser(
         ("bearer_auth" = []),
     ),
     responses(
-        (status = 201, description = "endpoint and keys added to db for user", body = String),
-        (status = 500, description = "some server error or whatever", body = String),
+        (status = 201, description = "endpoint and keys added to db for user"),
+        (status = 500, description = "some server error or whatever"),
     )
 )]
 

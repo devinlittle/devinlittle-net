@@ -20,7 +20,7 @@ use common::{
     ),
     responses(
         (status = 200, description = "listing created", body = FileListing),
-        (status = 500, description = "uhmmm...failed", body = String),
+        (status = 500, description = "uhmmm...failed"),
     ),
     tag = "file_listings"
 )]
@@ -63,8 +63,8 @@ pub async fn create_listing(
         ("bearer_auth" = []),
     ),
     responses(
-        (status = 200, description = "listing modified", body = String),
-        (status = 500, description = "uhmmm...failed", body = String),
+        (status = 200, description = "listing modified"),
+        (status = 500, description = "uhmmm...failed"),
     ),
     tag = "file_listings"
 )]
@@ -95,8 +95,8 @@ pub async fn modify_listing(
         ("bearer_auth" = []),
     ),
     responses(
-        (status = 200, description = "listing removed", body = String),
-        (status = 500, description = "uhmmm...failed", body = String),
+        (status = 200, description = "listing removed"),
+        (status = 500, description = "uhmmm...failed"),
     ),
     tag = "file_listings"
 )]
@@ -127,7 +127,7 @@ pub async fn remove_listing(
     ),
     responses(
         (status = 200, description = "listing returned", body = Vec<FileListing>),
-        (status = 500, description = "uhmmm...failed", body = String),
+        (status = 500, description = "uhmmm...failed"),
     ),
     tag = "file_listings"
 )]
@@ -158,8 +158,8 @@ pub async fn get_listings(
         ("bearer_auth" = []),
     ),
     responses(
-        (status = 200, description = "all listing removed from a specific session_id", body = String),
-        (status = 500, description = "uhmmm...failed", body = String),
+        (status = 200, description = "all listing removed from a specific session_id"),
+        (status = 500, description = "uhmmm...failed"),
     ),
     tag = "file_listings"
 )]

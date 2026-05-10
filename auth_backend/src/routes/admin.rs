@@ -107,7 +107,7 @@ pub async fn change_role(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok(().into_response())
+    Ok((StatusCode::OK).into_response())
 }
 
 #[utoipa::path(

@@ -8,7 +8,10 @@ use common::nanopass::FileListing;
 use dashmap::DashMap;
 use hyper::StatusCode;
 use std::sync::Arc;
-use utoipa::OpenApi;
+use utoipa::{
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+    OpenApi,
+};
 use utoipa_swagger_ui::SwaggerUi;
 use uuid::Uuid;
 
@@ -36,7 +39,7 @@ mod internal;
             common::nanopass::FileListingInput,
         )
     ),
-    modifiers(&JwtBearer),
+    modifiers(&JwtBearer, &InternalAuth),
     tags(
         (name = "internal", description = "internal routes"),
         (name = "file_listings", description = "routes relating to file listings")
@@ -45,6 +48,7 @@ mod internal;
 pub struct DaApiDoc;
 
 struct JwtBearer;
+struct InternalAuth;
 
 impl utoipa::Modify for JwtBearer {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
@@ -61,11 +65,22 @@ impl utoipa::Modify for JwtBearer {
     }
 }
 
+impl utoipa::Modify for InternalAuth {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "internal_auth",
+                SecurityScheme::Http(HttpBuilder::new().scheme(HttpAuthScheme::Basic).build()),
+            );
+        }
+    }
+}
+
 #[utoipa::path(
     get,
     path = "/health",
     responses(
-        (status = 200, description = "returns 200 if service alive", body = String),
+        (status = 200, description = "returns 200 if service alive"),
     ),
     tag = "internal"
 )]

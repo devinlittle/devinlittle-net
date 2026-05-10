@@ -32,7 +32,7 @@ use common::{
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 200, description = "added public key to db", body = String),
+        (status = 200, description = "added public key to db"),
         (status = 401, description = "jwt error"),
         (status = 500, description = "Interal Server Error")
     ),
@@ -72,7 +72,7 @@ pub async fn add_publickey(
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 200, description = "Deleted User", body = String),
+        (status = 200, description = "Deleted User"),
         (status = 401, description = "Credentials Incorrect"),
         (status = 404, description = "Not Found"),
         (status = 500, description = "Interal Server Error")
@@ -214,7 +214,7 @@ pub async fn list_active_sessions(
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 200, description = "revoked all sessions", body = String),
+        (status = 200, description = "revoked all sessions"),
         (status = 401, description = "Credentials Incorrect"),
         (status = 404, description = "Not Found"),
         (status = 500, description = "Interal Server Error")
@@ -236,7 +236,7 @@ pub async fn revoke_all_sessions(
     {
         Ok(result) => {
             if result.rows_affected() > 0 {
-                Ok("sessions GONE".into_response())
+                Ok((StatusCode::OK).into_response())
             } else {
                 Err(StatusCode::NOT_MODIFIED)
             }
@@ -258,7 +258,7 @@ pub async fn revoke_all_sessions(
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 200, description = "revoked specific token", body = String),
+        (status = 200, description = "revoked specific token"),
         (status = 401, description = "Credentials Incorrect"),
         (status = 404, description = "Not Found"),
         (status = 500, description = "Interal Server Error")
@@ -283,7 +283,7 @@ pub async fn revoke_specific_session(
     {
         Ok(result) => {
             if result.rows_affected() > 0 {
-                Ok("sessions GONE".into_response())
+                Ok((StatusCode::OK).into_response())
             } else {
                 Err(StatusCode::NOT_MODIFIED)
             }
@@ -303,7 +303,7 @@ pub async fn revoke_specific_session(
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 200, description = "recovery info added", body = String),
+        (status = 200, description = "recovery info added"),
         (status = 401, description = "Credentials Incorrect"),
         (status = 409, description = "information already there")
     ),

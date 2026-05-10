@@ -3,6 +3,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use common::gradegetter::GradesHashMap;
 use crypto_utils::{decrypt_string, encrypt_string};
 use futures_util::{SinkExt, StreamExt};
 use regex::Regex;
@@ -457,7 +458,7 @@ async fn fetch_grades(token: String) -> Result<String, anyhow::Error> {
     .await
     .context("fetch_final_grades_export failed")?;
 
-    let grades: HashMap<String, Vec<Option<f32>>> =
+    let grades: GradesHashMap =
         parse_grades_html(html).context("parse_grades_html failed to parse through html")?;
 
     let grades = serde_json::to_value(grades)?.to_string();
@@ -706,8 +707,6 @@ async fn fetch_final_grades_export(
 
     Ok(body)
 }
-
-type GradesHashMap = HashMap<String, Vec<Option<f32>>>;
 
 fn parse_grades_html(html: String) -> Result<GradesHashMap, anyhow::Error> {
     let document = scraper::Html::parse_document(html.as_str());

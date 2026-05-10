@@ -10,7 +10,10 @@ use std::{
     sync::{Arc, RwLock},
 };
 use tokio::sync::watch;
-use utoipa::OpenApi;
+use utoipa::{
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+    OpenApi,
+};
 use utoipa_swagger_ui::SwaggerUi;
 use uuid::Uuid;
 
@@ -42,7 +45,7 @@ pub mod internal;
             common::gradegetter::ForwardMessage,
         )
     ),
-    modifiers(&JwtBearer),
+    modifiers(&JwtBearer, &InternalAuth),
     tags(
         (name = "user_auth", description = "Authentication endpoints"),
         (name = "grades", description = "Grade Endpoints"),
@@ -52,6 +55,7 @@ pub mod internal;
 pub struct DaApiDoc;
 
 struct JwtBearer;
+struct InternalAuth;
 
 impl utoipa::Modify for JwtBearer {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
@@ -64,6 +68,17 @@ impl utoipa::Modify for JwtBearer {
                     ),
                 ),
             )
+        }
+    }
+}
+
+impl utoipa::Modify for InternalAuth {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "internal_auth",
+                SecurityScheme::Http(HttpBuilder::new().scheme(HttpAuthScheme::Basic).build()),
+            );
         }
     }
 }

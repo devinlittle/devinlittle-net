@@ -6,7 +6,7 @@ use tracing::info;
 
 use crate::routes::AppState;
 
-use common::AuthenticatedUser;
+use common::{gradegetter::GradesHashMap, AuthenticatedUser};
 
 #[utoipa::path(
     get,
@@ -15,9 +15,8 @@ use common::AuthenticatedUser;
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 200, description = "Grades for the User", body = Value),
+        (status = 200, description = "Grades for the User", body = GradesHashMap),
         (status = 401, description = "Credentials Incorrect"),
-        (status = 403, description = "Role Mismatch"),
         (status = 404, description = "No Grades Found"),
         (status = 500, description = "Interal Server Error")
     ),
@@ -27,7 +26,7 @@ pub async fn grades_handler(
     State(state): State<AppState>,
     Extension(user): Extension<AuthenticatedUser>,
 ) -> Result<Json<Value>, StatusCode> {
-    // BUG: this commented code below me is bugged bc it uses the old string'd roles
+    // WARN: this commented code below me is bugged bc it uses the old string'd roles
     /* if user.role != "devin" && user.role != "owen" && user.role != "trusted" {
         return Err(StatusCode::FORBIDDEN);
     } */

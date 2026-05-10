@@ -76,7 +76,7 @@ impl UserRow {
     path = "/login",
     request_body = LoginInput,
     responses(
-        (status = 200, description = "Returns Valid JWT for User and SET_COOKIE header for refreshing purposes", body = String),
+        (status = 200, description = "Returns Valid JWT for User and SET_COOKIE header for refreshing purposes", body = LoginOutput),
         (status = 401, description = "Credentials Incorrect"),
         (status = 500, description = "Interal Server Error")
     ),
@@ -170,7 +170,7 @@ pub async fn validate_token() -> Result<(), StatusCode> {
         ("cookie_auth" = [])
     ),
     responses(
-        (status = 200, description = "sent back jwt and refresh_cookie", body = String),
+        (status = 200, description = "sent back jwt and refresh_cookie", body = LoginOutput),
         (status = 401, description = "cookie messed tf up"),
         (status = 500, description = "Interal Server Error")
     ),
@@ -275,7 +275,7 @@ pub async fn refresh_handler(
         ("cookie_auth" = [])
     ),
     responses(
-        (status = 200, description = "Sends back an empty, expired cookie to client ", body = String),
+        (status = 200, description = "Sends back an empty, expired cookie to client "),
         (status = 401, description = "the refresh_token cookie the user send is messed tf up"),
         (status = 500, description = "Interal Server Error")
     ),

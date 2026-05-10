@@ -66,7 +66,7 @@ pub struct LoginInput {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct LoginOutput {
     pub access_token: String,
 }

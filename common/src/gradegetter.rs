@@ -1,5 +1,7 @@
 // used in gradegetter_backend/routes/auth.rs
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 use utoipa::ToSchema;
@@ -39,3 +41,5 @@ pub enum ForwardStatus {
     #[serde(rename = "Incorrect Email or Password,E")]
     ErrorInSetup,
 }
+
+pub type GradesHashMap = HashMap<String, Vec<Option<f32>>>;

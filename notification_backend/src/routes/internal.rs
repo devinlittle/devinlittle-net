@@ -17,8 +17,11 @@ use crate::routes::AppState;
     params(
         ("uuid", description = "pretty easy to understand what this means.")
     ),
+    security(
+        ("internal_auth" = []),
+    ),
     responses(
-        (status = 200, description = "Removes uuid from HashSet defined in state, forces checks on next request", body = String),
+        (status = 200, description = "Removes uuid from HashSet defined in state, forces checks on next request"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"
@@ -49,8 +52,11 @@ pub async fn invalidate_user(
     params(
         ("uuid", description = "pretty easy to understand what this means.")
     ),
+    security(
+        ("internal_auth" = []),
+    ),
     responses(
-        (status = 200, description = "removes user from the lazily created db", body = String),
+        (status = 200, description = "removes user from the lazily created db"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"
@@ -83,7 +89,7 @@ pub async fn delete_handler(
         ("internal_auth" = []),
     ),
     responses(
-        (status = 200, description = "message send and broadcasted", body = String),
+        (status = 200, description = "message send and broadcasted"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"
@@ -103,7 +109,7 @@ pub async fn global_message(State(state): State<AppState>, message: String) -> S
         ("internal_auth" = []),
     ),
     responses(
-        (status = 200, description = "message sent to admin and broadcasted", body = String),
+        (status = 200, description = "message sent to admin and broadcasted"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"
@@ -134,8 +140,8 @@ pub async fn role_message(
         ("internal_auth" = []),
     ),
     responses(
-        (status = 200, description = "message send and broadcasted", body = String),
-        (status = 404, description = "channel that was request to send to not found", body = String),
+        (status = 200, description = "message send and broadcasted"),
+        (status = 404, description = "channel that was request to send to not found"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "internal"
@@ -155,7 +161,7 @@ pub async fn user_message(
     match tx.send(message) {
         Ok(_) => StatusCode::OK,
         Err(_) => {
-            tracing::error!("USER NOT ONLINE");
+            tracing::info!("USER NOT ONLINE");
             // push notification out
             StatusCode::INTERNAL_SERVER_ERROR
         }
