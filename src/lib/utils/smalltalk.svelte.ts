@@ -1,5 +1,5 @@
 import { sendMessage } from "./notifications.svelte"
-import { auth, authApi } from "./auth.svelte.js"
+import { auth, authApi } from "./auth.svelte"
 import { store_private_key_in_indexeddb } from "./sqlite.svelte"
 import type { KeySyncMessage, KeySyncPayload, KeySyncStatus, PendingChallenge, } from "$lib/types/smalltalk.types"
 import wordlist from "$lib/utils/wordlist.json"

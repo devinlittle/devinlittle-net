@@ -1,10 +1,10 @@
-import { auth, API_URL, createClient, refresh } from "./auth.svelte.js";
-import { fetchGrades } from "./gradegetter.svelte.js";
-import { handleNanoPass } from "./nanopass.svelte.js";
+import { auth, API_URL, createClient, refresh } from "./auth.svelte";
+import { fetchGrades } from "./gradegetter.svelte";
+import { handleNanoPass } from "./nanopass.svelte";
 import type { NanoPassMessage, NanoPassPayload } from "../types/nanopass.types";
-import { handleKeySync } from "./smalltalk.svelte.ts";
+import { handleKeySync } from "./smalltalk.svelte";
 import type { KeySyncMessage } from "../types/smalltalk.types";
-import type { paths as NotificationPaths } from "$lib/types/notification.api.ts";
+import type { paths as NotificationPaths } from "$lib/types/notification.api";
 
 export const notificationApi = createClient<NotificationPaths>(`${API_URL}/notification`);
 

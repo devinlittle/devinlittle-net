@@ -1,4 +1,4 @@
-import { auth, refresh, authApi } from './auth.svelte.js'
+import { auth, refresh, authApi } from './auth.svelte'
 import { getDb } from './sqlite.js'
 
 // --- state ---

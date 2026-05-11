@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { auth } from "$lib/utils/auth.svelte.ts";
+  import { auth } from "$lib/utils/auth.svelte";
   import {
     fetchGrades,
     grades,

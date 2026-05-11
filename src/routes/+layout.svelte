@@ -2,13 +2,13 @@
   import Header from "./Header.svelte";
 
   import { onMount } from "svelte";
-  import { initAuth, auth } from "$lib/utils/auth.svelte.ts";
+  import { initAuth, auth } from "$lib/utils/auth.svelte";
   import { db_state, mountDB } from "$lib/utils/sqlite.svelte";
   import {
     addNotification,
     connectNotifications,
     getSocket,
-  } from "$lib/utils/notifications.svelte.ts";
+  } from "$lib/utils/notifications.svelte";
 
   onMount(async () => {
     const ok = await initAuth();

@@ -7,7 +7,7 @@
     getRole,
     VAPID_PUBLIC_KEY,
     authApi,
-  } from "$lib/utils/auth.svelte.ts";
+  } from "$lib/utils/auth.svelte";
   import { goto } from "$app/navigation";
   import {
     db_state,

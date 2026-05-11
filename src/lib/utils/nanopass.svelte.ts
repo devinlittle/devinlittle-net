@@ -1,7 +1,7 @@
-import { API_URL, auth, createClient } from "./auth.svelte.js"
+import { API_URL, auth, createClient } from "./auth.svelte"
 import type { NanoPassMessage, NanoPassPayload } from "$lib/types/nanopass.types"
-import { addNotification, formatBytes, sendMessage } from "./notifications.svelte.js"
-import type { components, paths as NanoPassPaths } from "$lib/types/nanopass.api.js"
+import { addNotification, formatBytes, sendMessage } from "./notifications.svelte"
+import type { components, paths as NanoPassPaths } from "$lib/types/nanopass.api"
 
 export const nanopassApi = createClient<NanoPassPaths>(`${API_URL}/nanopass`);
 export type FileListing = components["schemas"]["FileListing"]

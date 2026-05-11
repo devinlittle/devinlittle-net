@@ -1,6 +1,6 @@
-import { API_URL, createClient } from "$lib/utils/auth.svelte.ts";
+import { API_URL, createClient } from "$lib/utils/auth.svelte";
 import type { components, paths as GradesPaths } from "$lib/types/gradegetter.api";
-export type GradeGetterHashMap = components["schemas"]["HashMap"]
+export type GradeGetterHashMap = components["schemas"]["BTreeMap"]
 
 export const gradesApi = createClient<GradesPaths>(`${API_URL}/gradegetter`);
 

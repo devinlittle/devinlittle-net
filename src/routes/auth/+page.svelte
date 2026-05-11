@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
 
-  import { authApi, onAuthSuccess } from "$lib/utils/auth.svelte.ts";
+  import { authApi, onAuthSuccess } from "$lib/utils/auth.svelte";
   import {
     connectNotifications,
     disconnectNotifications,

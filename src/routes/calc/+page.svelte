@@ -8,7 +8,7 @@
     authApi,
     type ServiceName,
     type UserRole,
-  } from "$lib/utils/auth.svelte.ts";
+  } from "$lib/utils/auth.svelte";
   import {
     notificationApi,
     sendMessage,
