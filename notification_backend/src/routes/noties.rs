@@ -25,9 +25,7 @@ use crate::{
 
 use common::{
     nanopass::RemoveSessionInternalInput,
-    notification::{
-        Bootstrap, NotificationMessage, PushSubscription, SendNotification, SubscribeRequest,
-    },
+    notification::{Bootstrap, PushSubscription, SendNotification, SubscribeRequest},
     AuthenticatedUser, UserRole,
 };
 
@@ -292,11 +290,11 @@ pub async fn notify(
         tracing::debug!("this is connected_users: {:?}", state.connected_users);
     })
 }
-
+// INFO: THIS IS INTENTIONAL, REMEMBER, `notification_backend` IS A SMART BUT MOSTLY DUMB PIPE
 #[utoipa::path(
     post,
     path = "/user_message/{id}",
-    request_body = NotificationMessage,
+    request_body = String,
     params(
         ("id", description = "contains a uuid")
     ),
@@ -312,20 +310,14 @@ pub async fn notify(
 pub async fn user_message(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
-    Json(req): Json<NotificationMessage>,
+    body: String,
 ) -> StatusCode {
     let uuid = match Uuid::from_str(uuid.as_str()) {
         Ok(uuid) => uuid,
         Err(_) => return StatusCode::UNAUTHORIZED,
     };
 
-    let message_payload = serde_json::to_string(&req).unwrap_or_default();
-
-    let message = serde_json::json!({
-        "namespace": "notification",
-        "payload": message_payload,
-    })
-    .to_string();
+    let message = body;
 
     let Some(tx) = state.connected_users.get(&uuid) else { return push_to_browser(state.pool, state.web_push_client, uuid, message).await };
 
