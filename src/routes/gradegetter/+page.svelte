@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { auth } from "$lib/utils/auth.svelte.ts";
   import {
     fetchGrades,

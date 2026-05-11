@@ -1,13 +1,14 @@
-import { auth, API_URL, refresh, authFetch } from "./auth.svelte.js";
+import { auth, API_URL, createClient, refresh } from "./auth.svelte.js";
 import { fetchGrades } from "./gradegetter.svelte.js";
 import { handleNanoPass } from "./nanopass.svelte.js";
-import type { NanoPassMessage, NanoPassPayload } from "./nanopass.types.ts";
+import type { NanoPassMessage, NanoPassPayload } from "../types/nanopass.types";
 import { handleKeySync } from "./smalltalk.svelte.ts";
-import type { KeySyncMessage } from "./smalltalk.types.ts";
+import type { KeySyncMessage } from "../types/smalltalk.types";
+import type { paths as NotificationPaths } from "$lib/types/notification.api.ts";
+
+export const notificationApi = createClient<NotificationPaths>(`${API_URL}/notification`);
 
 // --- types ---
-
-
 type Notification =
   {
     id: string
@@ -220,9 +221,25 @@ export function disconnectNotifications() {
   updateSocketState("disconnected");
 }
 
-export async function sendMessage(msg: String, target_user_id: String) {
-  await authFetch(`${API_URL}/notification/user_message/${target_user_id}`, {
-    method: "POST",
-    body: msg
-  })
+export async function sendMessage(msg: string, target_user_id: string) {
+  // HACK: using fetch here is super hacky and a temp fix
+  const url = `${API_URL}/notification/user_message/${target_user_id}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain',
+      'Authorization': `Bearer ${auth.accessToken}`
+    },
+    body: msg,
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      refresh();
+      sendMessage(msg, target_user_id)
+    }
+  }
+  //const user_message = notificationApi.path("/user_message/{id}").method("post").create() as any;
+  //  await user_message({ id: target_user_id }, msg);
 }

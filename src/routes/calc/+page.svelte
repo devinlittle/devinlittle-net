@@ -1,12 +1,20 @@
-<script>
+<script lang="ts">
   import { goto } from "$app/navigation";
+  import type { components } from "$lib/types/auth.api";
   import {
     auth,
-    authFetch,
     onAuthSuccess,
-    API_URL,
     getRole,
+    authApi,
+    type ServiceName,
+    type UserRole,
   } from "$lib/utils/auth.svelte.ts";
+  import {
+    notificationApi,
+    sendMessage,
+  } from "$lib/utils/notifications.svelte";
+
+  type Users = components["schemas"]["Users"];
 
   // ── calculator state ──────────────────────────────────────
   let display = $state("0");
@@ -18,8 +26,8 @@
 
   // ── admin panel state ─────────────────────────────────────
   let showAdmin = $state(false);
-  let adminSpring = $state(false);
-  let users = $state([]);
+  //  let adminSpring = $state(false);
+  let users = $state<Users[] | undefined[]>([]);
   let adminError = $state("");
   let loadingUsers = $state(false);
   let decodedJwt = $state(null);
@@ -45,20 +53,20 @@
 
   // ── secret trigger ────────────────────────────────────────
 
-  async function checkSequence(key) {
+  const refresh = authApi.path("/refresh").method("post").create();
+
+  async function checkSequence(key: number) {
     keyHistory = [...keyHistory.slice(-4), key];
     const last5 = keyHistory.slice(-5);
 
     if (last5.join(",") === DEVIN_SEQ.join(",")) {
       if (!auth.accessToken) return;
 
-      const res = await authFetch(`${API_URL}/auth/refresh`, {
-        method: "POST",
-      });
+      let res = await refresh({});
 
       if (!res.ok) return;
 
-      const { access_token } = await res.json();
+      const { access_token } = res.data;
       onAuthSuccess(access_token);
 
       const payload = decode(access_token);
@@ -71,17 +79,16 @@
     } else if (last5.join(",") === GLOSS_SEQ.join(",")) {
       if (!auth.accessToken) return;
 
-      const res = await authFetch(`${API_URL}/auth/refresh`, {
-        method: "POST",
-      });
+      let res = await refresh({});
 
       if (!res.ok) return;
 
-      const { access_token } = await res.json();
+      const { access_token } = res.data;
       onAuthSuccess(access_token);
 
       const payload = decode(access_token);
-      const role = getRole(payload?.roles, "gloss");
+      //      const role = getRole(payload?.roles, "gloss");
+      const role = getRole(payload?.roles, "global");
 
       if (role !== "devin" && role !== "owen" && role !== "trusted") return;
 
@@ -91,13 +98,11 @@
     } else if (last5.join(",") === ANNOUNCE_SEQ.join(",")) {
       if (!auth.accessToken) return;
 
-      const res = await authFetch(`${API_URL}/auth/refresh`, {
-        method: "POST",
-      });
+      let res = await refresh({});
 
       if (!res.ok) return;
 
-      const { access_token } = await res.json();
+      const { access_token } = res.data;
       onAuthSuccess(access_token);
 
       const payload = decode(access_token);
@@ -136,11 +141,12 @@
   }
 
   // ── calculator logic ──────────────────────────────────────
-  function toRad(x) {
+  function toRad(x: number) {
     return angleMode === "deg" ? (x * Math.PI) / 180 : x;
   }
 
-  function press(val) {
+  // val could be string or number~
+  function press(val: any) {
     checkSequence(val);
 
     if (justEvaled && !isNaN(val)) {
@@ -160,7 +166,7 @@
     }
   }
 
-  function pressOp(op) {
+  function pressOp(op: any) {
     justEvaled = false;
     expression = display + " " + op;
     display = "0";
@@ -313,9 +319,10 @@
     loadingUsers = true;
     adminError = "";
     try {
-      const res = await authFetch(`${API_URL}/auth/admin/users`);
+      const loadUsers = authApi.path("/admin/users").method("get").create();
+      let res = await loadUsers({});
       if (!res.ok) throw new Error("failed");
-      users = await res.json();
+      users = res.data;
     } catch {
       adminError = "couldn't load users";
     } finally {
@@ -324,9 +331,11 @@
   }
 
   async function deauthUser(userId) {
-    await authFetch(`${API_URL}/auth/admin/revoke_all/${userId}`, {
-      method: "DELETE",
-    });
+    const deauthUserReq = authApi
+      .path("/admin/revoke_all/{id}")
+      .method("delete")
+      .create();
+    await deauthUserReq({ id: userId });
     await loadUsers();
   }
 
@@ -340,23 +349,31 @@
   } */
 
   async function deleteUser(userId) {
-    await authFetch(`${API_URL}/auth/admin/users/${userId}/delete`, {
-      method: "DELETE",
-    });
+    const deleteUserReq = authApi
+      .path("/admin/users/{id}/delete")
+      .method("delete")
+      .create();
+    await deleteUserReq({ id: userId });
 
     await loadUsers();
   }
 
-  async function changeRole(userId, service, role) {
-    await authFetch(`${API_URL}/auth/admin/users/${userId}/role`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service, role }),
-    });
+  async function changeRole(
+    userId: string,
+    service: ServiceName,
+    role: UserRole,
+  ) {
+    let changeRoleReq = authApi
+      .path("/admin/users/{id}/role")
+      .method("patch")
+      .create();
+    await changeRoleReq({ id: userId, role: role, service: service });
 
-    await authFetch(`${API_URL}/auth/admin/users/${userId}/evict`, {
-      method: "POST",
-    });
+    let evictUserReq = authApi
+      .path("/admin/users/{id}/evict")
+      .method("post")
+      .create();
+    await evictUserReq({ id: userId });
 
     await loadUsers();
   }
@@ -366,15 +383,12 @@
 
   async function sendGlobalAnnouncement() {
     if (!announceTitle || !announceContent) return;
-    await authFetch(`${API_URL}/auth/admin/global_message`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: announceTitle,
-        content: announceContent,
-        type: "global",
-      }),
-    });
+
+    let globalMessageReq = authApi
+      .path("/admin/global_message")
+      .method("post")
+      .create();
+    await globalMessageReq({ title: announceTitle, content: announceContent });
     announceTitle = "";
     announceContent = "";
   }
@@ -394,10 +408,9 @@
     }
     searching = true;
     try {
-      const res = await authFetch(
-        `${API_URL}/auth/users/search?q=${encodeURIComponent(q)}`,
-      );
-      if (res.ok) search_results = await res.json();
+      const searchReq = authApi.path("/users/search").method("get").create();
+      let res = await searchReq({ q: encodeURIComponent(q) });
+      if (res.ok) search_results = res.data;
     } finally {
       searching = false;
     }
@@ -423,19 +436,22 @@
 
   async function sendAnnounceUser() {
     if (!selected.length || !title.trim() || !body.trim()) return;
+
+    const payload = {
+      namespace: "notification",
+      payload: {
+        title,
+        content: body,
+        sender_username: auth.username,
+        type: "user",
+      },
+    };
     for (const user of selected) {
-      await authFetch(`${API_URL}/notification/user_message/${user.id}`, {
-        method: "POST",
-        body: JSON.stringify({
-          namespace: "notification",
-          payload: {
-            title,
-            content: body,
-            sender_username: auth.username,
-            type: "user",
-          },
-        }),
-      });
+      try {
+        await sendMessage(JSON.stringify(payload), user.id);
+      } catch (err) {
+        console.log(err);
+      }
     }
     title = "";
     body = "";
@@ -665,8 +681,14 @@
                   <span class="svc-name">{svc}</span>
                   <select
                     value={u?.roles?.[svc] ?? "user"}
-                    onchange={(e) =>
-                      changeRole(selectedUser, svc, e.target.value)}
+                    onchange={(e) => {
+                      const target = e.currentTarget as HTMLSelectElement;
+                      changeRole(
+                        selectedUser,
+                        svc as ServiceName,
+                        target.value as UserRole,
+                      );
+                    }}
                   >
                     <option value="user">user</option>
                     <option value="trusted">trusted</option>

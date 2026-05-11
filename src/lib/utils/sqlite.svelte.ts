@@ -1,4 +1,4 @@
-import { auth, API_URL, authFetch, refresh } from './auth.svelte.js'
+import { auth, refresh, authApi } from './auth.svelte.js'
 import { getDb } from './sqlite.js'
 
 // --- state ---
@@ -190,11 +190,8 @@ export async function generate_and_store_keypair(): Promise<{ public_key: string
   const public_key_buffer = await crypto.subtle.exportKey('spki', keypair.publicKey)
   const public_key_b64 = btoa(String.fromCharCode(...new Uint8Array(public_key_buffer)))
 
-  await authFetch(`${API_URL}/auth/me`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ public_key: public_key_b64 })
-  })
+  let patchPubkey = authApi.path(`/me`).method("patch").create();
+  await patchPubkey({ "public_key": public_key_b64 });
 
   await refresh();
 

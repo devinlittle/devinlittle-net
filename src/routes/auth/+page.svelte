@@ -1,7 +1,7 @@
-<script>
-  import { goto, invalidateAll } from "$app/navigation";
+<script lang="ts">
+  import { goto } from "$app/navigation";
 
-  import { API_URL, onAuthSuccess } from "$lib/utils/auth.svelte.ts";
+  import { authApi, onAuthSuccess } from "$lib/utils/auth.svelte.ts";
   import {
     connectNotifications,
     disconnectNotifications,
@@ -25,29 +25,33 @@
       return;
     }
 
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
+    let loginReq = authApi.path("/login").method("post").create();
+    try {
+      let res = await loginReq({
         username: loginUsername,
         password: loginPassword,
-      }),
-    });
+      });
 
-    if (!res.ok) {
-      loginError =
-        res.status === 401
-          ? "invalid username or password"
-          : "something went wrong";
-      return;
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("invalid_auth");
+        throw new Error("server_error");
+      }
+
+      const { access_token } = res.data;
+      onAuthSuccess(access_token);
+      goto("/");
+      disconnectNotifications();
+      connectNotifications();
+    } catch (err) {
+      if (err.status === 401) {
+        loginError = "invalid username or password";
+      } else if (err.status === 403) {
+        loginError = "your account is locked";
+      } else {
+        loginError = "please text me somehting went wrong";
+      }
+      console.error("Login failed:", err);
     }
-
-    const { access_token } = await res.json();
-    onAuthSuccess(access_token);
-    goto("/");
-    disconnectNotifications();
-    connectNotifications();
   }
 
   async function handleRegister() {
@@ -61,27 +65,27 @@
       return;
     }
 
-    const res = await fetch(`${API_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ username: regUsername, password: regPassword }),
+    let registerReq = authApi.path("/register").method("post").create();
+    let register_res = await registerReq({
+      username: regUsername,
+      password: regPassword,
     });
 
-    if (!res.ok) {
+    if (!register_res.ok) {
       regError =
-        res.status === 409 ? "username already taken" : "something went wrong";
+        register_res.status === 409
+          ? "username already taken"
+          : "something went wrong";
       return;
     }
 
-    const login_res = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ username: regUsername, password: regPassword }),
+    let loginReq = authApi.path("/login").method("post").create();
+    let login_res = await loginReq({
+      username: regUsername,
+      password: regPassword,
     });
 
-    const { access_token } = await login_res.json();
+    const { access_token } = login_res.data;
 
     onAuthSuccess(access_token);
     goto("/");

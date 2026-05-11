@@ -1,6 +1,11 @@
-import { API_URL, auth, authFetch } from "./auth.svelte.js"
-import type { NanoPassMessage, NanoPassPayload, FileListing } from "./nanopass.types.js"
+import { API_URL, auth, createClient } from "./auth.svelte.js"
+import type { NanoPassMessage, NanoPassPayload } from "$lib/types/nanopass.types"
 import { addNotification, formatBytes, sendMessage } from "./notifications.svelte.js"
+import type { components, paths as NanoPassPaths } from "$lib/types/nanopass.api.js"
+
+export const nanopassApi = createClient<NanoPassPaths>(`${API_URL}/nanopass`);
+export type FileListing = components["schemas"]["FileListing"]
+export type Visibility = components["schemas"]["Visibility"]
 
 // --- state ---
 
@@ -212,7 +217,7 @@ const peerConnections = new Map<string, RTCPeerConnection>()
 
 import { PUBLIC_TURN_USERNAME, PUBLIC_TURN_PASSWORD } from "$env/static/public"
 
-function createPeerConnection(listing_id: string, target_session_id: string, target_user_id: String): RTCPeerConnection {
+function createPeerConnection(listing_id: string, target_session_id: string, target_user_id: string): RTCPeerConnection {
   const pc = new RTCPeerConnection({
     iceServers: [
       { urls: "stun:turn.devinlittle.net:3478" },
@@ -246,7 +251,7 @@ function createPeerConnection(listing_id: string, target_session_id: string, tar
 
 
 
-async function initWebRTCAsRequester(listing_id: string, target_session_id: string, target_user_id: String) {
+async function initWebRTCAsRequester(listing_id: string, target_session_id: string, target_user_id: string) {
   const pc = createPeerConnection(listing_id, target_session_id, target_user_id)
   const dc = pc.createDataChannel('filetransfer')
   receiveFileInChunks(dc, listing_id)
@@ -255,7 +260,7 @@ async function initWebRTCAsRequester(listing_id: string, target_session_id: stri
   sendNanoPass({ type: 'SDPOffer', listing_id, sdp: offer.sdp! }, target_session_id, target_user_id)
 }
 
-function initWebRTCAsHost(listing_id: string, target_session_id: string, target_user_id: String) {
+function initWebRTCAsHost(listing_id: string, target_session_id: string, target_user_id: string) {
   const pc = createPeerConnection(listing_id, target_session_id, target_user_id)
   pc.ondatachannel = (e) => {
     e.channel.onopen = () => sendFileInChunks(listing_id, e.channel)
@@ -265,14 +270,15 @@ function initWebRTCAsHost(listing_id: string, target_session_id: string, target_
 // ---- data fetch/send functions ----
 
 export async function fetchListings() {
-  const response = await authFetch(`${API_URL}/nanopass/listings`)
+  const get_listings = nanopassApi.path("/listings").method("get").create();
+  const response = await get_listings({});
   if (!response.ok) return
-  const data: FileListing[] = await response.json()
+  const data: FileListing[] = response.data;
   nanopass.listings = data
 }
 
 
-export function sendNanoPass(payload: NanoPassPayload, target_session_id: string | null = null, target_user_id: String) {
+export function sendNanoPass(payload: NanoPassPayload, target_session_id: string | null = null, target_user_id: string) {
   sendMessage(JSON.stringify({
     namespace: 'nanopass',
     id: crypto.randomUUID(),

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import {
-    authFetch,
     API_URL,
     auth,
     logout,
     getRole,
     VAPID_PUBLIC_KEY,
+    authApi,
   } from "$lib/utils/auth.svelte.ts";
   import { goto } from "$app/navigation";
   import {
@@ -23,7 +23,11 @@
     setup_recovery_phrase,
     recover_with_phrase,
   } from "$lib/utils/smalltalk.svelte";
-  import { addNotification } from "$lib/utils/notifications.svelte";
+  import {
+    addNotification,
+    notificationApi,
+  } from "$lib/utils/notifications.svelte";
+  import { gradesApi } from "$lib/utils/gradegetter.svelte";
 
   let sessions = $state([]);
   let confirmText = $state("");
@@ -69,31 +73,37 @@
   }
 
   async function fetch_sessions() {
-    const res = await authFetch(`${API_URL}/auth/me/sessions`);
-    if (res.ok) sessions = await res.json();
+    let get_sessions = authApi.path("/me/sessions").method("get").create();
+    let res = await get_sessions({});
+    if (res.ok) sessions = await res.data;
   }
 
   onMount(async () => {});
 
   async function revoke(id) {
-    const res = await authFetch(`${API_URL}/auth/me/session/${id}`, {
-      method: "DELETE",
-    });
+    let revokeSessionReq = authApi
+      .path("/me/session/{id}")
+      .method("delete")
+      .create();
+    let res = await revokeSessionReq({ id });
     if (res.ok) sessions = sessions.filter((s) => s.session_id !== id);
   }
 
   async function revokeAll() {
-    const res = await authFetch(`${API_URL}/auth/me/sessions`, {
-      method: "DELETE",
-    });
+    let revokeAllSessions = authApi
+      .path("/me/sessions")
+      .method("delete")
+      .create();
+    let res = await revokeAllSessions({});
     if (res.ok) sessions = sessions.filter((s) => s.is_current);
   }
 
   async function deleteAccount() {
     if (confirmText.toLowerCase() !== "delete") return;
-    const res = await authFetch(`${API_URL}/auth/me`, {
-      method: "DELETE",
-    });
+
+    let deleteAccReq = authApi.path("/me").method("delete").create();
+    let res = await deleteAccReq({});
+
     if (res.ok) {
       logout();
       goto("/");
@@ -185,18 +195,14 @@
       return;
     }
 
-    const res = await authFetch(
-      `${API_URL}/gradegetter/auth/schoology/credentials`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          schoology_email: schEmail,
-          schoology_password: schPassword,
-        }),
-      },
-    );
+    let addSchoologyCreds = gradesApi
+      .path("/auth/schoology/credentials")
+      .method("post")
+      .create();
+    let res = await addSchoologyCreds({
+      schoology_email: schEmail,
+      schoology_password: schPassword,
+    });
 
     if (!res.ok) {
       schErr =
@@ -204,9 +210,8 @@
       return;
     }
 
-    await authFetch(`${API_URL}/gradegetter/auth/forward`, {
-      method: "GET",
-    });
+    let forwardReq = gradesApi.path("/auth/forward").method("get").create();
+    await forwardReq({});
 
     wsStatus = "running";
     wsSteps = [];
@@ -247,9 +252,11 @@
   }
 
   async function deleteSchoology() {
-    await authFetch(`${API_URL}/gradegetter/auth/schoology/credentials`, {
-      method: "DELETE",
-    });
+    let delSchoology = gradesApi
+      .path("/auth/schoology/credentials")
+      .method("delete")
+      .create();
+    await delSchoology({});
   }
 
   type PermissionState = "granted" | "denied" | "default" | "unsupported";
@@ -268,12 +275,15 @@
   }
 
   async function postSubscription(subscription: PushSubscription) {
-    const res = await authFetch(`${API_URL}/notification/subscribe`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(subscription.toJSON()),
+    const subscriptonJson = subscription.toJSON();
+    const keys = subscriptonJson.keys as { auth: string; p256dh: string };
+    let subsctibeReq = notificationApi
+      .path("/subscribe")
+      .method("post")
+      .create();
+    let res = await subsctibeReq({
+      endpoint: subscriptonJson.endpoint,
+      keys,
     });
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
   }

@@ -1,11 +1,15 @@
-import { API_URL, authFetch } from "$lib/utils/auth.svelte.ts";
+import { API_URL, createClient } from "$lib/utils/auth.svelte.ts";
+import type { components, paths as GradesPaths } from "$lib/types/gradegetter.api";
+export type GradeGetterHashMap = components["schemas"]["HashMap"]
+
+export const gradesApi = createClient<GradesPaths>(`${API_URL}/gradegetter`);
 
 let _grades = $state({});
 let _forbiddon = $state(false);
 
 export const grades = {
   get value() { return _grades },
-  set value(v) { _grades = v }
+  set value(v: GradeGetterHashMap) { _grades = v }
 };
 
 export const forbidden = {
@@ -14,12 +18,9 @@ export const forbidden = {
 };
 
 export async function fetchGrades() {
-  const response = await authFetch(`${API_URL}/gradegetter/grades`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+
+  const grades_req = gradesApi.path("/grades").method("get").create();
+  const response = await grades_req({});
 
   if (!response.ok) {
 
@@ -35,5 +36,5 @@ export async function fetchGrades() {
 
   forbidden.value = false;
 
-  grades.value = await response.json();
+  grades.value = response.data;
 }

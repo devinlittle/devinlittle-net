@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { Fetcher } from "openapi-typescript-fetch";
 /* export const fetchMarkdownPosts = async () => {
   const allPostFiles = import.meta.glob('/src/routes/projects/*.md');
   const iterablePostFiles = Object.entries(allPostFiles);
@@ -39,9 +40,45 @@ export let auth = $state({
   ready: false
 });
 
+
+export function createClient<T>(baseUrl: string) {
+  const fetcher = Fetcher.for<T>();
+
+  fetcher.configure({
+    baseUrl,
+    init: { credentials: "include" },
+    use: [
+      async (url, init, next) => {
+        if (auth.accessToken) {
+          init.headers.set("Authorization", `Bearer ${auth.accessToken}`);
+        }
+
+        let res = await next(url, init);
+
+        if (res.status === 401 || res.status === 403) {
+          const ok = await refresh();
+          if (ok) {
+            init.headers.set("Authorization", `Bearer ${auth.accessToken}`);
+            res = await next(url, init);
+          }
+        }
+        return res;
+      }
+    ]
+  });
+
+  return fetcher;
+}
+
+import type { paths as AuthPaths, components } from "$lib/types/auth.api";
+export const authApi = createClient<AuthPaths>(`${API_URL}/auth`);
+
+export type ServiceName = components["schemas"]["ServiceName"]
+export type UserRole = components["schemas"]["UserRole"]
+
 function decode(token) {
   try {
-    return JSON.parse(atob(token.split(".")[1]));
+    return JSON.parse(atob(token.split(".")[1])); // grabs the data portion of the jwt, ignoring header and sig
   } catch {
     return null;
   }
@@ -58,9 +95,11 @@ function setToken(token) {
 }
 
 async function setSessionId() {
-  const sessions_req = await authFetch(`${API_URL}/auth/me/sessions`);
+  let get_sessions = authApi.path("/me/sessions").method("get").create();
+
+  const sessions_req = await get_sessions({});
   if (sessions_req.ok) {
-    let sessions = await sessions_req.json()
+    let sessions = sessions_req.data;
     for (const session of sessions) {
       if (session.is_current) {
         auth.session_id = session.session_id;
@@ -78,19 +117,18 @@ function clear() {
   localStorage.removeItem("access_token");
 }
 
-export function getRole(roles, service) {
+export function getRole(roles: UserRole, service: ServiceName): UserRole {
   return roles[service] ?? roles["global"] ?? "user";
 }
 
 // INFO: called once in +layout.svelte onMount
 export async function initAuth() {
   try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    });
+    const refresh = authApi.path("/refresh").method("post").create();
+    const res = await refresh({});
+
     if (res.ok) {
-      const { access_token } = await res.json();
+      const { access_token } = res.data;
       setToken(access_token);
       await setSessionId()
       return true;
@@ -102,18 +140,34 @@ export async function initAuth() {
 }
 
 export async function refresh() {
-  const res = await fetch(`${API_URL}/auth/refresh`, {
-    method: "POST",
-    credentials: "include",
-  });
+  const refresh = authApi.path("/refresh").method("post").create();
+  const res = await refresh({});
+
   if (!res.ok) { clear(); return false; }
-  const { access_token } = await res.json();
+
+  const { access_token } = res.data;
   setToken(access_token);
   await setSessionId();
   return true;
 }
 
-export async function authFetch(input, init = {}) {
+
+export async function logout() {
+  const logout = authApi.path("/logout").method("get").create();
+  await logout({});
+  clear();
+  goto("/");
+}
+
+// INFO: called from login/register page after successful auth
+export function onAuthSuccess(token) {
+  setToken(token);
+}
+
+
+// INFO: USE CREATE CLIENT INSTEAD
+
+/*export async function _authFetch(input, init = {}) {
   const headers = new Headers(init.headers ?? {});
   if (auth.accessToken) headers.set("Authorization", `Bearer ${auth.accessToken}`);
 
@@ -128,17 +182,4 @@ export async function authFetch(input, init = {}) {
   }
   return res;
 }
-
-export async function logout() {
-  await fetch(`${API_URL}/auth/logout`, {
-    method: "GET",
-    credentials: "include",
-  }).catch(() => { });
-  clear();
-  goto("/");
-}
-
-// INFO: called from login/register page after successful auth
-export function onAuthSuccess(token) {
-  setToken(token);
-}
+*/

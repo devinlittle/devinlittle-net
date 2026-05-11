@@ -1,26 +1,6 @@
-// --- visibility ---
-
-export type Visibility =
-  | { type: "Private" }
-  | { type: "Public" }
-  | { type: "Restricted"; allowlist: string[] }
-
-// --- file listing ---
-
-export type FileListing = {
-  id: string
-  owner_id: string
-  owner_username: string
-  session_id: string
-  filename: string
-  size_bytes: number
-  mime_type: string
-  created_at: string
-  visibility: Visibility
-  auto_accept: boolean
-}
-
 // --- envelope ---
+
+import type { FileListing } from "$lib/utils/nanopass.svelte"
 
 export type NanoPassMessage = {
   id: string

@@ -4,6 +4,7 @@
   "scripts": {
     "start:prod": "node --env-file=template.env build",
     "dev": "vite dev",
+    "gen:api": "./scripts/update-types.sh",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
@@ -17,6 +18,7 @@
     "@sveltejs/kit": "^2.59.1",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "mdsvex": "^0.12.7",
+    "openapi-typescript": "^7.13.0",
     "svelte": "^5.55.5",
     "svelte-check": "^4.4.8",
     "typescript": "^5.9.3",
@@ -26,6 +28,7 @@
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
-    "comlink": "^4.4.2"
+    "comlink": "^4.4.2",
+    "openapi-typescript-fetch": "^2.2.1"
   }
 }

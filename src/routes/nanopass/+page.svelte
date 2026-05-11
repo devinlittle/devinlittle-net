@@ -5,9 +5,10 @@
     registerHostedFile,
     sendNanoPass,
     unregisterHostedFile,
+    nanopassApi,
   } from "$lib/utils/nanopass.svelte";
-  import { auth, API_URL, authFetch } from "$lib/utils/auth.svelte";
-  import type { FileListing, Visibility } from "$lib/utils/nanopass.types";
+  import { auth, API_URL, authApi } from "$lib/utils/auth.svelte";
+  import type { FileListing, Visibility } from "$lib/utils/nanopass.svelte";
   import { formatBytes } from "$lib/utils/notifications.svelte";
   import { beforeNavigate } from "$app/navigation";
   import { db_exec, db_run, upsert_contact } from "$lib/utils/sqlite.svelte";
@@ -89,25 +90,19 @@
       ...(selectedVisibility === "Restricted" && { allowlist: [] }),
     } as Visibility;
     try {
-      const res = await authFetch(`${API_URL}/nanopass/listings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.accessToken}`,
-        },
-        body: JSON.stringify({
-          owner_id: auth.id,
-          session_id: auth.session_id,
-          filename: pendingFile.name,
-          size_bytes: pendingFile.size,
-          created_at: Math.round(Date.now() / 1000),
-          mime_type: pendingFile.type || "application/octet-stream",
-          visibility,
-          auto_accept: selectedAutoAcceptState,
-        }),
+      let postListing = nanopassApi.path("/listings").method("post").create();
+      let res = await postListing({
+        owner_id: auth.id,
+        session_id: auth.session_id,
+        filename: pendingFile.name,
+        size_bytes: pendingFile.size,
+        created_at: String(Math.round(Date.now() / 1000)),
+        mime_type: pendingFile.type || "application/octet-stream",
+        visibility,
+        auto_accept: selectedAutoAcceptState,
       });
       if (res.ok) {
-        const listing: FileListing = await res.json();
+        const listing: FileListing = res.data;
         registerHostedFile(listing.id, pendingFile);
         showFileUploadModal = false;
         pendingFile = null;
@@ -119,13 +114,12 @@
   }
 
   async function removeListing(id: string) {
-    let res = await authFetch(`${API_URL}/nanopass/listings`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        listing_id: id,
-      }),
+    let removeListingReq = nanopassApi
+      .path("/listings")
+      .method("delete")
+      .create();
+    let res = await removeListingReq({
+      listing_id: id,
     });
     if (res.ok) {
       unregisterHostedFile(id);
@@ -166,23 +160,19 @@
       }
 
       if (missing.length > 0) {
-        const res = await authFetch(`${API_URL}/auth/users/by-ids`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${auth.accessToken}`,
-          },
-          body: JSON.stringify({ ids: missing }),
+        let searchByIds = authApi.path("/users/by-id").method("post").create();
+        let res = await searchByIds({
+          ids: missing,
         });
 
         if (res.ok) {
-          const users = await res.json();
+          const users = res.data;
           for (const user of users) {
             upsert_contact({
               user_id: user.id,
               username: user.username,
               public_key: user.public_key,
-              last_seen: user.last_seen,
+              //              last_seen: user.last_seen,
             });
             resolved[user.id] = user;
           }
@@ -203,24 +193,21 @@
       }),
     } as Visibility;
 
-    const res = await authFetch(`${API_URL}/nanopass/listings`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${auth.accessToken}`,
-      },
-      body: JSON.stringify({
-        id: pendingEditListing.id,
-        owner_id: pendingEditListing.owner_id,
-        owner_username: pendingEditListing.owner_username,
-        session_id: pendingEditListing.session_id,
-        filename: pendingEditListing.filename,
-        size_bytes: pendingEditListing.size_bytes,
-        created_at: pendingEditListing.created_at,
-        mime_type: pendingEditListing.mime_type,
-        visibility: visibility,
-        auto_accept: selectedAutoAcceptState,
-      }),
+    let modifyListingReq = nanopassApi
+      .path("/listings")
+      .method("patch")
+      .create();
+    let res = await modifyListingReq({
+      id: pendingEditListing.id,
+      owner_id: pendingEditListing.owner_id,
+      owner_username: pendingEditListing.owner_username,
+      session_id: pendingEditListing.session_id,
+      filename: pendingEditListing.filename,
+      size_bytes: pendingEditListing.size_bytes,
+      created_at: pendingEditListing.created_at,
+      mime_type: pendingEditListing.mime_type,
+      visibility: visibility,
+      auto_accept: selectedAutoAcceptState,
     });
 
     if (res.ok) {
@@ -245,10 +232,9 @@
     }
     searching = true;
     try {
-      const res = await authFetch(
-        `${API_URL}/auth/users/search?q=${encodeURIComponent(q)}`,
-      );
-      if (res.ok) search_results = await res.json();
+      const searchReq = authApi.path("/users/search").method("get").create();
+      let res = await searchReq({ q: encodeURIComponent(q) });
+      if (res.ok) search_results = await res.data;
     } finally {
       searching = false;
     }

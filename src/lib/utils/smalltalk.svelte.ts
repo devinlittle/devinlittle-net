@@ -1,7 +1,7 @@
 import { sendMessage } from "./notifications.svelte"
-import { auth, API_URL, authFetch } from "./auth.svelte.js"
+import { auth, authApi } from "./auth.svelte.js"
 import { store_private_key_in_indexeddb } from "./sqlite.svelte"
-import type { KeySyncMessage, KeySyncPayload, KeySyncStatus, PendingChallenge, } from "$lib/utils/smalltalk.types.js"
+import type { KeySyncMessage, KeySyncPayload, KeySyncStatus, PendingChallenge, } from "$lib/types/smalltalk.types"
 import wordlist from "$lib/utils/wordlist.json"
 
 // --- emoji pool ---
@@ -398,14 +398,8 @@ export async function setup_recovery_phrase(words: string[]): Promise<void> {
 
   const recovery_hash = await hash_words(words)
 
-  await authFetch(`${API_URL}/auth/me/recovery`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      recovery_hash,
-      encrypted_private_key: encrypted_b64
-    })
-  })
+  let recovery = authApi.path("/me/recovery").method("patch").create();
+  await recovery({ "recovery_hash": recovery_hash, "encrypted_private_key": encrypted_b64 });
 }
 
 // recover private key using 12 words
@@ -413,15 +407,12 @@ export async function recover_with_phrase(words: string[]): Promise<boolean> {
   try {
     const recovery_hash = await hash_words(words)
 
-    const res = await authFetch(`${API_URL}/auth/me/recovery/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recovery_hash })
-    })
+    let verifyRecovery = authApi.path("/me/recovery/verify").method("post").create();
+    const res = await verifyRecovery({ "recovery_hash": recovery_hash });
 
     if (!res.ok) return false  // wrong words
 
-    const { encrypted_private_key } = await res.json()
+    const { encrypted_private_key } = res.data;
 
     const combined = base64_to_arraybuffer(encrypted_private_key)
 
