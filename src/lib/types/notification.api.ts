@@ -406,6 +406,7 @@ export interface operations {
             };
             cookie?: never;
         };
+        /** @description The raw message body */
         requestBody: {
             content: {
                 "text/plain": string;

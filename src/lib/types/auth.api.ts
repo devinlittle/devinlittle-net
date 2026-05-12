@@ -276,7 +276,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/by-id": {
+    "/users/by-ids": {
         parameters: {
             query?: never;
             header?: never;

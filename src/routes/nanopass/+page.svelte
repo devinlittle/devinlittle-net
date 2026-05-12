@@ -160,7 +160,7 @@
       }
 
       if (missing.length > 0) {
-        let searchByIds = authApi.path("/users/by-id").method("post").create();
+        let searchByIds = authApi.path("/users/by-ids").method("post").create();
         let res = await searchByIds({
           ids: missing,
         });
