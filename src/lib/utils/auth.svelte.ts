@@ -40,7 +40,6 @@ export let auth = $state({
   ready: false
 });
 
-
 export function createClient<T>(baseUrl: string) {
   const fetcher = Fetcher.for<T>();
 
@@ -49,25 +48,58 @@ export function createClient<T>(baseUrl: string) {
     init: { credentials: "include" },
     use: [
       async (url, init, next) => {
+        const headers = new Headers(init.headers);
+
         if (auth.accessToken) {
-          init.headers.set("Authorization", `Bearer ${auth.accessToken}`);
+          headers.set("Authorization", `Bearer ${auth.accessToken}`);
         }
 
-        let res = await next(url, init);
+        try {
+          let res = await next(url, { ...init, headers });
 
-        if (res.status === 401 || res.status === 403) {
-          const ok = await refresh();
-          if (ok) {
-            init.headers.set("Authorization", `Bearer ${auth.accessToken}`);
-            res = await next(url, init);
+          if (res.status === 401 || res.status === 403) {
+            return await preformRefresh(url, init, next);
           }
+
+          return res;
+        } catch (err) {
+          if (err.status === 401 || err.status === 403) {
+            return await preformRefresh(url, init, next);
+          }
+          throw err;
         }
-        return res;
       }
     ]
   });
 
   return fetcher;
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function getRefreshStatus() {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = refresh();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+async function preformRefresh(url: any, init: any, next: any) {
+  const ok = await getRefreshStatus();
+  if (ok) {
+    const retryHeaders = new Headers(init.headers);
+    retryHeaders.set("Authorization", `Bearer ${auth.accessToken}`);
+
+    return await next(url, { ...init, headers: retryHeaders });
+  }
+  throw new Error("Refresh failed");
 }
 
 import type { paths as AuthPaths, components } from "$lib/types/auth.api";
@@ -140,12 +172,12 @@ export async function initAuth() {
 }
 
 export async function refresh() {
-  const refresh = authApi.path("/refresh").method("post").create();
-  const res = await refresh({});
-
+  const res = await fetch(`${API_URL}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  });
   if (!res.ok) { clear(); return false; }
-
-  const { access_token } = res.data;
+  const { access_token } = await res.json();
   setToken(access_token);
   await setSessionId();
   return true;
