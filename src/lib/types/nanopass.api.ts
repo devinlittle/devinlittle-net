@@ -30,7 +30,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete: operations["remove_all_session_listings"];
+        delete: operations["internal_remove_all_session_listings"];
         options?: never;
         head?: never;
         patch?: never;
@@ -103,6 +103,110 @@ export interface components {
             size_bytes: number;
             visibility: components["schemas"]["Visibility"];
         };
+        /** @enum {string} */
+        Namespaces: "notification" | "nanopass" | "gradegetter" | "smalltalk_keysync" | "smalltalk_notes";
+        NanoPassMessage: {
+            /** Format: uuid */
+            from_session_id?: string | null;
+            /** Format: uuid */
+            from_user_id?: string | null;
+            /** Format: uuid */
+            id: string;
+            namespace: components["schemas"]["Namespaces"];
+            payload: components["schemas"]["NanoPassPayload"];
+            /** Format: uuid */
+            target_session_id?: string | null;
+            /** Format: uuid */
+            target_user_id?: string | null;
+        };
+        NanoPassPayload: {
+            data: {
+                /** Format: uuid */
+                listing_id: string;
+                /** Format: uuid */
+                requester_session_id: string;
+            };
+            /** @enum {string} */
+            type: "FileQuery";
+        } | {
+            data: {
+                /** Format: uuid */
+                host_session_id: string;
+                /** Format: uuid */
+                listing_id: string;
+            };
+            /** @enum {string} */
+            type: "FileQueryResponse";
+        } | {
+            data: {
+                /** Format: uuid */
+                listing_id: string;
+                /** Format: uuid */
+                requester_session_id: string;
+                requester_username: string;
+            };
+            /** @enum {string} */
+            type: "TransferRequest";
+        } | {
+            data: {
+                /** Format: uuid */
+                listing_id: string;
+            };
+            /** @enum {string} */
+            type: "TransferAccepted";
+        } | {
+            data: {
+                /** Format: uuid */
+                listing_id: string;
+            };
+            /** @enum {string} */
+            type: "TransferDeclined";
+        } | {
+            data: {
+                /** Format: uuid */
+                listing_id: string;
+                sdp: string;
+            };
+            /** @enum {string} */
+            type: "SDPOffer";
+        } | {
+            data: {
+                /** Format: uuid */
+                listing_id: string;
+                sdp: string;
+            };
+            /** @enum {string} */
+            type: "SDPAnswer";
+        } | {
+            data: {
+                candidate: string;
+                /** Format: uuid */
+                listing_id: string;
+                sdp_mid?: string | null;
+                /** Format: int32 */
+                sdp_mline_index?: number | null;
+            };
+            /** @enum {string} */
+            type: "ICECandidate";
+        } | {
+            data: {
+                listing: components["schemas"]["FileListing"];
+            };
+            /** @enum {string} */
+            type: "ListingAdded";
+        } | {
+            data: {
+                listing: components["schemas"]["FileListing"];
+            };
+            /** @enum {string} */
+            type: "ListingModified";
+        } | {
+            data: {
+                listing: components["schemas"]["FileListing"];
+            };
+            /** @enum {string} */
+            type: "ListingRemoved";
+        };
         RemoveListingInput: {
             /** Format: uuid */
             listing_id: string;
@@ -155,7 +259,7 @@ export interface operations {
             };
         };
     };
-    remove_all_session_listings: {
+    internal_remove_all_session_listings: {
         parameters: {
             query?: never;
             header?: never;

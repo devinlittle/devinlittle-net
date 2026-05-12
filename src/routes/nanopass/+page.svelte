@@ -265,8 +265,10 @@
     sendNanoPass(
       {
         type: "FileQuery",
-        listing_id: listing.id,
-        requester_session_id: auth.session_id,
+        data: {
+          listing_id: listing.id,
+          requester_session_id: auth.session_id,
+        },
       },
       null,
       listing.owner_id,

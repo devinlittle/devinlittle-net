@@ -1,11 +1,13 @@
 import { API_URL, auth, createClient } from "./auth.svelte"
-import type { NanoPassMessage, NanoPassPayload } from "$lib/types/nanopass.types"
+//import type { NanoPassMessage, NanoPassPayload } from "$lib/types/nanopass.types"
 import { addNotification, formatBytes, sendMessage } from "./notifications.svelte"
 import type { components, paths as NanoPassPaths } from "$lib/types/nanopass.api"
 
 export const nanopassApi = createClient<NanoPassPaths>(`${API_URL}/nanopass`);
 export type FileListing = components["schemas"]["FileListing"]
 export type Visibility = components["schemas"]["Visibility"]
+export type NanoPassMessage = components["schemas"]["NanoPassMessage"]
+export type NanoPassPayload = components["schemas"]["NanoPassPayload"]
 
 // --- state ---
 
@@ -26,9 +28,9 @@ export function handleNanoPass(msg: NanoPassMessage) {
 
   const payload = msg.payload
   switch (payload.type) {
-    case "ListingAdded": return handleListingAdded(payload.listing)
-    case "ListingModified": return handleListingModified(payload.listing)
-    case "ListingRemoved": return handleListingRemoved(payload.listing.id)
+    case "ListingAdded": return handleListingAdded(payload.data.listing)
+    case "ListingModified": return handleListingModified(payload.data.listing)
+    case "ListingRemoved": return handleListingRemoved(payload.data.listing.id)
     case "FileQuery": return handleFileQuery(msg)
     case "FileQueryResponse": return handleFileQueryResponse(msg)
     case "TransferRequest": return handleTransferRequest(msg)
@@ -60,13 +62,16 @@ function handleListingRemoved(listing_id: string) {
 // --- ARP resolution ---
 
 function handleFileQuery(msg: NanoPassMessage) {
-  const payload = msg.payload as Extract<NanoPassPayload, { type: 'FileQuery' }>
+  const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'FileQuery' }>
+  const payload = raw_payload.data;
   const hosted = hostedFiles.get(payload.listing_id)
   if (!hosted) return // not our file; ignore
   sendNanoPass({
     type: 'FileQueryResponse',
-    listing_id: payload.listing_id,
-    host_session_id: auth.session_id!
+    data: {
+      listing_id: payload.listing_id,
+      host_session_id: auth.session_id!
+    }
   }, msg.from_session_id, msg.from_user_id)
 
 }
@@ -74,14 +79,17 @@ function handleFileQuery(msg: NanoPassMessage) {
 const resolvedHosts = new Map<string, string>()
 
 function handleFileQueryResponse(msg: NanoPassMessage) {
-  const payload = msg.payload as Extract<NanoPassPayload, { type: 'FileQueryResponse' }>
+  const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'FileQueryResponse' }>
+  const payload = raw_payload.data;
   resolvedHosts.set(payload.listing_id, payload.host_session_id)
   // now we know who to send the TransferRequest to
   sendNanoPass({
     type: 'TransferRequest',
-    listing_id: payload.listing_id,
-    requester_session_id: auth.session_id!,
-    requester_username: auth.username,
+    data: {
+      listing_id: payload.listing_id,
+      requester_session_id: auth.session_id!,
+      requester_username: auth.username,
+    }
   }, payload.host_session_id, msg.from_user_id)
 }
 
@@ -89,12 +97,13 @@ function handleFileQueryResponse(msg: NanoPassMessage) {
 
 // this is the facetime like notifiation
 function handleTransferRequest(msg: NanoPassMessage) {
-  const payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferRequest' }>
+  const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferRequest' }>
+  let payload = raw_payload.data;
   const listing = nanopass.listings.find(l => l.id === payload.listing_id)
   if (!listing) return
 
   if (listing.auto_accept == true) {
-    sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
+    sendNanoPass({ type: 'TransferAccepted', data: { listing_id: payload.listing_id } }, msg.from_session_id, msg.from_user_id)
     initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
 
     sendMessage(
@@ -131,24 +140,26 @@ function handleTransferRequest(msg: NanoPassMessage) {
       requester_session_id: payload.requester_session_id,
       requester_username: payload.requester_username,
       onAccept: () => {
-        sendNanoPass({ type: 'TransferAccepted', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
+        sendNanoPass({ type: 'TransferAccepted', data: { listing_id: payload.listing_id } }, msg.from_session_id, msg.from_user_id)
         // host creates offer
         initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
       },
       onDecline: () => {
-        sendNanoPass({ type: 'TransferDeclined', listing_id: payload.listing_id }, msg.from_session_id, msg.from_user_id)
+        sendNanoPass({ type: 'TransferDeclined', data: { listing_id: payload.listing_id } }, msg.from_session_id, msg.from_user_id)
       }
     })
   }
 }
 
 function handleTransferAccepted(msg: NanoPassMessage) {
-  const payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferAccepted' }>
+  const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferAccepted' }>
+  const payload = raw_payload.data;
   initWebRTCAsRequester(payload.listing_id, msg.from_session_id, msg.from_user_id)
 }
 
 function handleTransferDeclined(msg: NanoPassMessage) {
-  const payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferDeclined' }>
+  const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferDeclined' }>
+  const payload = raw_payload.data;
   console.log('transfer declined for', payload.listing_id)
 }
 
@@ -178,7 +189,8 @@ function addTransferNotification({ listing, requester_session_id, requester_user
 
 // setRemoteDescription, createAnswer, setLocalDescription, send SDPAnswer
 async function handleSDPOffer(msg: NanoPassMessage) {
-  const payload = msg.payload as Extract<NanoPassPayload, { type: 'SDPOffer' }>
+  const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'SDPOffer' }>
+  const payload = raw_payload.data;
   console.log('handleSDPOffer, pc exists:', !!peerConnections.get(payload.listing_id))
   const pc = peerConnections.get(payload.listing_id)
   if (!pc) {
@@ -189,12 +201,13 @@ async function handleSDPOffer(msg: NanoPassMessage) {
   const answer = await pc.createAnswer()
   await pc.setLocalDescription(answer)  // this should trigger ICE gathering
   console.log('gathering state after setLocalDescription:', pc.iceGatheringState)
-  sendNanoPass({ type: 'SDPAnswer', listing_id: payload.listing_id, sdp: answer.sdp! }, msg.from_session_id, msg.from_user_id)
+  sendNanoPass({ type: 'SDPAnswer', data: { listing_id: payload.listing_id, sdp: answer.sdp! } }, msg.from_session_id, msg.from_user_id)
 }
 
 // setRemoteDescription
 async function handleSDPAnswer(msg: NanoPassMessage) {
-  const payload = msg.payload as Extract<NanoPassPayload, { type: 'SDPAnswer' }>
+  const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'SDPAnswer' }>
+  const payload = raw_payload.data;
   const pc = peerConnections.get(payload.listing_id)
   if (!pc) return
   await pc.setRemoteDescription({ type: 'answer', sdp: payload.sdp })
@@ -202,7 +215,8 @@ async function handleSDPAnswer(msg: NanoPassMessage) {
 
 // addIceCandidate
 async function handleICECandidate(msg: NanoPassMessage) {
-  const payload = msg.payload as Extract<NanoPassPayload, { type: 'ICECandidate' }>
+  const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'ICECandidate' }>
+  const payload = raw_payload.data;
   const pc = peerConnections.get(payload.listing_id)
   if (!pc) return
   await pc.addIceCandidate({
@@ -234,10 +248,12 @@ function createPeerConnection(listing_id: string, target_session_id: string, tar
     if (!e.candidate) return
     sendNanoPass({
       type: 'ICECandidate',
-      listing_id,
-      candidate: e.candidate.candidate,
-      sdp_mid: e.candidate.sdpMid ?? null,
-      sdp_mline_index: e.candidate.sdpMLineIndex ?? null
+      data: {
+        listing_id,
+        candidate: e.candidate.candidate,
+        sdp_mid: e.candidate.sdpMid ?? null,
+        sdp_mline_index: e.candidate.sdpMLineIndex ?? null
+      }
     }, target_session_id, target_user_id)
   }
 
@@ -257,7 +273,7 @@ async function initWebRTCAsRequester(listing_id: string, target_session_id: stri
   receiveFileInChunks(dc, listing_id)
   const offer = await pc.createOffer()
   await pc.setLocalDescription(offer)
-  sendNanoPass({ type: 'SDPOffer', listing_id, sdp: offer.sdp! }, target_session_id, target_user_id)
+  sendNanoPass({ type: 'SDPOffer', data: { listing_id, sdp: offer.sdp! } }, target_session_id, target_user_id)
 }
 
 function initWebRTCAsHost(listing_id: string, target_session_id: string, target_user_id: string) {
