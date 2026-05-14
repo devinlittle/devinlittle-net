@@ -14,7 +14,7 @@ use sqlx::{types::uuid, PgPool};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::util::{hash::hash, secrets::SECRETS};
+use crate::util::{hash::validate, secrets::SECRETS};
 
 use common::{
     auth::{
@@ -169,6 +169,12 @@ pub async fn list_active_sessions(
     TypedHeader(cookies): TypedHeader<Cookie>,
     Extension(user): Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse, StatusCode> {
+    let refresh_token = if cookies.get("refresh_token").is_some() {
+        cookies.get("refresh_token").unwrap_or_default()
+    } else {
+        return Err(StatusCode::UNAUTHORIZED);
+    };
+
     let sessions = sqlx::query!(
         "SELECT id, expires_at, user_agent, token_hash FROM refresh_tokens
         WHERE user_id = $1
@@ -194,7 +200,10 @@ pub async fn list_active_sessions(
             .unwrap_or_else(|| Utc::now()),
             user_agent: session.user_agent.clone(),
             is_current: {
-                hash(cookies.get("refresh_token").unwrap_or_default()) == session.token_hash
+                validate(
+                    refresh_token,
+                    session.token_hash.clone().unwrap_or_default(),
+                )
             },
         })
         .collect();
@@ -441,6 +450,7 @@ pub async fn search_user(
     Ok(Json(results))
 }
 
+// TODO: check if is_admin and then if so send user's roles too!
 #[utoipa::path(
     post,
     path = "/users/by-ids",
@@ -458,6 +468,7 @@ pub async fn search_user(
 )]
 pub async fn get_users_by_ids(
     State(pool): State<PgPool>,
+    Extension(_user): Extension<AuthenticatedUser>,
     Json(req): Json<ByIdsInput>,
 ) -> Result<Json<Vec<UserSearchResult>>, StatusCode> {
     let users = sqlx::query_as!(

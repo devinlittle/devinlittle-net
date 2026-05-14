@@ -12,10 +12,8 @@ use uuid::Uuid;
 use crate::{routes::user::delete_and_invalidate, util::secrets::SECRETS};
 
 use common::{
-    auth::{
-        ChangeRoleInput, Message, MessageNamespace, NotificationPayload, NotificationType, Users,
-    },
-    AuthenticatedUser, UserRole,
+    auth::{ChangeRoleInput, Message, NotificationPayload, NotificationType, Users},
+    AuthenticatedUser, Namespaces, UserRole,
 };
 #[utoipa::path(
     get,
@@ -334,7 +332,7 @@ pub async fn global_message(
     let payload = serde_json::to_value(payload).unwrap_or_default();
 
     let message = Message {
-        namespace: MessageNamespace::Notification,
+        namespace: Namespaces::Notification,
         payload,
     };
 

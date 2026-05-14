@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{ServiceName, UserRole, UserRoles};
+use crate::{Namespaces, ServiceName, UserRole, UserRoles};
 
 // used in auth_backend/src/routes/admin.rs
 #[derive(Serialize, ToSchema, Debug, Clone)]
@@ -22,17 +22,12 @@ pub struct ChangeRoleInput {
     pub role: UserRole,
 }
 
+// HACK:
+// TODO: make this better
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct Message {
-    pub namespace: MessageNamespace,
+    pub namespace: Namespaces,
     pub payload: serde_json::Value,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum MessageNamespace {
-    Notification,
-    Nanopass,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]

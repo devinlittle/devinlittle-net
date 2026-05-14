@@ -37,17 +37,15 @@ pub fn verify_password(original: &str, hashed_password: &str) -> bool {
     return argon2.verify_password(original.as_bytes(), &parsed).is_ok();
 }
 
-pub fn hash(data: &str) -> String {
+pub fn hash(data: &str) -> Vec<u8> {
     let mut hasher = Sha256::new();
     let salt = &SECRETS.hash_secret;
     hasher.update(salt);
     hasher.update(data);
-    format!("{:x}", hasher.finalize())
+    hasher.finalize().to_vec()
 }
 
-//  XXX: depricated, used by old login auth; still might have uses later...
-#[allow(dead_code)]
-pub fn validate(original: &str, hashed: &str) -> bool {
+pub fn validate(original: &str, hashed: Vec<u8>) -> bool {
     let original_hashed = hash(original);
-    constant_time_eq(original_hashed.as_bytes(), hashed.as_bytes())
+    constant_time_eq(&original_hashed, &hashed)
 }

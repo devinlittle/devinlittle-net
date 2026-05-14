@@ -183,8 +183,8 @@ pub async fn refresh_handler(
 ) -> Result<impl IntoResponse, StatusCode> {
     let cookie_refresh_token = cookies.get("refresh_token").unwrap_or_default();
 
-    let valid_token = sqlx::query!(
-        "SELECT token_hash FROM refresh_tokens WHERE token_hash = $1",
+    let old_token_query = sqlx::query!(
+        "SELECT id, token_hash FROM refresh_tokens WHERE token_hash = $1",
         hash(cookie_refresh_token)
     )
     .fetch_optional(&pool)
@@ -192,8 +192,14 @@ pub async fn refresh_handler(
     .map_err(|err| {
         tracing::error!("{}", err);
         StatusCode::INTERNAL_SERVER_ERROR
-    })?
-    .is_some();
+    })?;
+
+    let (valid_token, old_token_id) = match old_token_query {
+        Some(token) => (true, token.id),
+        None => {
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+    };
 
     if !valid_token {
         return Err(StatusCode::UNAUTHORIZED);
@@ -209,7 +215,7 @@ pub async fn refresh_handler(
          AND expires_at > NOW()
          RETURNING user_id",
         hash(cookie_refresh_token),
-        hash(refresh_token.as_str())
+        old_token_id,
     )
     .fetch_optional(&pool)
     .await
@@ -287,21 +293,17 @@ pub async fn logout_handler(
 ) -> Result<impl IntoResponse, StatusCode> {
     let refresh_cookie = cookies.get("refresh_token").unwrap_or_default();
 
-    let query = format!(
-        "DELETE FROM refresh_tokens WHERE token_hash = '{}'",
+    if sqlx::query!(
+        "DELETE FROM refresh_tokens WHERE token_hash = $1",
         hash(refresh_cookie)
-    );
-
-    tracing::debug!("{query}");
-
-    if sqlx::query(&query)
-        .execute(&pool)
-        .await
-        .map_err(|err| {
-            tracing::error!("{}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })
-        .is_ok()
+    )
+    .execute(&pool)
+    .await
+    .map_err(|err| {
+        tracing::error!("{}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })
+    .is_ok()
     {
         let refresh_cookie = "refresh_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0";
 
