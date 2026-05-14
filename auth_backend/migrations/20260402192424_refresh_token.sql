@@ -1,14 +1,15 @@
 CREATE TABLE refresh_tokens (
     id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id     UUID NOT NULL,
-    token_hash  BYTEA NULL,
-    expires_at  TIMESTAMP NOT NULL,
-    created_at  TIMESTAMP DEFAULT NOW(),
-    revoked_at  TIMESTAMP NULL,
+    token_hash  BYTEA NOT NULL,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    revoked_at  TIMESTAMPTZ NULL,
     replaced_by_token UUID NULL,
     user_agent TEXT NOT NULL,
 
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+
     CONSTRAINT fk_replaced_by_token
         FOREIGN KEY (replaced_by_token) REFERENCES refresh_tokens(id)
         ON DELETE SET NULL
