@@ -70,14 +70,14 @@ pub struct SmalltalkNotesMessage {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", content = "data")]
 pub enum SmalltalkNotesEvent {
-    #[schema(rename = "NoteAdded")]
+    #[schema(title = "NoteAdded")]
     NoteAdded { note: SmalltalkNote },
-    #[schema(rename = "NoteUpdated")]
+    #[schema(title = "NoteUpdated")]
     NoteUpdated { note_id: Uuid, note: SmalltalkNote },
-    #[schema(rename = "NoteDeleted")]
+    #[schema(title = "NoteDeleted")]
     NoteDeleted { note_id: Uuid },
-    #[schema(rename = "NoteRankUpdated")]
+    #[schema(title = "NoteRankUpdated")]
     NoteRankUpdated { note_id: Uuid, new_rank: i32 },
-    #[schema(rename = "NoteForgotten")]
+    #[schema(title = "NoteForgotten")]
     NoteForgotten { note_id: Uuid },
 }
