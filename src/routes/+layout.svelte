@@ -2,7 +2,11 @@
   import Header from "./Header.svelte";
 
   import { onMount } from "svelte";
-  import { initAuth, auth } from "$lib/utils/auth.svelte";
+  import {
+    initAuth,
+    auth,
+    get_ready_for_devin_grfd,
+  } from "$lib/utils/auth.svelte";
   import { db_state, mountDB } from "$lib/utils/sqlite.svelte";
   import {
     addNotification,
@@ -11,36 +15,17 @@
   } from "$lib/utils/notifications.svelte";
 
   onMount(async () => {
-    const ok = await initAuth();
-    if (ok) {
-      console.log("pretend the db is being setup");
-      await mountDB();
-      if (db_state.ready) {
-      } else if (db_state.needs_key_sync) {
-        addNotification({
-          type: "important_info",
-          title: "Notification",
-          body: "messaging capabilities are limited, navigate to the settings page to sync encryption keys",
-          sender: "DevinLittle.Net",
-          global: false,
-        });
-      } else if (db_state.needs_onboarding) {
-        // generate keys
+    await get_ready_for_devin_grfd(false);
+
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible" && getSocket() === null) {
+        await initAuth();
+        connectNotifications();
       }
-
-      connectNotifications();
-
-      document.addEventListener("visibilitychange", async () => {
-        if (document.visibilityState === "visible" && getSocket() === null) {
-          await initAuth();
-          connectNotifications();
-        }
-      });
-    } else {
-      // Loading global notifications, no db ever initalized
-      connectNotifications();
-    }
+    });
   });
+
+  $inspect(auth);
 
   import "./styles.css";
   import Notifications from "$lib/comps/Notifications.svelte";
