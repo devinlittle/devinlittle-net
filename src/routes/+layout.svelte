@@ -6,6 +6,7 @@
     initAuth,
     auth,
     get_ready_for_devin_grfd,
+    global_private_key,
   } from "$lib/utils/auth.svelte";
   import { db_state, mountDB } from "$lib/utils/sqlite.svelte";
   import {
@@ -26,6 +27,7 @@
   });
 
   $inspect(auth);
+  $inspect(global_private_key);
 
   import "./styles.css";
   import Notifications from "$lib/comps/Notifications.svelte";

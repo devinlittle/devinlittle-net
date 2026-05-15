@@ -1,5 +1,46 @@
+import type { components } from "$lib/types/smalltalk.api"
+import type { SmallTalkNotesDecryptedNote } from "$lib/types/smalltalk.types";
+
+export type SmallTalkNoteMessage = components["schemas"]["SmalltalkNotesMessage"];
+export type SmallTalkNotesEvent = components["schemas"]["SmalltalkNotesEvent"];
+export type SmallTalkNotesNote = components["schemas"]["SmalltalkNote"];
+
+export const notes = $state<SmallTalkNotesDecryptedNote[]>([])
+
+
+export function handleSmallTalkNotes(msg: SmallTalkNoteMessage) {
+  const payload = msg.payload
+  switch (payload.type) {
+    case "NoteAdded":
+    case "NoteUpdated":
+    case "NoteDeleted":
+    case "NoteRankUpdated":
+    case "NoteForgotten":
+  }
+}
+
+/* 
+async function addNote() {
+  // decrypt incoming note content
+  // add note to sqlite db
+}
+
+*/
+
+// Note Updated:
+// check if note exists in notes var 
+// if not: add note
+// otherwise update note
+
+/* async function decryptNote(content: SmallTalkNotesNote, is_password_protected: boolean): Promise<SmallTalkNotesDecryptedNote> {
+
+} */
+
+
+// INFO: SMALLTALK_KEYSYNC HERE
+
 import { sendMessage } from "./notifications.svelte"
-import { auth, authApi } from "./auth.svelte"
+import { auth, authApi, global_private_key } from "./auth.svelte"
 import { store_private_key_in_indexeddb } from "./sqlite.svelte"
 import type { KeySyncMessage, KeySyncPayload, KeySyncStatus, PendingChallenge, } from "$lib/types/smalltalk.types"
 import wordlist from "$lib/utils/wordlist.json"
@@ -80,11 +121,11 @@ function pick_random_emojis(count: number): string[] {
   return shuffled.slice(0, count)
 }
 
-function arraybuffer_to_base64(buffer: ArrayBuffer): string {
+export function arraybuffer_to_base64(buffer: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buffer)))
 }
 
-function base64_to_arraybuffer(b64: string): ArrayBuffer {
+export function base64_to_arraybuffer(b64: string): ArrayBuffer {
   const binary = atob(b64)
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) {
@@ -436,6 +477,7 @@ export async function recover_with_phrase(words: string[]): Promise<boolean> {
     )
 
     await store_private_key_in_indexeddb(private_key)
+    global_private_key.value = private_key;
     return true
 
   } catch (e) {

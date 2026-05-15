@@ -69,12 +69,12 @@
   async function fetch_sessions() {
     let get_sessions = authApi.path("/me/sessions").method("get").create();
     let res = await get_sessions({});
-    if (res.ok) sessions = await res.data;
+    if (res.ok) sessions = res.data;
   }
 
   onMount(async () => {});
 
-  async function revoke(id) {
+  async function revoke(id: string) {
     let revokeSessionReq = authApi
       .path("/me/session/{id}")
       .method("delete")
@@ -106,13 +106,6 @@
 
   async function startOnboarding() {
     await generate_and_store_keypair();
-    addNotification({
-      type: "important_info",
-      title: "Notification",
-      body: "Encryption Key added! Refresh the page for changes to take place.",
-      sender: "DevinLittle.Net",
-      global: false,
-    });
   }
 
   let show_recovery_setup = $state(false);
@@ -271,6 +264,7 @@
   async function postSubscription(subscription: PushSubscription) {
     const subscriptonJson = subscription.toJSON();
     const keys = subscriptonJson.keys as { auth: string; p256dh: string };
+
     let subsctibeReq = notificationApi
       .path("/subscribe")
       .method("post")
@@ -287,7 +281,6 @@
     notificationLoading = true;
 
     try {
-      // 1. Force the permission prompt (Chrome requirement for user gesture)
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         throw new Error(
@@ -295,17 +288,13 @@
         );
       }
 
-      // 2. Wait for the Service Worker
       const reg = await navigator.serviceWorker.ready;
 
-      // 3. CLEANUP: Unsubscribe any existing subscription to prevent "hanging"
       const existingSub = await reg.pushManager.getSubscription();
       if (existingSub) {
         await existingSub.unsubscribe();
       }
 
-      // 4. Try to subscribe
-      // Ensure VAPID_PUBLIC_KEY is a clean string without whitespace
       const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY.trim());
 
       const subscription = await reg.pushManager.subscribe({
@@ -313,7 +302,6 @@
         applicationServerKey: convertedKey,
       });
 
-      // 5. Sync with your backend
       await postSubscription(subscription);
 
       localStorage.setItem("notifications_allowed", "true");
@@ -350,13 +338,11 @@
 
     notificationPermission = Notification.permission as PermissionState;
 
-    // check if already subscribed at browser level
     const reg = await navigator.serviceWorker.ready;
     const existing = await reg.pushManager.getSubscription();
 
     if (existing && Notification.permission === "granted") {
-      // re-POST to backend in case localStorage was cleared
-      if (localStorage.getItem("notifications_allowed") !== "true") {
+      if (localStorage.getItem("notifications_allowed") != "true") {
         await postSubscription(existing);
       }
       notificationSubscribed = true;

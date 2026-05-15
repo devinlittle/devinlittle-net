@@ -36,14 +36,6 @@
         password: loginPassword,
       });
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          loginError = "invalid username or password";
-          throw new Error("invalid_auth");
-        }
-        throw new Error("server_error");
-      }
-
       const { access_token } = res.data;
       goto("/");
 
@@ -51,14 +43,16 @@
 
       await get_ready_for_devin_grfd(true);
     } catch (err) {
-      if (err.status === 401) {
+      console.log(`error loggin in: ${err}`);
+      if (err.status == 401) {
         loginError = "invalid username or password";
-      } else if (err.status === 403) {
+      } else if (err.status == 403) {
         loginError = "your account is locked";
-      } else if (err.status === 500) {
+      } else if (err.status == 500) {
         loginError = "please text me somehting went wrong";
       }
       console.error("Login failed:", err);
+      return;
     }
   }
 
@@ -82,7 +76,7 @@
       });
     } catch (err) {
       if (err.status === 409) {
-        regError = "your account is locked";
+        regError = "username is taken";
       } else if (err.status === 500) {
         loginError = "please text me somehting went wrong";
       }

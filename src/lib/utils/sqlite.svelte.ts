@@ -1,4 +1,5 @@
-import { auth, refresh, authApi } from './auth.svelte'
+import { auth, refresh, authApi, global_private_key } from './auth.svelte'
+import { addNotification } from './notifications.svelte.js'
 import { getDb } from './sqlite.js'
 
 // --- state ---
@@ -194,6 +195,16 @@ export async function generate_and_store_keypair(): Promise<{ public_key: string
   await patchPubkey({ "public_key": public_key_b64 });
 
   await refresh();
+
+  addNotification({
+    type: "important_info",
+    title: "Notification",
+    body: "Encryption Key added! Refresh the page for changes to take place.",
+    sender: "DevinLittle.Net",
+    global: false,
+  });
+
+  global_private_key.value = keypair.privateKey;
 
   return { public_key: public_key_b64 }
 }

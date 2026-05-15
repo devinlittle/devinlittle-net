@@ -31,6 +31,13 @@ export let auth = $state({
   ready: false
 });
 
+export const global_private_key = {
+  get value() { return _global_private_key },
+  set value(v: CryptoKey) { _global_private_key = v }
+};
+
+let _global_private_key = $state<CryptoKey>();
+
 export function createClient<T>(baseUrl: string) {
   const fetcher = Fetcher.for<T>();
 
@@ -49,13 +56,21 @@ export function createClient<T>(baseUrl: string) {
           let res = await next(url, { ...init, headers });
 
           if (res.status === 401 || res.status === 403) {
-            return await preformRefresh(url, init, next);
+            try {
+              await preformRefresh(url, init, next);
+            } catch (err) {
+              return res;
+            }
           }
 
           return res;
         } catch (err) {
           if (err.status === 401 || err.status === 403) {
-            return await preformRefresh(url, init, next);
+            try {
+              await preformRefresh(url, init, next);
+            } catch (err_not_used) {
+              return err;
+            }
           }
           throw err;
         }
@@ -90,12 +105,13 @@ async function preformRefresh(url: any, init: any, next: any) {
 
     return await next(url, { ...init, headers: retryHeaders });
   }
-  throw new Error("Refresh failed");
+  return new Error("Refresh failed")
+  //throw new Error("Refresh failed");
 }
 
 import type { paths as AuthPaths, components } from "$lib/types/auth.api";
 import { base64_to_arraybuffer } from "./smalltalk.svelte";
-import { db_state, mountDB } from "./sqlite.svelte";
+import { db_state, get_private_key_from_indexeddb, mountDB } from "./sqlite.svelte";
 import { addNotification, connectNotifications, disconnectNotifications } from "./notifications.svelte";
 export const authApi = createClient<AuthPaths>(`${API_URL}/auth`);
 
@@ -127,6 +143,13 @@ async function setToken(token) {
     }
   } else {
     auth.public_key = null;
+  }
+
+  try {
+    global_private_key.value = await get_private_key_from_indexeddb();
+  } catch (e) {
+    console.error("error adding private_key to auth");
+    global_private_key.value = null;
   }
 
   auth.ready = true;
@@ -171,6 +194,7 @@ function clear() {
   auth.id = null;
   auth.roles = null;
   auth.ready = false;
+  auth.public_key = null;
   localStorage.removeItem("access_token");
 }
 

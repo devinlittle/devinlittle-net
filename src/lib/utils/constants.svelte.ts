@@ -1,5 +1,5 @@
 export const API_URL = "https://api.devinlittle.net";
-//export const API_URL = "https://localhost:3333";
+//export const API_URL = "https://10.10.10.10:3333";
 //export const API_URL = import.meta.env.API_URL;
 
 // PROD KEY
