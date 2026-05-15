@@ -1,10 +1,10 @@
-import { auth, API_URL, createClient, refresh } from "./auth.svelte";
+import { auth, createClient, refresh } from "./auth.svelte";
 import { fetchGrades } from "./gradegetter.svelte";
-import { handleNanoPass } from "./nanopass.svelte";
-import type { NanoPassMessage, NanoPassPayload } from "../types/nanopass.types";
-import { handleKeySync } from "./smalltalk.svelte";
+import { handleNanoPass, type NanoPassMessage } from "./nanopass.svelte";
+import { handleKeySync, handleSmallTalkNotes, type SmallTalkNoteMessage } from "./smalltalk.svelte";
 import type { KeySyncMessage } from "../types/smalltalk.types";
-import type { paths as NotificationPaths } from "$lib/types/notification.api";
+import type { components, paths as NotificationPaths } from "$lib/types/notification.api.ts";
+import { API_URL } from "./constants.svelte";
 
 export const notificationApi = createClient<NotificationPaths>(`${API_URL}/notification`);
 
@@ -24,7 +24,7 @@ type Notification =
     onDecline?: () => void
   }
 
-type MessageNamespace = "notification" | "nanopass" | "gradegetter" | "smalltalk_keysync"
+type MessageNamespace = components["schemas"]["Namespaces"]
 
 type IncomingMessage = {
   namespace: MessageNamespace
@@ -124,6 +124,9 @@ function handleMessage(msg: IncomingMessage) {
       break
     case "gradegetter":
       fetchGrades();
+      break
+    case "smalltalk_notes":
+      handleSmallTalkNotes(msg as SmallTalkNoteMessage)
       break
     case "smalltalk_keysync":
       handleKeySync(msg as KeySyncMessage)

@@ -1,7 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
 
-  import { authApi, onAuthSuccess } from "$lib/utils/auth.svelte";
+  import {
+    authApi,
+    get_ready_for_devin_grfd,
+    onAuthSuccess,
+  } from "$lib/utils/auth.svelte";
   import {
     connectNotifications,
     disconnectNotifications,
@@ -33,21 +37,25 @@
       });
 
       if (!res.ok) {
-        if (res.status === 401) throw new Error("invalid_auth");
+        if (res.status === 401) {
+          loginError = "invalid username or password";
+          throw new Error("invalid_auth");
+        }
         throw new Error("server_error");
       }
 
       const { access_token } = res.data;
-      onAuthSuccess(access_token);
+      await onAuthSuccess(access_token);
+
+      await get_ready_for_devin_grfd(true);
+
       goto("/");
-      disconnectNotifications();
-      connectNotifications();
     } catch (err) {
       if (err.status === 401) {
         loginError = "invalid username or password";
       } else if (err.status === 403) {
         loginError = "your account is locked";
-      } else {
+      } else if (err.status === 500) {
         loginError = "please text me somehting went wrong";
       }
       console.error("Login failed:", err);
@@ -66,16 +74,19 @@
     }
 
     let registerReq = authApi.path("/register").method("post").create();
-    let register_res = await registerReq({
-      username: regUsername,
-      password: regPassword,
-    });
 
-    if (!register_res.ok) {
-      regError =
-        register_res.status === 409
-          ? "username already taken"
-          : "something went wrong";
+    try {
+      await registerReq({
+        username: regUsername,
+        password: regPassword,
+      });
+    } catch (err) {
+      if (err.status === 409) {
+        regError = "your account is locked";
+      } else if (err.status === 500) {
+        loginError = "please text me somehting went wrong";
+      }
+
       return;
     }
 
@@ -87,10 +98,11 @@
 
     const { access_token } = login_res.data;
 
-    onAuthSuccess(access_token);
+    await onAuthSuccess(access_token);
+
+    await get_ready_for_devin_grfd(true);
+
     goto("/");
-    disconnectNotifications();
-    connectNotifications();
   }
 </script>
 

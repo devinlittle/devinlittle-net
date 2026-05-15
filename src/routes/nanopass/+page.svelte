@@ -7,7 +7,7 @@
     unregisterHostedFile,
     nanopassApi,
   } from "$lib/utils/nanopass.svelte";
-  import { auth, API_URL, authApi } from "$lib/utils/auth.svelte";
+  import { auth, authApi } from "$lib/utils/auth.svelte";
   import type { FileListing, Visibility } from "$lib/utils/nanopass.svelte";
   import { formatBytes } from "$lib/utils/notifications.svelte";
   import { beforeNavigate } from "$app/navigation";

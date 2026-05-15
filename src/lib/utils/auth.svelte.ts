@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { Fetcher } from "openapi-typescript-fetch";
+import { API_URL } from "./constants.svelte";
 /* export const fetchMarkdownPosts = async () => {
   const allPostFiles = import.meta.glob('/src/routes/projects/*.md');
   const iterablePostFiles = Object.entries(allPostFiles);
@@ -18,16 +19,6 @@ import { Fetcher } from "openapi-typescript-fetch";
 
   return allPosts ;
 }; */
-
-
-export const API_URL = "https://api.devinlittle.net";
-//export const API_URL = "https://localhost:8082";
-//export const API_URL = import.meta.env.API_URL;
-
-// PROD KEY
-export const VAPID_PUBLIC_KEY = "BNw9vPwkS56SfucmmgVchwetJmkrVjUcyPf6mv3J0Wl7il4b3Y_OmVgEfbC4RWUoxYZPq1eZYqah8CtjLQm_7uU"
-// TESTING KEY
-//export const VAPID_PUBLIC_KEY = "BDo9oD-LKEaTbSP4-arFhXUBl2OkV0InKjMFnLVxb3xTcNejP0mmLFOh_nZ_s-4Q5sW_FEjy8maH03jBDclxIH4"
 
 // this "auth" var is for state
 export let auth = $state({
@@ -103,6 +94,9 @@ async function preformRefresh(url: any, init: any, next: any) {
 }
 
 import type { paths as AuthPaths, components } from "$lib/types/auth.api";
+import { base64_to_arraybuffer } from "./smalltalk.svelte";
+import { db_state, mountDB } from "./sqlite.svelte";
+import { addNotification, connectNotifications } from "./notifications.svelte";
 export const authApi = createClient<AuthPaths>(`${API_URL}/auth`);
 
 export type ServiceName = components["schemas"]["ServiceName"]
@@ -116,14 +110,45 @@ function decode(token) {
   }
 }
 
-function setToken(token) {
+async function setToken(token) {
   auth.accessToken = token;
   auth.id = decode(token)?.sub ?? null;
   auth.username = decode(token)?.username ?? null;
   auth.roles = decode(token)?.roles ?? null;
-  auth.public_key = decode(token)?.public_key ?? null;
+
   localStorage.setItem("access_token", token);
+
+  if (decode(token)?.public_key) {
+    try {
+      auth.public_key = await return_public_key(decode(token)?.public_key);
+    } catch (e) {
+      console.error("Failed to import public key:", e);
+      auth.public_key = null;
+    }
+  } else {
+    auth.public_key = null;
+  }
+
   auth.ready = true;
+}
+
+async function return_public_key(public_key_b64: string): Promise<CryptoKey> {
+  if (public_key_b64 == null) {
+    auth.public_key = null
+    return;
+  }
+
+  let public_key_buf = base64_to_arraybuffer(public_key_b64);
+
+  let public_key = await crypto.subtle.importKey(
+    'spki',
+    public_key_buf,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    []
+  );
+
+  return public_key;
 }
 
 async function setSessionId() {
@@ -161,7 +186,7 @@ export async function initAuth() {
 
     if (res.ok) {
       const { access_token } = res.data;
-      setToken(access_token);
+      await setToken(access_token);
       await setSessionId()
       return true;
     }
@@ -178,7 +203,7 @@ export async function refresh() {
   });
   if (!res.ok) { clear(); return false; }
   const { access_token } = await res.json();
-  setToken(access_token);
+  await setToken(access_token);
   await setSessionId();
   return true;
 }
@@ -192,10 +217,38 @@ export async function logout() {
 }
 
 // INFO: called from login/register page after successful auth
-export function onAuthSuccess(token) {
-  setToken(token);
+export async function onAuthSuccess(token) {
+  await setToken(token);
 }
 
+
+export async function get_ready_for_devin_grfd(from_login: boolean): Promise<boolean> {
+  if (!from_login) {
+    const ok = await initAuth();
+    if (!ok) {
+      connectNotifications();
+      return false;
+    }
+  }
+
+  console.log("pretend the db is being setup");
+  await mountDB();
+  if (db_state.ready) {
+  } else if (db_state.needs_key_sync) {
+    addNotification({
+      type: "important_info",
+      title: "Notification",
+      body: "messaging capabilities are limited, navigate to the settings page to sync encryption keys",
+      sender: "DevinLittle.Net",
+      global: false,
+    });
+  } else if (db_state.needs_onboarding) {
+    // generate keys
+  }
+
+  connectNotifications();
+  return true;
+}
 
 // INFO: USE CREATE CLIENT INSTEAD
 

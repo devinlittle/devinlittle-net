@@ -1,4 +1,5 @@
-import { API_URL, auth, createClient } from "./auth.svelte"
+import { auth, createClient } from "./auth.svelte"
+import { API_URL } from "./constants.svelte";
 //import type { NanoPassMessage, NanoPassPayload } from "$lib/types/nanopass.types"
 import { addNotification, formatBytes, sendMessage } from "./notifications.svelte"
 import type { components, paths as NanoPassPaths } from "$lib/types/nanopass.api"

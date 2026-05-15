@@ -171,6 +171,8 @@ export interface components {
         HashMap: {
             [key: string]: "devin" | "owen" | "trusted" | "user";
         };
+        /** @enum {string} */
+        Namespaces: "notification" | "nanopass" | "gradegetter" | "smalltalk_keysync" | "smalltalk_notes";
         RoleMessage: {
             message: string;
             target_role: components["schemas"]["UserRole"];

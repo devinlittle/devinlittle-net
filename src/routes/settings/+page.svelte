@@ -1,13 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import {
-    API_URL,
-    auth,
-    logout,
-    getRole,
-    VAPID_PUBLIC_KEY,
-    authApi,
-  } from "$lib/utils/auth.svelte";
+  import { auth, logout, getRole, authApi } from "$lib/utils/auth.svelte";
   import { goto } from "$app/navigation";
   import {
     db_state,
@@ -28,6 +21,7 @@
     notificationApi,
   } from "$lib/utils/notifications.svelte";
   import { gradesApi } from "$lib/utils/gradegetter.svelte";
+  import { API_URL, VAPID_PUBLIC_KEY } from "$lib/utils/constants.svelte";
 
   let sessions = $state([]);
   let confirmText = $state("");
@@ -823,7 +817,7 @@
       {/each}
 
       <button class="btn btn-danger btn-full" onclick={revokeAll}>
-        Sign out of all other sessions
+        Sign out of all sessions
       </button>
     </div>
 
