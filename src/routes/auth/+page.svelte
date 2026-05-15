@@ -45,11 +45,11 @@
       }
 
       const { access_token } = res.data;
+      goto("/");
+
       await onAuthSuccess(access_token);
 
       await get_ready_for_devin_grfd(true);
-
-      goto("/");
     } catch (err) {
       if (err.status === 401) {
         loginError = "invalid username or password";
@@ -98,11 +98,11 @@
 
     const { access_token } = login_res.data;
 
+    goto("/");
+
     await onAuthSuccess(access_token);
 
     await get_ready_for_devin_grfd(true);
-
-    goto("/");
   }
 </script>
 

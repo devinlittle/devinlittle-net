@@ -96,7 +96,7 @@ async function preformRefresh(url: any, init: any, next: any) {
 import type { paths as AuthPaths, components } from "$lib/types/auth.api";
 import { base64_to_arraybuffer } from "./smalltalk.svelte";
 import { db_state, mountDB } from "./sqlite.svelte";
-import { addNotification, connectNotifications } from "./notifications.svelte";
+import { addNotification, connectNotifications, disconnectNotifications } from "./notifications.svelte";
 export const authApi = createClient<AuthPaths>(`${API_URL}/auth`);
 
 export type ServiceName = components["schemas"]["ServiceName"]
@@ -219,10 +219,12 @@ export async function logout() {
 // INFO: called from login/register page after successful auth
 export async function onAuthSuccess(token) {
   await setToken(token);
+  await setSessionId();
 }
 
 
 export async function get_ready_for_devin_grfd(from_login: boolean): Promise<boolean> {
+  disconnectNotifications();
   if (!from_login) {
     const ok = await initAuth();
     if (!ok) {
@@ -230,23 +232,26 @@ export async function get_ready_for_devin_grfd(from_login: boolean): Promise<boo
       return false;
     }
   }
-
-  console.log("pretend the db is being setup");
-  await mountDB();
-  if (db_state.ready) {
-  } else if (db_state.needs_key_sync) {
-    addNotification({
-      type: "important_info",
-      title: "Notification",
-      body: "messaging capabilities are limited, navigate to the settings page to sync encryption keys",
-      sender: "DevinLittle.Net",
-      global: false,
-    });
-  } else if (db_state.needs_onboarding) {
-    // generate keys
+  if (auth.ready) {
+    console.log("pretend the db is being setup");
+    await mountDB();
+    if (db_state.ready) {
+    } else if (db_state.needs_key_sync) {
+      addNotification({
+        type: "important_info",
+        title: "Notification",
+        body: "messaging capabilities are limited, navigate to the settings page to sync encryption keys",
+        sender: "DevinLittle.Net",
+        global: false,
+      });
+    } else if (db_state.needs_onboarding) {
+      // generate keys
+    }
   }
 
+  console.log("begining notification connectoin")
   connectNotifications();
+  console.log("done doing that")
   return true;
 }
 
