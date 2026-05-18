@@ -238,6 +238,8 @@ export async function logout() {
   await logout({});
   clear();
   goto("/");
+  disconnectNotifications();
+  connectNotifications();
 }
 
 // INFO: called from login/register page after successful auth
