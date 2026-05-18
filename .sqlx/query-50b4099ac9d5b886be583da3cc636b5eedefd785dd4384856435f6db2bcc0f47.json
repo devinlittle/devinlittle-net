@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n    SELECT\n        id,\n        user_id,\n        enc_name,\n        enc_content,\n        is_protected as \"is_protected!\",\n        password_hash,\n        salt,\n        rank as \"rank!\",\n        is_deleted as \"is_deleted!\",\n        updated_at as \"updated_at!: chrono::DateTime<chrono::Utc>\",\n        created_at as \"created_at!: chrono::DateTime<chrono::Utc>\",\n        last_accessed_at as \"last_accessed_at!: chrono::DateTime<chrono::Utc>\"\n    FROM smalltalk_notes\n    WHERE user_id = $1\n    AND updated_at > $2::timestamptz\n    ORDER BY updated_at ASC\n    ",
+  "query": "\n    SELECT\n        id,\n        user_id,\n        enc_name,\n        enc_content,\n        group_id,\n        is_protected as \"is_protected!\",\n        password_hash,\n        salt,\n        rank as \"rank!\",\n        is_deleted as \"is_deleted!\",\n        updated_at as \"updated_at!: chrono::DateTime<chrono::Utc>\",\n        created_at as \"created_at!: chrono::DateTime<chrono::Utc>\"\n    FROM smalltalk_notes\n    WHERE user_id = $1\n    AND updated_at > $2::timestamptz\n    ORDER BY updated_at ASC\n    ",
   "describe": {
     "columns": [
       {
@@ -25,42 +25,42 @@
       },
       {
         "ordinal": 4,
+        "name": "group_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
         "name": "is_protected!",
         "type_info": "Bool"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "password_hash",
         "type_info": "Text"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "salt",
         "type_info": "Bytea"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "rank!",
         "type_info": "Int4"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "is_deleted!",
         "type_info": "Bool"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at!: chrono::DateTime<chrono::Utc>",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
-        "name": "created_at!: chrono::DateTime<chrono::Utc>",
-        "type_info": "Timestamptz"
-      },
-      {
         "ordinal": 11,
-        "name": "last_accessed_at!: chrono::DateTime<chrono::Utc>",
+        "name": "created_at!: chrono::DateTime<chrono::Utc>",
         "type_info": "Timestamptz"
       }
     ],
@@ -80,10 +80,10 @@
       true,
       true,
       true,
-      false,
+      true,
       false,
       false
     ]
   },
-  "hash": "aab12390d3b3e106a1d083e6341d9848b81fcd5a8c1f05bf3579e2a7251c8e61"
+  "hash": "50b4099ac9d5b886be583da3cc636b5eedefd785dd4384856435f6db2bcc0f47"
 }
