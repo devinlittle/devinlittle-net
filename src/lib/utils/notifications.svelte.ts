@@ -237,12 +237,10 @@ export async function sendMessage(msg: string, target_user_id: string) {
     body: msg,
   });
 
-  if (!response.ok) {
-    if (response.status === 401) {
+  /*  if (!response.ok) {
       refresh();
-      sendMessage(msg, target_user_id)
-    }
-  }
+    } */
+
   //const user_message = notificationApi.path("/user_message/{id}").method("post").create() as any;
   //  await user_message({ id: target_user_id }, msg);
 }
