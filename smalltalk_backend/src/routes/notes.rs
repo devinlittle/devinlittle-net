@@ -5,7 +5,10 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use common::{
-    smalltalk::{NoteCreateRequest, NotePatchRequest, SmalltalkNote, SmalltalkNotesEvent},
+    smalltalk::{
+        NoteCreateRequest, NoteGroupCreateRequest, NotePatchRequest, SmalltalkNote,
+        SmalltalkNotesEvent, SmalltalkNotesGroup, SmalltalkNotesSyncResponse,
+    },
     AuthenticatedUser,
 };
 use hyper::StatusCode;
@@ -17,7 +20,7 @@ use uuid::Uuid;
 use crate::routes::AppState;
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct NoteSyncParams {
+pub struct SyncParams {
     /// Unix timestamp in milliseconds
     #[schema(value_type = i64, example = 1715760000000_i64)]
     #[serde(with = "chrono::serde::ts_milliseconds")]
@@ -26,13 +29,13 @@ pub struct NoteSyncParams {
 
 #[utoipa::path(
     get,
-    path = "/notes",
+    path = "/notes/sync",
     params(("since" = i64 , Query, description = "unix timestamp in milliseconds to grab notes after")),
     security(
         ("bearer_auth" = [])
     ),
     responses(
-        (status = 200, description = "lists notes", body = Vec<SmalltalkNote>),
+        (status = 200, description = "lists notes and groups with an updated at time higher than the since param", body = Vec<SmalltalkNotesSyncResponse>),
         (status = 401, description = "Credentials Incorrect"),
     ),
     tag = "smalltalk_notes"
@@ -40,8 +43,8 @@ pub struct NoteSyncParams {
 pub async fn note_sync(
     State(state): State<AppState>,
     Extension(user): Extension<AuthenticatedUser>,
-    Query(sync_params): Query<NoteSyncParams>,
-) -> Result<Json<Vec<SmalltalkNote>>, StatusCode> {
+    Query(sync_params): Query<SyncParams>,
+) -> Result<Json<SmalltalkNotesSyncResponse>, StatusCode> {
     let synced_notes = sqlx::query_as!(
         SmalltalkNote,
         r#"
@@ -50,14 +53,14 @@ pub async fn note_sync(
         user_id,
         enc_name,
         enc_content,
+        group_id,
         is_protected as "is_protected!",
         password_hash,
         salt,
         rank as "rank!",
         is_deleted as "is_deleted!",
         updated_at as "updated_at!: chrono::DateTime<chrono::Utc>",
-        created_at as "created_at!: chrono::DateTime<chrono::Utc>",
-        last_accessed_at as "last_accessed_at!: chrono::DateTime<chrono::Utc>"
+        created_at as "created_at!: chrono::DateTime<chrono::Utc>"
     FROM smalltalk_notes
     WHERE user_id = $1
     AND updated_at > $2::timestamptz
@@ -69,20 +72,65 @@ pub async fn note_sync(
     .fetch_all(&state.pool)
     .await
     .map_err(|err| {
-        tracing::error!("Note sync database error: {:?}", err);
+        tracing::error!(
+            "Note sync database error when attempting to fetch notes: {:?}",
+            err
+        );
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok(Json(synced_notes))
+    let synced_groups = sqlx::query_as!(
+        SmalltalkNotesGroup,
+        r#"
+    SELECT
+        id,
+        user_id,
+        enc_group_name,
+        enc_group_metadata,
+        rank as "rank!",
+        is_deleted as "is_deleted!",
+        updated_at as "updated_at!: chrono::DateTime<chrono::Utc>",
+        created_at as "created_at!: chrono::DateTime<chrono::Utc>"
+    FROM smalltalk_notes_groups
+    WHERE user_id = $1
+    AND updated_at > $2::timestamptz
+    ORDER BY updated_at ASC
+    "#,
+        user.uuid,
+        sync_params.since as _ // have the "as _" because rust-analayzer doesn't like this line
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|err| {
+        tracing::error!(
+            "Note sync database error when attempting to fetch groups: {:?}",
+            err
+        );
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let output = SmalltalkNotesSyncResponse {
+        notes: synced_notes,
+        groups: synced_groups,
+    };
+
+    tracing::info!(
+        "User '{0} ({1})' synced notes + groups",
+        user.username,
+        user.uuid
+    );
+
+    Ok(Json(output))
 }
 
+// maybe use this for regrabbing a forgotten note?
 // /notes grab_notes GET
 
 //async fn grab_notes(State(state): State<AppState>, )
 
 #[utoipa::path(
     post,
-    path = "/note",
+    path = "/notes/note",
     request_body = NoteCreateRequest,
     security(
         ("bearer_auth" = [])
@@ -127,12 +175,14 @@ pub async fn create_note(
         .broadcast_note_event(user.uuid, SmalltalkNotesEvent::NoteAdded { note })
         .await;
 
+    tracing::info!("User '{0} ({1})' created note", user.username, user.uuid);
+
     Ok(StatusCode::OK)
 }
 
 #[utoipa::path(
     delete,
-    path = "/note/{note_id}",
+    path = "/notes/note/{note_id}",
     params(
         ("note_id", description = "the id of the specific note to soft delete")
     ),
@@ -172,12 +222,14 @@ pub async fn soft_del_note(
         )
         .await;
 
+    tracing::info!("User '{0} ({1})' deleted a note", user.username, user.uuid);
+
     Ok(StatusCode::OK)
 }
 
 #[utoipa::path(
     patch,
-    path = "/note/{note_id}",
+    path = "/notes/note/{note_id}",
     request_body = NotePatchRequest,
     params(
         ("note_id", description = "the id of the specific note to update")
@@ -202,6 +254,8 @@ pub async fn update_note(
             let event = SmalltalkNotesEvent::NoteUpdated { note_id, note };
 
             state.broadcast_note_event(user.uuid, event).await;
+
+            tracing::info!("User '{0} ({1})' updated a note", user.username, user.uuid);
 
             Ok(StatusCode::OK)
         }
@@ -281,3 +335,100 @@ pub async fn handle_patch_note(
 
     Ok(updated_note)
 }
+
+#[utoipa::path(
+    post,
+    path = "/notes/group",
+    request_body = NoteGroupCreateRequest,
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "created note"),
+        (status = 500, description = "internal server error"),
+    ),
+    tag = "smalltalk_notes"
+)]
+pub async fn create_group(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+    Json(req): Json<NoteGroupCreateRequest>,
+) -> Result<StatusCode, StatusCode> {
+    let mut rb: QueryBuilder<Postgres> =
+        QueryBuilder::new("INSERT INTO smalltalk_notes_groups (id, user_id, enc_group_name, enc_group_metadata, updated_at, created_at) VALUES (");
+
+    let mut separated = rb.separated(", ");
+
+    separated.push("gen_random_uuid()"); // group id
+    separated.push_bind(user.uuid);
+    separated.push_bind(req.enc_group_name);
+    separated.push_bind(req.enc_group_metadata);
+
+    separated.push("NOW()"); // created_at
+    separated.push("NOW()"); // updated_at
+
+    rb.push(") RETURNING *");
+
+    let query = rb.build_query_as::<SmalltalkNotesGroup>();
+    let group = query.fetch_one(&state.pool).await.map_err(|err| {
+        tracing::error!("Error creating note, {:?}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    state
+        .broadcast_note_event(user.uuid, SmalltalkNotesEvent::GroupCreated { group })
+        .await;
+
+    tracing::info!("User '{0} ({1})' created group", user.username, user.uuid);
+
+    Ok(StatusCode::OK)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/notes/group/{group_id}",
+    params(
+        ("group_id", description = "the id of the specific group to soft delete")
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "deletes group and broadcasts the state on websocket"),
+        (status = 500, description = "internal server error"),
+    ),
+    tag = "smalltalk_notes"
+)]
+pub async fn delete_group(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+    Path(group_id): Path<Uuid>,
+) -> Result<StatusCode, StatusCode> {
+    let query = sqlx::query!(
+        "UPDATE smalltalk_notes_groups SET
+            enc_group_metadata = NULL,
+            is_deleted = TRUE
+        WHERE id = $1 AND user_id = $2 RETURNING id",
+        group_id,
+        user.uuid
+    )
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|err| {
+        tracing::error!("Error deleting group: {:?}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    state
+        .broadcast_note_event(
+            user.uuid,
+            SmalltalkNotesEvent::GroupDeleted { group_id: query.id },
+        )
+        .await;
+
+    tracing::info!("User '{0} ({1})' deleted a group", user.username, user.uuid);
+
+    Ok(StatusCode::OK)
+}
+
+pub async fn update_group() {}

@@ -40,6 +40,7 @@ pub mod notes;
             common::AuthenticatedUser,
             common::Claims,
             common::smalltalk::SmalltalkNote,
+            common::smalltalk::SmalltalkNotesGroup,
             common::smalltalk::SmalltalkNotesMessage,
         )
     ),
@@ -146,12 +147,14 @@ pub fn create_routes(pool: PgPool) -> Router {
         .route("/metrics", get(|| async move { metric_handle.render() }));
 
     let routes_with_middleware = Router::new()
-        .route("/notes", get(notes::note_sync))
-        .route("/note", post(notes::create_note))
+        .route("/notes/sync", get(notes::note_sync))
+        .route("/notes/note", post(notes::create_note))
         .route(
-            "/note/{note_id}",
+            "/notes/note/{note_id}",
             patch(notes::update_note).delete(notes::soft_del_note),
         )
+        .route("/notes/group", post(notes::create_group))
+        .route("/notes/group/{group_id}", delete(notes::delete_group))
         .layer(axum::middleware::from_fn_with_state(
             app_state.clone(),
             crate::middleware::jwt::jwt_auth,
