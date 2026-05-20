@@ -31,6 +31,9 @@ pub mod notes;
         crate::routes::notes::note_sync,
         crate::routes::notes::update_note,
         crate::routes::notes::soft_del_note,
+        crate::routes::notes::create_group,
+        crate::routes::notes::delete_group,
+        crate::routes::notes::update_group,
         // Internal Paths
         crate::routes::internal::invalidate_user,
         crate::routes::internal::delete_handler,
@@ -154,7 +157,10 @@ pub fn create_routes(pool: PgPool) -> Router {
             patch(notes::update_note).delete(notes::soft_del_note),
         )
         .route("/notes/group", post(notes::create_group))
-        .route("/notes/group/{group_id}", delete(notes::delete_group))
+        .route(
+            "/notes/group/{group_id}",
+            delete(notes::delete_group).patch(notes::update_group),
+        )
         .layer(axum::middleware::from_fn_with_state(
             app_state.clone(),
             crate::middleware::jwt::jwt_auth,

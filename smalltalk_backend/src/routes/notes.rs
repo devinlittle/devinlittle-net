@@ -6,8 +6,8 @@ use axum::{
 use chrono::{DateTime, Utc};
 use common::{
     smalltalk::{
-        NoteCreateRequest, NoteGroupCreateRequest, NotePatchRequest, SmalltalkNote,
-        SmalltalkNotesEvent, SmalltalkNotesGroup, SmalltalkNotesSyncResponse,
+        NoteCreateRequest, NoteGroupCreateRequest, NotePatchRequest, NotesGroupPatchRequest,
+        SmalltalkNote, SmalltalkNotesEvent, SmalltalkNotesGroup, SmalltalkNotesSyncResponse,
     },
     AuthenticatedUser,
 };
@@ -431,4 +431,100 @@ pub async fn delete_group(
     Ok(StatusCode::OK)
 }
 
-pub async fn update_group() {}
+#[utoipa::path(
+    patch,
+    path = "/notes/group/{group_id}",
+    request_body = NotesGroupPatchRequest,
+    params(
+        ("group_id", description = "the id of the specific group to update")
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "updates group and broadcasts update on websocket"),
+        (status = 500, description = "internal server error"),
+    ),
+    tag = "smalltalk_notes"
+)]
+pub async fn update_group(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+    Path(group_id): Path<Uuid>,
+    Json(req): Json<NotesGroupPatchRequest>,
+) -> Result<impl IntoResponse, StatusCode> {
+    match handle_patch_group(&state.pool, &group_id, &user.uuid, req).await {
+        Ok(group) => {
+            let event = SmalltalkNotesEvent::GroupUpdated { group_id, group };
+
+            state.broadcast_note_event(user.uuid, event).await;
+
+            tracing::info!("User '{0} ({1})' updated a group", user.username, user.uuid);
+
+            Ok(StatusCode::OK)
+        }
+        Err(e) => {
+            tracing::error!("Failed to patch group: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn handle_patch_group(
+    pool: &sqlx::PgPool,
+    group_id: &Uuid,
+    user_id: &Uuid,
+    req: NotesGroupPatchRequest,
+) -> Result<SmalltalkNotesGroup, sqlx::Error> {
+    let mut rb: QueryBuilder<Postgres> = QueryBuilder::new("UPDATE smalltalk_notes_groups SET ");
+    let mut first = true;
+
+    macro_rules! set {
+        ($col:literal, $value:expr) => {{
+            if !first {
+                rb.push(", ");
+            }
+            first = false;
+            rb.push(concat!($col, " = ")).push_bind($value);
+        }};
+    }
+
+    if let Some(name) = req.enc_group_name {
+        set!("enc_group_name", name);
+    }
+
+    if let Some(group_metadata) = req.enc_group_metadata {
+        set!("enc_group_metadata", group_metadata);
+    } else if req.is_deleted == Some(true) {
+        if !first {
+            rb.push(", ");
+        }
+        first = false;
+        rb.push("enc_group_metadata = NULL");
+    }
+
+    if let Some(rank) = req.rank {
+        set!("rank", rank);
+    }
+
+    if let Some(deleted) = req.is_deleted {
+        set!("is_deleted", deleted);
+    }
+
+    if !first {
+        rb.push(", ");
+    }
+
+    rb.push("updated_at = NOW()");
+
+    rb.push(" WHERE id = ")
+        .push_bind(group_id)
+        .push(" AND user_id = ")
+        .push_bind(user_id)
+        .push(" RETURNING *");
+
+    let query = rb.build_query_as::<SmalltalkNotesGroup>();
+    let updated_group = query.fetch_one(pool).await?;
+
+    Ok(updated_group)
+}

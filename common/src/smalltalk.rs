@@ -106,6 +106,16 @@ pub struct NoteGroupCreateRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct NotesGroupPatchRequest {
+    #[schema(value_type = Option<String>, format = Binary)]
+    pub enc_group_name: Option<Vec<u8>>,
+    #[schema(value_type = Option<String>, format = Binary)]
+    pub enc_group_metadata: Option<Vec<u8>>,
+    pub rank: Option<i32>,
+    pub is_deleted: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SmalltalkNotesMessage {
     pub id: Uuid,
     pub namespace: Namespaces,
