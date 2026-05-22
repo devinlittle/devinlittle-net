@@ -31,11 +31,9 @@ sqlx = { workspace = true, features = [
   "postgres",
   "migrate",
   "json",
-  "time",
   "chrono",
   "uuid"]}
 uuid.workspace = true
-time.workspace = true
 jsonwebtoken.workspace = true
 chrono = {workspace = true, features = ["serde"]}
 base64.workspace = true
@@ -43,6 +41,7 @@ rand.workspace = true
 
 tracing.workspace = true
 tracing-subscriber.workspace = true
+opentelemetry.workspace = true 
 
 dotenvy.workspace = true
 constant_time_eq.workspace = true

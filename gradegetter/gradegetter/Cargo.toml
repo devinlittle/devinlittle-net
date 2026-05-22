@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 common = {workspace = true, features = ["gradegetter"]}
 
-reqwest = { workspace = true, features = ["json"]}
+reqwest = { workspace = true, features = ["form", "query"]}
 tokio.workspace = true
 regex.workspace = true
 serde.workspace = true
@@ -16,7 +16,7 @@ sqlx = { workspace = true, features = [
   "runtime-tokio-rustls",
   "postgres",
   "json",
-  "time",
+  "chrono",
   "uuid"]}
 uuid.workspace = true
 dotenvy.workspace = true
@@ -27,6 +27,3 @@ futures-util.workspace = true
 axum.workspace = true 
 tracing.workspace = true
 tracing-subscriber.workspace = true
-
-[target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }

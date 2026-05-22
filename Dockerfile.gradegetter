@@ -70,6 +70,8 @@ RUN chown -R appuser:appuser /app && \
     mkdir -p /app/recordings && \
     chown appuser:appuser /app/recordings
 
+RUN mkdir -p /app/logs
+
 USER appuser
 WORKDIR /app/gradegetter
 

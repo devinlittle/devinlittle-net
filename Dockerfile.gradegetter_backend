@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/app/target/,id=${APP_NAME} \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
 cargo build --locked --release --bin gradegetter_backend && \
-cp ./target/release/$APP_NAME /bin/server
+cp ./target/release/$APP_NAME /bin/gradegetter_backend
 
 ################################################################################
 FROM rust:${RUST_VERSION}-alpine AS sqlx_build
@@ -39,12 +39,14 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-COPY --from=build /bin/server /bin/
+COPY --from=build /bin/gradegetter_backend /bin/
 COPY --from=sqlx_build /usr/local/cargo/bin/sqlx /bin/sqlx
 COPY --chown=appuser ./gradegetter/gradegetter_backend/migrations /migrations
+
+RUN mkdir -p /app/logs
 
 USER appuser
 ENV RUST_LOG=info
 EXPOSE 3002
 
-CMD ["/bin/server"]
+CMD ["/bin/gradegetter_backend"]

@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/app/target/,id=${APP_NAME} \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
 cargo build --locked --release --bin auth_backend && \
-cp ./target/release/$APP_NAME /bin/server
+cp ./target/release/$APP_NAME /bin/$APP_NAME
 
 ################################################################################
 FROM rust:${RUST_VERSION}-alpine AS sqlx_build
@@ -39,12 +39,14 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-COPY --from=build /bin/server /bin/
+COPY --from=build /bin/auth_backend /bin/
 COPY --from=sqlx_build /usr/local/cargo/bin/sqlx /bin/sqlx
 COPY --chown=appuser ./auth_backend/migrations /migrations
+
+RUN mkdir -p /app/logs
 
 USER appuser
 ENV RUST_LOG=info
 EXPOSE 3000
 
-CMD ["/bin/server"]
+CMD ["/bin/auth_backend"]

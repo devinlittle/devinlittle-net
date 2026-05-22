@@ -23,7 +23,7 @@ pub struct ChangeRoleInput {
 }
 
 // HACK:
-// TODO: make this better
+// TODO: make this bette
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct Message {
     pub namespace: Namespaces,

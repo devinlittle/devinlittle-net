@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/app/target/,id=${APP_NAME} \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
 cargo build --locked --release --bin ${APP_NAME} && \
-cp ./target/release/$APP_NAME /bin/server
+cp ./target/release/$APP_NAME /bin/notification_backend
 ################################################################################
 FROM rust:${RUST_VERSION}-alpine AS sqlx_build
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
@@ -37,12 +37,14 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-COPY --from=build /bin/server /bin/
+COPY --from=build /bin/notification_backend /bin/
 COPY --from=sqlx_build /usr/local/cargo/bin/sqlx /bin/sqlx
 COPY --chown=appuser ./notification_backend/migrations /migrations
+
+RUN mkdir -p /app/logs
 
 USER appuser
 ENV RUST_LOG=info
 EXPOSE 3003
 
-CMD ["/bin/server"]
+CMD ["/bin/notification_backend"]

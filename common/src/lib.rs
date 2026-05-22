@@ -18,6 +18,8 @@ pub mod notification;
 #[cfg(feature = "smalltalk")]
 pub mod smalltalk;
 
+pub mod tracing;
+
 #[derive(Clone, ToSchema, Serialize, Deserialize, Debug)]
 pub struct AuthenticatedUser {
     pub username: String,

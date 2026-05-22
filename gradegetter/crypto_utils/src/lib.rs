@@ -7,6 +7,7 @@ use dotenvy::dotenv;
 use once_cell::sync::Lazy;
 use rand::{rng, Rng};
 use std::env;
+use tracing::instrument;
 
 static ENCRYPTION_KEY: Lazy<Key<Aes256Gcm>> = Lazy::new(|| {
     dotenv().ok();
@@ -20,6 +21,15 @@ static ENCRYPTION_KEY: Lazy<Key<Aes256Gcm>> = Lazy::new(|| {
     Key::<Aes256Gcm>::from_slice(&key_bytes).to_owned()
 });
 
+#[instrument(
+    name = "crypto.encrypt",
+    skip(plaintext),
+    fields(
+        crypto.algorithm = "aes-256-gcm",
+        crypto.operation = "encrypt",
+        payload.size_bytes = plaintext.len()
+    )
+)]
 pub fn encrypt_string(plaintext: &str) -> String {
     let cipher = Aes256Gcm::new(&ENCRYPTION_KEY);
 
@@ -38,6 +48,15 @@ pub fn encrypt_string(plaintext: &str) -> String {
     general_purpose::STANDARD.encode(&combined)
 }
 
+#[instrument(
+    name = "crypto.decrypt",
+    skip(encoded),
+    fields(
+        crypto.algorithm = "aes-256-gcm",
+        crypto.operation = "decrypt",
+        payload.size_bytes = encoded.len()
+    )
+)]
 pub fn decrypt_string(encoded: &str) -> Result<String, String> {
     let data = general_purpose::STANDARD
         .decode(encoded)
