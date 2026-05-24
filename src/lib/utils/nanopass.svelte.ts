@@ -1,6 +1,5 @@
 import { auth, createClient } from "./auth.svelte"
 import { API_URL } from "./constants.svelte";
-//import type { NanoPassMessage, NanoPassPayload } from "$lib/types/nanopass.types"
 import { addNotification, formatBytes, sendMessage } from "./notifications.svelte"
 import type { components, paths as NanoPassPaths } from "$lib/types/nanopass.api"
 
@@ -20,7 +19,6 @@ export const nanopass = $state({
 // --- entry point called from notifications.svelte.ts ---
 
 export function handleNanoPass(msg: NanoPassMessage) {
-  console.log(msg.payload.type, '| from:', msg.from_session_id, '| me:', auth.session_id, '| match:', msg.from_session_id === auth.session_id, '| target:', msg.target_session_id)
   // drop if WE sent this AND it was targeted
   if (msg.from_session_id === auth.session_id && msg.target_session_id !== null) return
 

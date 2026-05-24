@@ -15,6 +15,7 @@
   } from "$lib/utils/notifications.svelte";
 
   type Users = components["schemas"]["Users"];
+  type UserRoles = components["schemas"]["UserRole"];
 
   // ── calculator state ──────────────────────────────────────
   let display = $state("0");
@@ -694,6 +695,7 @@
                     <option value="trusted">trusted</option>
                     <option value="devin">devin</option>
                     <option value="owen">owen</option>
+                    <option value="mrd">Mr.D</option>
                   </select>
                 </div>
               {/each}
