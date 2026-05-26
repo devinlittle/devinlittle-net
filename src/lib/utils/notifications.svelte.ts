@@ -219,7 +219,7 @@ export function getSocket() {
 }
 
 export function disconnectNotifications() {
-  socket.close();
+  socket?.close();
   socket = null
   updateSocketState("disconnected");
 }
