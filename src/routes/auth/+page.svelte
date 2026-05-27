@@ -6,10 +6,7 @@
     get_ready_for_devin_grfd,
     onAuthSuccess,
   } from "$lib/utils/auth.svelte";
-  import {
-    connectNotifications,
-    disconnectNotifications,
-  } from "$lib/utils/notifications.svelte";
+  import { connectNotifications } from "$lib/utils/notifications.svelte";
 
   let tab = $state("login");
 

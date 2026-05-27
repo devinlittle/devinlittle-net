@@ -134,10 +134,16 @@ function handleMessage(msg: IncomingMessage) {
   }
 }
 
-let socketState = $state<"connected" | "connecting" | "disconnected">("disconnected");
+let _socketState = $state<"connected" | "connecting" | "disconnected" | "intial_page">("intial_page");
+
+export const socketState = {
+  get value() { return _socketState },
+  set value(v) { _socketState = v }
+};
+
 
 function updateSocketState(newStatus: "connected" | "connecting" | "disconnected") {
-  socketState = newStatus;
+  _socketState = newStatus;
 
   switch (newStatus) {
     case "disconnected":
@@ -160,29 +166,43 @@ function updateSocketState(newStatus: "connected" | "connecting" | "disconnected
   }
 }
 
-
 export function connectNotifications() {
+  if (socket) {
+    socket.onopen = null;
+    socket.onmessage = null;
+    socket.onerror = null;
+    socket.onclose = null;
+
+    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+      socket.close();
+    }
+    socket = null;
+  }
+
   const isAuthed = auth.id !== null
   const path = isAuthed ? `/ws/${auth.id}` : `/ws/global`
   const url = `${API_URL.replace("https://", "wss://").replace("http://", "ws://")}/notification${path}`
-  if (socket?.readyState === WebSocket.OPEN) return
-  socket = new WebSocket(url)
 
-  if (socket?.readyState === WebSocket.CONNECTING) {
-    updateSocketState("connecting");
-  }
+  const ws = new WebSocket(url)
+  socket = ws;
+
+  updateSocketState("connecting");
 
   const bootstrap_json = JSON.stringify({
     token: auth.accessToken,
     session_id: auth.session_id
   })
 
-  socket.onopen = () => {
+  ws.onopen = () => {
+    if (ws !== socket) return;
+
     if (isAuthed) socket!.send(`BOOTSTRAP:${bootstrap_json}`)
     updateSocketState("connected");
   }
 
-  socket.onmessage = (e: MessageEvent) => {
+  ws.onmessage = (e: MessageEvent) => {
+    if (ws !== socket) return;
+
     if (e.data === "Channel Created") return
     try {
       const msg = JSON.parse(e.data) as IncomingMessage
@@ -193,35 +213,27 @@ export function connectNotifications() {
     }
   }
 
-  socket.onclose = () => {
+  ws.onclose = () => {
+    if (ws !== socket) return;
     socket = null
-    updateSocketState("disconnected");
-    setTimeout(() => {
-      // TODO: add button to notification to reconnect
-      addNotification({
-        type: "fast_info",
-        title: "Notification",
-        body: "Connection interrupted. Please reload the page to stay connected.",
-        sender: "DevinLittle.Net",
-        dismissTime: 5000,
-        global: false,
-      });
-      console.error("WEBSOCKET CLOSED");
-    }, 1000)
 
+    updateSocketState("disconnected");
+
+    addNotification({
+      type: "fast_info",
+      title: "Notification",
+      body: "Connection interrupted. Please reload the page to stay connected.",
+      sender: "DevinLittle.Net",
+      dismissTime: 5000,
+      global: false,
+    });
   }
 
-  socket.onerror = () => socket?.close()
+  ws.onerror = () => { connectNotifications(); }
 }
 
 export function getSocket() {
   return socket;
-}
-
-export function disconnectNotifications() {
-  socket?.close();
-  socket = null
-  updateSocketState("disconnected");
 }
 
 export async function sendMessage(msg: string, target_user_id: string) {

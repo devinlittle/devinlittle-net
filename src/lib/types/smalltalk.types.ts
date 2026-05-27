@@ -1,4 +1,42 @@
+export type SmallTalkNotesDecryptedNote = {
+  /**
+   * Format: int64
+   * @description Unix timestamp in milliseconds
+   */
+  created_at: number;
+  /** Format: binary */
+  dec_content?: string | null;
+  /** Format: binary */
+  dec_name: string;
+  /** Format: uuid */
+  group_id: string;
+  /** Format: uuid */
+  id: string;
+  is_deleted: boolean;
+  is_protected: boolean;
+  /**
+   * Format: int64
+   * @description Unix timestamp in milliseconds
+   */
+  last_accessed_at: number;
+  password_hash?: string | null;
+  /** Format: int32 */
+  rank: number;
+  /** Format: binary */
+  salt?: string | null;
+  /**
+   * Format: int64
+   * @description Unix timestamp in milliseconds
+   */
+  updated_at: number;
+  /** Format: uuid */
+  user_id: string;
+}
 
+
+
+// INFO: KEY_SYNC
+//
 // ND = new device
 // TD = trusted device (the device with the private key)
 

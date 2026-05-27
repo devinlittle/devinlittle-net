@@ -5,7 +5,28 @@ export type SmallTalkNoteMessage = components["schemas"]["SmalltalkNotesMessage"
 export type SmallTalkNotesEvent = components["schemas"]["SmalltalkNotesEvent"];
 export type SmallTalkNotesNote = components["schemas"]["SmalltalkNote"];
 
-export const notes = $state<SmallTalkNotesDecryptedNote[]>([])
+export const smalltalk_notes = $state({ notes: [] as SmallTalkNotesDecryptedNote[] })
+export const notes_info = $state({ ready: false })
+
+// this is called from sqlite after db is loaded
+export async function load_notes() {
+
+  //WARN: this is a test statement and should be deleted in prod
+  await db_exec(`INSERT INTO smalltalk_decrypted_notes (
+      id, user_id, dec_name, dec_content, is_protected, rank, is_deleted, created_at, updated_at, last_accessed_at
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000000',
+      'Welcome to Smalltalk!',
+      'This is a local, decrypted mock note used to test the local database.',
+      0, 1, 0,
+      ${Date.now()}, ${Date.now()}, ${Date.now()}
+    ) ON CONFLICT(id) DO NOTHING;
+  `)
+
+  const db_notes = await db_exec(`SELECT * FROM smalltalk_decrypted_notes WHERE is_deleted = 0`);
+  smalltalk_notes.notes = db_notes;
+}
 
 
 export function handleSmallTalkNotes(msg: SmallTalkNoteMessage) {
@@ -14,8 +35,10 @@ export function handleSmallTalkNotes(msg: SmallTalkNoteMessage) {
     case "NoteAdded":
     case "NoteUpdated":
     case "NoteDeleted":
-    case "NoteRankUpdated":
-    case "NoteForgotten":
+    case "NoteForgotten": //INFO: i dont think this will be implemented... dont know what i was thinking
+    case "GroupCreated":
+    case "GroupUpdated":
+    case "GroupDeleted":
   }
 }
 
@@ -41,7 +64,7 @@ async function addNote() {
 
 import { sendMessage } from "./notifications.svelte"
 import { auth, authApi, global_private_key } from "./auth.svelte"
-import { store_private_key_in_indexeddb } from "./sqlite.svelte"
+import { db_exec, store_private_key_in_indexeddb } from "./sqlite.svelte"
 import type { KeySyncMessage, KeySyncPayload, KeySyncStatus, PendingChallenge, } from "$lib/types/smalltalk.types"
 import wordlist from "$lib/utils/wordlist.json"
 
@@ -494,7 +517,7 @@ async function get_private_key_from_indexeddb_raw(): Promise<CryptoKey | null> {
       const idb = (e.target as IDBOpenDBRequest).result
       const tx = idb.transaction('keys', 'readonly')
       const store = tx.objectStore('keys')
-      const get = store.get(`private_key_${auth.id}`)
+      const get = store.get(`private_key_${auth.id} `)
       get.onsuccess = async () => {
         if (!get.result) return resolve(null)
         try {

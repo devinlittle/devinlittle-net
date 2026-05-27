@@ -177,7 +177,7 @@ export interface paths {
         delete: operations["delete_handler"];
         options?: never;
         head?: never;
-        patch: operations["add_publickey"];
+        patch: operations["add_account_info"];
         trace?: never;
     };
     "/me/recovery": {
@@ -344,11 +344,12 @@ export interface components {
             iat: string;
             public_key?: string | null;
             roles: components["schemas"]["HashMap"];
+            /** Format: uuid */
             sub: string;
             username: string;
         };
         HashMap: {
-            [key: string]: "devin" | "owen" | "trusted" | "user";
+            [key: string]: "devin" | "owen" | "mrd" | "trusted" | "user";
         };
         LoginInput: {
             /** @example password */
@@ -370,14 +371,14 @@ export interface components {
             username: string;
         };
         /** @enum {string} */
-        ServiceName: "global" | "gradegetter" | "smalltalk" | "notifications";
+        ServiceName: "global" | "gradegetter" | "smalltalk" | "notifications" | "podcastschoolproject";
         UpdateProfileInput: {
             bio?: string | null;
             last_seen_visible?: boolean | null;
             public_key?: string | null;
         };
         /** @enum {string} */
-        UserRole: "devin" | "owen" | "trusted" | "user";
+        UserRole: "devin" | "owen" | "mrd" | "trusted" | "user";
         UserSearchResult: {
             bio?: string | null;
             /** Format: uuid */
@@ -833,7 +834,7 @@ export interface operations {
             };
         };
     };
-    add_publickey: {
+    add_account_info: {
         parameters: {
             query?: never;
             header?: never;

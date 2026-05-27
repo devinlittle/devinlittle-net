@@ -1,6 +1,6 @@
 export const API_URL = "https://api.devinlittle.net";
+//export const API_URL = "https://localhost:3333";
 //export const API_URL = "https://10.10.10.10:3333";
-//export const API_URL = import.meta.env.API_URL;
 
 // PROD KEY
 export const VAPID_PUBLIC_KEY = "BNw9vPwkS56SfucmmgVchwetJmkrVjUcyPf6mv3J0Wl7il4b3Y_OmVgEfbC4RWUoxYZPq1eZYqah8CtjLQm_7uU"

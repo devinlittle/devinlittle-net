@@ -110,9 +110,9 @@ async function preformRefresh(url: any, init: any, next: any) {
 }
 
 import type { paths as AuthPaths, components } from "$lib/types/auth.api";
-import { base64_to_arraybuffer } from "./smalltalk.svelte";
-import { db_state, get_private_key_from_indexeddb, mountDB } from "./sqlite.svelte";
-import { addNotification, connectNotifications, disconnectNotifications } from "./notifications.svelte";
+import { base64_to_arraybuffer, load_notes } from "./smalltalk.svelte";
+import { db_exec, db_state, get_private_key_from_indexeddb, mountDB } from "./sqlite.svelte";
+import { addNotification, connectNotifications } from "./notifications.svelte";
 export const authApi = createClient<AuthPaths>(`${API_URL}/auth`);
 
 export type ServiceName = components["schemas"]["ServiceName"]
@@ -238,7 +238,6 @@ export async function logout() {
   await logout({});
   clear();
   goto("/");
-  disconnectNotifications();
   connectNotifications();
 }
 
@@ -250,7 +249,6 @@ export async function onAuthSuccess(token) {
 
 
 export async function get_ready_for_devin_grfd(from_login: boolean): Promise<boolean> {
-  disconnectNotifications();
   if (!from_login) {
     const ok = await initAuth();
     if (!ok) {
@@ -258,10 +256,15 @@ export async function get_ready_for_devin_grfd(from_login: boolean): Promise<boo
       return false;
     }
   }
+
   if (auth.ready) {
     console.log("pretend the db is being setup");
     await mountDB();
     if (db_state.ready) {
+
+      // TODO: do load notes from db function
+      //      await load_notes();
+
     } else if (db_state.needs_key_sync) {
       addNotification({
         type: "important_info",
@@ -275,7 +278,7 @@ export async function get_ready_for_devin_grfd(from_login: boolean): Promise<boo
     }
   }
 
-  console.log("begining notification connectoin")
+  console.log("begining notification connection")
   connectNotifications();
   console.log("done doing that")
   return true;

@@ -2,35 +2,38 @@
   import Header from "./Header.svelte";
 
   import { onMount } from "svelte";
+  import { auth, get_ready_for_devin_grfd } from "$lib/utils/auth.svelte";
   import {
-    initAuth,
-    auth,
-    get_ready_for_devin_grfd,
-    global_private_key,
-  } from "$lib/utils/auth.svelte";
-  import { db_state, mountDB } from "$lib/utils/sqlite.svelte";
-  import {
-    addNotification,
     connectNotifications,
-    getSocket,
+    socketState,
   } from "$lib/utils/notifications.svelte";
 
   onMount(async () => {
     await get_ready_for_devin_grfd(false);
 
-    document.addEventListener("visibilitychange", async () => {
+    /*  document.addEventListener("visibilitychange", async () => {
       if (document.visibilityState === "visible" && getSocket() === null) {
         await initAuth();
         connectNotifications();
       }
-    });
+    }); */
+  });
+
+  $effect(() => {
+    if (socketState.value == "disconnected") {
+      console.log("connecting as was previously disconnected");
+      connectNotifications();
+    }
   });
 
   $inspect(auth);
-  $inspect(global_private_key);
+  $inspect(nanopass);
+  $inspect(smalltalk_notes);
 
   import "./styles.css";
   import Notifications from "$lib/comps/Notifications.svelte";
+  import { nanopass } from "$lib/utils/nanopass.svelte";
+  import { smalltalk_notes } from "$lib/utils/smalltalk.svelte";
   /**
    * @typedef {Object} Props
    * @property {import('svelte').Snippet} [children]
