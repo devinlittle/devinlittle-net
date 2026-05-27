@@ -2,7 +2,11 @@
   import Header from "./Header.svelte";
 
   import { onMount } from "svelte";
-  import { auth, get_ready_for_devin_grfd } from "$lib/utils/auth.svelte";
+  import {
+    auth,
+    get_ready_for_devin_grfd,
+    initAuth,
+  } from "$lib/utils/auth.svelte";
   import {
     connectNotifications,
     socketState,
@@ -11,17 +15,18 @@
   onMount(async () => {
     await get_ready_for_devin_grfd(false);
 
-    /*  document.addEventListener("visibilitychange", async () => {
+    document.addEventListener("visibilitychange", async () => {
       if (document.visibilityState === "visible" && getSocket() === null) {
         await initAuth();
         connectNotifications();
       }
-    }); */
+    });
   });
 
-  $effect(() => {
+  $effect(async () => {
     if (socketState.value == "disconnected") {
       console.log("connecting as was previously disconnected");
+      await initAuth();
       connectNotifications();
     }
   });
