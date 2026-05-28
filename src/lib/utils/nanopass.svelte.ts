@@ -50,7 +50,12 @@ function handleListingAdded(listing: FileListing) {
 
 function handleListingModified(listing: FileListing) {
   const idx = nanopass.listings.findIndex(l => l.id == listing.id)
-  if (idx !== -1) nanopass.listings.splice(idx, 1, listing)
+
+  if (idx !== -1) {
+    nanopass.listings.splice(idx, 1, listing)
+  } else {
+    nanopass.listings.push(listing);
+  }
 }
 
 function handleListingRemoved(listing_id: string) {
