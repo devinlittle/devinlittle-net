@@ -20,10 +20,12 @@ const MIGRATIONS: string[][] = [
   CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
-  )`,
-    `
+  )`,],
+
+  [`
   CREATE TABLE IF NOT EXISTS contacts (
-    user_id TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY,
+    bio TEXT NULL,
     username TEXT NOT NULL,
     public_key TEXT,
     last_seen TEXT
@@ -109,8 +111,10 @@ async function run_migrations() {
       `INSERT OR REPLACE INTO meta(key, value) VALUES('db_version', ?)`,
       [String(i + 1)]
     )
-    console.log(`migration ${i + 1} done`)
+    console.debug(`migration ${i + 1} done`)
   }
+
+  console.log(`[LOCAL DB VERSION]: ${current_version}`)
 }
 
 // --- private key management ---
@@ -271,20 +275,20 @@ export async function db_run(sql: string, params: any[] = []) {
 // --- contact helpers ---
 
 export function upsert_contact(contact: {
-  user_id: string
+  id: string
   username: string
   public_key?: string | null
   last_seen?: string | null
 }) {
   db_run(
-    `INSERT INTO contacts(user_id, username, public_key, last_seen)
+    `INSERT INTO contacts(id, username, public_key, last_seen)
 VALUES(?, ?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
+     ON CONFLICT(id) DO UPDATE SET
 username = excluded.username,
   public_key = COALESCE(excluded.public_key, contacts.public_key),
   last_seen = COALESCE(excluded.last_seen, contacts.last_seen); `,
     [
-      contact.user_id,
+      contact.id,
       contact.username,
       contact.public_key ?? null,
       contact.last_seen ?? null,
@@ -295,7 +299,7 @@ username = excluded.username,
 // TODO: implement the set online in notifications and the frontent websocket router
 export function set_contact_online(user_id: string, is_online: boolean) {
   db_run(
-    `UPDATE contacts SET is_online = ? WHERE user_id = ? `,
+    `UPDATE contacts SET is_online = ? WHERE id = ? `,
     [is_online ? 1 : 0, user_id]
   )
 }
@@ -303,7 +307,7 @@ export function set_contact_online(user_id: string, is_online: boolean) {
 // TODO: implement the set online in notifications and the frontent websocket router
 export function set_contact_last_seen(user_id: string, last_seen: string) {
   db_run(
-    `UPDATE contacts SET last_seen = ?, is_online = 0 WHERE user_id = ? `,
+    `UPDATE contacts SET last_seen = ?, is_online = 0 WHERE id = ? `,
     [last_seen, user_id]
   )
 }

@@ -46,21 +46,37 @@ export function handleNanoPass(msg: NanoPassMessage) {
 function handleListingAdded(listing: FileListing) {
   if (nanopass.listings.some(l => l.id === listing.id)) return
   nanopass.listings.push(listing)
+
+  console.log("[NanoPass]: Added New Listing")
 }
 
 function handleListingModified(listing: FileListing) {
   const idx = nanopass.listings.findIndex(l => l.id == listing.id)
 
+  if (listing.visibility.type === "Restricted") {
+    if (!(listing.visibility.allowlist.includes(auth.id) || listing.owner_id === auth.id)) {
+      nanopass.listings.splice(idx, 1);
+      return
+    }
+  }
+
+  // if listing exists in nanopass state
   if (idx !== -1) {
     nanopass.listings.splice(idx, 1, listing)
+    console.log("[NanoPass]: Modified Listing")
+
+    // if not in state, add the listing only if we are allowed ot have it
   } else {
     nanopass.listings.push(listing);
+    console.log("[NanoPass]: Added New Listing")
   }
 }
 
 function handleListingRemoved(listing_id: string) {
   const idx = nanopass.listings.findIndex(l => l.id == listing_id)
   if (idx !== -1) nanopass.listings.splice(idx, 1)
+
+  console.log("[NanoPass]: Removed Listing")
 }
 
 // --- ARP resolution ---

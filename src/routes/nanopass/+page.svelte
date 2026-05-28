@@ -12,6 +12,7 @@
   import { formatBytes } from "$lib/utils/notifications.svelte";
   import { beforeNavigate } from "$app/navigation";
   import { db_exec, db_run, upsert_contact } from "$lib/utils/sqlite.svelte";
+  import type { components as AuthApiComponents } from "$lib/types/auth.api";
 
   let activeTab = $state<"mine" | "public" | "forme">("mine");
 
@@ -131,13 +132,16 @@
     pendingFile = null;
   }
 
+  type SearchResults = AuthApiComponents["schemas"]["UserSearchResult"][];
+  type AllowList = string[];
+
   let pendingEditListing: FileListing = $state(null);
-  let pendingEditUsersList = $state([]);
+  let pendingEditUsersList = $state<AllowList>([]);
 
   let search = $state("");
-  let search_results = $state([]);
+  let search_results = $state<SearchResults>([]);
   let searching = $state(false);
-  let selected = $state([]);
+  let selected = $state<SearchResults>([]);
   let show_search = $state(false);
 
   async function showEditFile() {
@@ -149,7 +153,7 @@
 
       for (const id of allowlist) {
         const rows = await db_exec(
-          `SELECT user_id, username FROM contacts WHERE user_id = ?`,
+          `SELECT id, username FROM contacts WHERE id= ?`,
           [id],
         );
         if (rows[0]) {
@@ -169,7 +173,7 @@
           const users = res.data;
           for (const user of users) {
             upsert_contact({
-              user_id: user.id,
+              id: user.id,
               username: user.username,
               public_key: user.public_key,
               //              last_seen: user.last_seen,
@@ -180,7 +184,7 @@
       }
 
       pendingEditUsersList = allowlist;
-      selected = allowlist.map((id) => resolved[id] ?? { id, username: id });
+      selected = allowlist.map((id) => resolved[id] ?? { id });
     }
     showEditFileModal = true;
   }
@@ -197,6 +201,7 @@
       .path("/listings")
       .method("patch")
       .create();
+
     let res = await modifyListingReq({
       id: pendingEditListing.id,
       owner_id: pendingEditListing.owner_id,
@@ -234,7 +239,7 @@
     try {
       const searchReq = authApi.path("/users/search").method("get").create();
       let res = await searchReq({ q: encodeURIComponent(q) });
-      if (res.ok) search_results = await res.data;
+      if (res.ok) search_results = res.data;
     } finally {
       searching = false;
     }
@@ -246,7 +251,7 @@
     search_timeout = setTimeout(() => searchUsers(search), 300);
   }
 
-  function selectUser(user) {
+  function selectUser(user: AuthApiComponents["schemas"]["UserSearchResult"]) {
     if (selected.find((s) => s.id === user.id)) return;
     selected = [...selected, user];
     pendingEditUsersList = [...pendingEditUsersList, user.id];
@@ -257,6 +262,7 @@
 
   function removeUser(id) {
     pendingEditUsersList = pendingEditUsersList.filter((i) => i !== id);
+    // INFO: fixes when s instead of s.id
     selected = selected.filter((s) => s.id !== id);
   }
 
