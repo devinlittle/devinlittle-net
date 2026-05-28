@@ -25,7 +25,8 @@ use common::{
     skip(pool),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -92,6 +93,7 @@ pub async fn list_users(
     fields(
         user.username = %user.username,
         user.id = %user.uuid,
+        user.session_id = %user.session_id,
         target_user.id = %target_id,
         target_user.role = %req.role,
         target_user.service = %req.service
@@ -165,6 +167,7 @@ pub async fn change_role(
     fields(
         user.username = %user.username,
         user.id = %user.uuid,
+        user.session_id = %user.session_id,
         target_user.id = %target_id
     )
 )]
@@ -251,6 +254,7 @@ pub async fn _force_password_reset(
     fields(
         user.username = %user.username,
         user.id = %user.uuid,
+        user.session_id = %user.session_id,
         target_user.id = %target_id
     )
 )]
@@ -325,6 +329,7 @@ pub async fn evict_from_hashset(
     fields(
         user.username = %user.username,
         user.id = %user.uuid,
+        user.session_id = %user.session_id,
         target_user.id = %target_id
     )
 )]
@@ -412,6 +417,7 @@ pub struct MessageFromFrontend {
     fields(
         user.username = %user.username,
         user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(

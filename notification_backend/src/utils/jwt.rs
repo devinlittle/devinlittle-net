@@ -41,6 +41,8 @@ pub async fn jwt_parse(
         .unwrap_or(&common::UserRole::User)
         .clone();
 
+    let session_id = decoded_jwt.session_id;
+
     let seen_users = Arc::clone(&state.seen_users);
 
     let is_seen = {
@@ -84,5 +86,6 @@ pub async fn jwt_parse(
         username,
         uuid,
         role,
+        session_id,
     })
 }

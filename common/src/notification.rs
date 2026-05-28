@@ -52,7 +52,6 @@ pub enum NotificationType {
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct Bootstrap {
     pub token: String,
-    pub session_id: Uuid,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]

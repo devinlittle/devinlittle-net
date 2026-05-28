@@ -142,6 +142,21 @@ pub async fn login_handler(
     };
 
     if verify_password(req.password.as_str(), &user.password_hash) {
+        let refresh_token = generate_random_string();
+
+        let refresh_cookie = format!(
+            "refresh_token={}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age={}",
+            refresh_token,
+            60 * 60 * 24 * 365 // this is a year - Devin Little
+        );
+        let session_id =
+            insert_refresh_token(pool, user.id, &refresh_token, user_agent.to_string())
+                .await
+                .map_err(|err| {
+                    error!(error = %err, "Failed to write active refresh token to db");
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
+
         let sub = user.id;
         let username = req.username.to_string();
         let iat: DateTime<Utc> = Utc::now();
@@ -154,25 +169,12 @@ pub async fn login_handler(
                 error!(error = %e, "[Database failure]: Failed to serialize user roles into JWT claims");
                 StatusCode::INTERNAL_SERVER_ERROR
             })?,
+            session_id,
             public_key: user.public_key,
             iat,
             exp,
         })
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-        let refresh_token = generate_random_string();
-
-        let refresh_cookie = format!(
-            "refresh_token={}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age={}",
-            refresh_token,
-            60 * 60 * 24 * 365 // this is a year - Devin Little
-        );
-        insert_refresh_token(pool, user.id, &refresh_token, user_agent.to_string())
-            .await
-            .map_err(|err| {
-                error!(error = %err, "Failed to write active refresh token to db");
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
 
         let mut headers = HeaderMap::new();
 
@@ -339,6 +341,7 @@ pub async fn refresh_handler(
         sub,
         username,
         roles: user.try_into_roles()?,
+        session_id: new_refresh_id,
         public_key: user.public_key,
         iat,
         exp,

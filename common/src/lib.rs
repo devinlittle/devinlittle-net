@@ -26,6 +26,7 @@ pub struct AuthenticatedUser {
     pub username: String,
     pub uuid: Uuid,
     pub role: UserRole,
+    pub session_id: Uuid,
 }
 
 pub type UserRoles = HashMap<ServiceName, UserRole>;
@@ -35,6 +36,7 @@ pub struct Claims {
     pub sub: Uuid,
     pub username: String,
     pub roles: UserRoles,
+    pub session_id: Uuid,
     pub public_key: Option<String>,
     #[serde(with = "chrono::serde::ts_seconds")]
     pub iat: DateTime<Utc>,

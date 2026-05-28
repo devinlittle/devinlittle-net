@@ -51,6 +51,8 @@ pub async fn jwt_auth(
         .or_else(|| decoded_jwt.roles.get(&common::ServiceName::Global))
         .unwrap_or(&common::UserRole::User);
 
+    let session_id = decoded_jwt.session_id;
+
     let seen_users = Arc::clone(&state.seen_users);
 
     let is_seen = {
@@ -137,6 +139,7 @@ pub async fn jwt_auth(
         username,
         uuid,
         role: role.clone(),
+        session_id,
     });
 
     Ok(next.run(request).await)

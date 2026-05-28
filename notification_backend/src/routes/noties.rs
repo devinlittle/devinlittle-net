@@ -70,17 +70,18 @@ pub async fn notify(
             Ok(user) => user,
             Err(_) => return,
         };
-        let uuid = match Uuid::from_str(path_uuid.as_str()) {
-            Ok(uuid) => uuid,
+
+        let path_uuid = match Uuid::from_str(path_uuid.as_str()) {
+            Ok(path_uuid) => path_uuid,
             Err(_) => return,
         };
 
-        if user.uuid != uuid {
+        if user.uuid != path_uuid {
             socket
                 .send(
                     format!(
                         "UUID in Token doesn't match with websocket path; {} != {}",
-                        user.uuid, uuid
+                        user.uuid, path_uuid
                     )
                     .into(),
                 )
@@ -91,10 +92,10 @@ pub async fn notify(
 
         let is_admin = user.role.is_admin();
 
-        let session_id = bootstrap_json.session_id;
+        let session_id = user.session_id;
 
         // Populating online_users per user hashset!!
-        if let Some(hashset) = state.online_users.get(&uuid) {
+        if let Some(hashset) = state.online_users.get(&user.uuid) {
             let mut write = hashset.write().unwrap();
             write.insert(session_id);
             tracing::debug!("Added session to existing active_user entry: {:?}", *write);
@@ -104,15 +105,15 @@ pub async fn notify(
             tracing::debug!("Created new active_user entry: {:?}", new_set);
             state
                 .online_users
-                .insert(uuid, Arc::new(RwLock::new(new_set)));
+                .insert(user.uuid, Arc::new(RwLock::new(new_set)));
         }
 
         // TODO: set active to true on auth_db thru internal call
         // announce to all users with conversations that user is now active
 
-        if !state.connected_users.contains_key(&uuid) {
+        if !state.connected_users.contains_key(&user.uuid) {
             let (tx, _) = broadcast::channel::<String>(32);
-            state.connected_users.insert(uuid, tx);
+            state.connected_users.insert(user.uuid, tx);
         }
         socket
             .send(Message::Text("Channel Created".into()))
@@ -123,7 +124,7 @@ pub async fn notify(
             let read = match read.read() {
                 Ok(read) => read,
                 Err(poisoned) => {
-                    tracing::error!("LOCK POISONED FOR USER {}", uuid);
+                    tracing::error!("LOCK POISONED FOR USER {}", user.uuid);
                     poisoned.into_inner()
                 }
             };
@@ -141,12 +142,12 @@ pub async fn notify(
         );
 
         let mut global_rx = state.global_channel.subscribe();
-        let tx = if let Some(tx) = state.connected_users.get(&uuid) {
+        let tx = if let Some(tx) = state.connected_users.get(&user.uuid) {
             tx.subscribe()
         } else {
             let (tx, _) = broadcast::channel(32);
-            state.connected_users.insert(uuid, tx.clone());
-            state.connected_users.get(&uuid).unwrap().subscribe()
+            state.connected_users.insert(user.uuid, tx.clone());
+            state.connected_users.get(&user.uuid).unwrap().subscribe()
         };
         let mut user_rx = tx;
 
@@ -242,11 +243,11 @@ pub async fn notify(
 
         // session clean up logic
         tracing::debug!("SESSION REMOVAL LOGIC ABOUT TO RUN");
-        let is_empty = if let Some(hashset_ref) = state.online_users.get(&uuid) {
+        let is_empty = if let Some(hashset_ref) = state.online_users.get(&user.uuid) {
             let mut write = match hashset_ref.write() {
                 Ok(guard) => guard,
                 Err(poisoned) => {
-                    tracing::error!("LOCK POISONED FOR USER {}", uuid);
+                    tracing::error!("LOCK POISONED FOR USER {}", user.uuid);
                     poisoned.into_inner()
                 }
             };
@@ -260,18 +261,18 @@ pub async fn notify(
         if is_empty {
             // TODO: add current timestamp as last_active timestamp and active as false
             // announce to all users that account now inactive sending timestamp
-            state.online_users.remove(&uuid);
-            state.connected_users.remove(&uuid);
-            tracing::debug!("No sessions remaining for {}, removing entry", uuid);
+            state.online_users.remove(&user.uuid);
+            state.connected_users.remove(&user.uuid);
+            tracing::debug!("No sessions remaining for {}, removing entry", user.uuid);
         } else {
-            tracing::debug!("session_id: {} removed for {}", session_id, uuid);
+            tracing::debug!("session_id: {} removed for {}", session_id, user.uuid);
         }
 
         let online_len = if let Some(read) = state.online_users.get(&user.uuid) {
             let read = match read.read() {
                 Ok(read) => read,
                 Err(poisoned) => {
-                    tracing::error!("LOCK POISONED FOR USER {}", uuid);
+                    tracing::error!("LOCK POISONED FOR USER {}", user.uuid);
                     poisoned.into_inner()
                 }
             };

@@ -29,7 +29,8 @@ use common::{
     skip(pool, req),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -97,7 +98,8 @@ pub async fn add_account_info(
     skip(pool),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -180,6 +182,7 @@ pub async fn delete_handler(
     fields(
         user.username = %user.username,
         user.id = %user.uuid,
+        user.session_id = %user.session_id,
         url = url,
     )
 )]
@@ -225,6 +228,7 @@ pub async fn delete_and_invalidate(url: String, client: &Client, user: &Authenti
     fields(
         user.username = %user.username,
         user.id = %user.uuid,
+        user.session_id = %user.session_id,
         url = url,
     )
 )]
@@ -252,7 +256,8 @@ pub async fn invalidate(url: String, client: &Client, user: &AuthenticatedUser) 
     skip(pool, cookies),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -329,7 +334,8 @@ pub async fn list_active_sessions(
     skip(pool),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -393,7 +399,8 @@ pub async fn revoke_all_sessions(
     skip(pool),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -462,7 +469,8 @@ pub async fn revoke_specific_session(
     skip(pool, req),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -520,7 +528,8 @@ pub async fn add_recovery_info(
     skip(pool, req),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -626,7 +635,8 @@ pub struct SearchParams {
     skip(pool, search_query),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(
@@ -690,7 +700,8 @@ pub async fn search_user(
     skip(pool, req),
     fields(
         user.username = %user.username,
-        user.id = %user.uuid
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
     )
 )]
 #[utoipa::path(

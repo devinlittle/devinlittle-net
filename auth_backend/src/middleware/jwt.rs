@@ -46,10 +46,13 @@ pub async fn jwt_auth(
         .unwrap_or(&common::UserRole::User)
         .clone();
 
+    let session_id = decoded_jwt.session_id;
+
     request.extensions_mut().insert(AuthenticatedUser {
         username,
         uuid,
         role,
+        session_id,
     });
 
     Ok(next.run(request).await)
