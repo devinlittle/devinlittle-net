@@ -131,6 +131,7 @@ async function setToken(token) {
   auth.id = decode(token)?.sub ?? null;
   auth.username = decode(token)?.username ?? null;
   auth.roles = decode(token)?.roles ?? null;
+  auth.session_id = decode(token)?.session_id ?? null;
 
   localStorage.setItem("access_token", token);
 
@@ -174,20 +175,6 @@ async function return_public_key(public_key_b64: string): Promise<CryptoKey> {
   return public_key;
 }
 
-async function setSessionId() {
-  let get_sessions = authApi.path("/me/sessions").method("get").create();
-
-  const sessions_req = await get_sessions({});
-  if (sessions_req.ok) {
-    let sessions = sessions_req.data;
-    for (const session of sessions) {
-      if (session.is_current) {
-        auth.session_id = session.session_id;
-      }
-    }
-  }
-}
-
 function clear() {
   auth.accessToken = null;
   auth.username = null;
@@ -211,7 +198,6 @@ export async function initAuth() {
     if (res.ok) {
       const { access_token } = res.data;
       await setToken(access_token);
-      await setSessionId()
       return true;
     }
   } catch {
@@ -228,7 +214,6 @@ export async function refresh() {
   if (!res.ok) { clear(); return false; }
   const { access_token } = await res.json();
   await setToken(access_token);
-  await setSessionId();
   return true;
 }
 
@@ -244,7 +229,6 @@ export async function logout() {
 // INFO: called from login/register page after successful auth
 export async function onAuthSuccess(token) {
   await setToken(token);
-  await setSessionId();
 }
 
 

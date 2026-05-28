@@ -190,7 +190,6 @@ export function connectNotifications() {
 
   const bootstrap_json = JSON.stringify({
     token: auth.accessToken,
-    session_id: auth.session_id
   })
 
   ws.onopen = () => {
