@@ -191,6 +191,8 @@ export function getRole(roles: UserRole, service: ServiceName): UserRole {
 
 // INFO: called once in +layout.svelte onMount
 export async function initAuth() {
+  if (localStorage.getItem("access_token") === null) { clear(); return false; }
+
   try {
     const refresh = authApi.path("/refresh").method("post").create();
     const res = await refresh({});
@@ -207,6 +209,8 @@ export async function initAuth() {
 }
 
 export async function refresh() {
+  if (localStorage.getItem("access_token") === null) { clear(); return false; }
+
   const res = await fetch(`${API_URL}/auth/refresh`, {
     method: "POST",
     credentials: "include",

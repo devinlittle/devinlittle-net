@@ -53,6 +53,7 @@ function handleListingAdded(listing: FileListing) {
 function handleListingModified(listing: FileListing) {
   const idx = nanopass.listings.findIndex(l => l.id == listing.id)
 
+  // remove listing if the restricted one isnt for us
   if (listing.visibility.type === "Restricted") {
     if (!(listing.visibility.allowlist.includes(auth.id) || listing.owner_id === auth.id)) {
       nanopass.listings.splice(idx, 1);
@@ -60,12 +61,11 @@ function handleListingModified(listing: FileListing) {
     }
   }
 
-  // if listing exists in nanopass state
+  // if listing exists in nanopass state edit it
   if (idx !== -1) {
     nanopass.listings.splice(idx, 1, listing)
     console.log("[NanoPass]: Modified Listing")
-
-    // if not in state, add the listing only if we are allowed ot have it
+    // else add listing if it should be there
   } else {
     nanopass.listings.push(listing);
     console.log("[NanoPass]: Added New Listing")

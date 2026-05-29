@@ -9,6 +9,7 @@
   } from "$lib/utils/auth.svelte";
   import {
     connectNotifications,
+    getSocket,
     socketState,
   } from "$lib/utils/notifications.svelte";
 
