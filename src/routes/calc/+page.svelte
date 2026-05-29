@@ -677,7 +677,7 @@
             {@const u = users.find((x) => x.id === selectedUser)}
             <div class="user-detail">
               <p class="section-label">roles</p>
-              {#each ["global", "gradegetter", "smalltalk"] as svc}
+              {#each ["global", "gradegetter", "smalltalk", "podcastschoolproject"] as svc}
                 <div class="role-row">
                   <span class="svc-name">{svc}</span>
                   <select
