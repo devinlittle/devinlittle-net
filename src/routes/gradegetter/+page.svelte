@@ -3,8 +3,20 @@
   import {
     fetchGrades,
     grades,
-    forbidden,
+    the_bad_status,
+    type BadStatus,
   } from "$lib/utils/gradegetter.svelte";
+
+  const status_messages: Record<Exclude<BadStatus, null>, string> = {
+    no_gg_account:
+      "Your GradeGetter information isn't in the system yet! Get setup in the settings page.",
+    forbidden: "Access denied. You don't have permission to view this.",
+    not_found:
+      "Youch! Your GradeGetter information isn't in the system yet! Get setup in the settings page.",
+    //      "Youch! You have a GradeGetter account, however no grades were present. Please re input your information.",
+    internal_server_error:
+      "So the server kinda exploded. My bad, text me if u see this...",
+  };
 
   $effect(() => {
     if (!auth.ready) return;
@@ -20,11 +32,10 @@
 
 <main>
   {#if auth.ready}
-    {#if forbidden.value}
-      <h1>Naviate to your settings page to setup gradegetter</h1>
-      <!--  <h1>GradeGetter under some heat rn...</h1> -->
+    {#if the_bad_status.value != null}
+      <h1>{status_messages[the_bad_status.value]}</h1>
     {:else if Object.keys(grades.value).length === 0}
-      <p>Loading...</p>
+      <h1>{status_messages[the_bad_status.value]}</h1>
     {:else}
       <div class="grades">
         {#each Object.entries(grades.value) as [subject, scores]}
@@ -43,7 +54,7 @@
       </div>
     {/if}
   {:else}
-    <h1>To use GradeGetter, Register an account</h1>
+    <h1>To use GradeGetter, Register an account on DevinLittle.Net!</h1>
   {/if}
 </main>
 

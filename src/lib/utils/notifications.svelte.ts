@@ -223,7 +223,7 @@ export function connectNotifications() {
       title: "Notification",
       body: "Connection interrupted. Please reload the page to stay connected.",
       sender: "DevinLittle.Net",
-      dismissTime: 5000,
+      dismissTime: 1000,
       global: false,
     });
   }

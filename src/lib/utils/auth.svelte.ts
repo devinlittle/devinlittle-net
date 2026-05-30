@@ -268,25 +268,5 @@ export async function get_ready_for_devin_grfd(from_login: boolean): Promise<boo
 
   console.log("begining notification connection")
   connectNotifications();
-  console.log("done doing that")
   return true;
 }
-
-// INFO: USE CREATE CLIENT INSTEAD
-
-/*export async function _authFetch(input, init = {}) {
-  const headers = new Headers(init.headers ?? {});
-  if (auth.accessToken) headers.set("Authorization", `Bearer ${auth.accessToken}`);
-
-  let res = await fetch(input, { ...init, headers, credentials: "include" });
-
-  if (res.status === 401 || res.status === 403) {
-    const ok = await refresh();
-    if (ok) {
-      headers.set("Authorization", `Bearer ${auth.accessToken}`);
-      res = await fetch(input, { ...init, headers, credentials: "include" });
-    }
-  }
-  return res;
-}
-*/
