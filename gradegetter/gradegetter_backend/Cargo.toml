@@ -17,21 +17,14 @@ tower-http.workspace = true
 tower.workspace = true
 utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
-rustls = {workspace = true, features = ["ring"]}
-ring.workspace = true
+rustls.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value"]  }
 anyhow.workspace = true
 
 sha2.workspace = true
-sqlx = { workspace = true, features = [
-  "runtime-tokio-rustls",
-  "postgres",
-  "migrate",
-  "json",
-  "chrono",
-  "uuid"]}
+sqlx.workspace = true
 uuid.workspace = true
 jsonwebtoken.workspace = true
 crypto_utils.workspace = true

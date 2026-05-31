@@ -17,22 +17,14 @@ tower-http.workspace = true
 tower.workspace = true
 utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
-rustls = {workspace = true, features = ["ring"]}
-ring.workspace = true
+rustls.workspace = true
 reqwest = {workspace = true, features = ["json"]}
 serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value"]  }
 anyhow.workspace = true
-
+sqlx.workspace = true
 sha2.workspace = true
 argon2.workspace = true
-sqlx = { workspace = true, features = [
-  "runtime-tokio-rustls",
-  "postgres",
-  "migrate",
-  "json",
-  "chrono",
-  "uuid"]}
 uuid.workspace = true
 jsonwebtoken.workspace = true
 chrono = {workspace = true, features = ["serde"]}
@@ -45,10 +37,6 @@ opentelemetry.workspace = true
 
 dotenvy.workspace = true
 constant_time_eq.workspace = true
-
-[target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }
-
 
 [package.metadata.deb]
 maintainer = "Devin Little <devinlittlee@gmail.com>"

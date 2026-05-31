@@ -6,12 +6,22 @@ use axum::{
     Extension, Json,
 };
 use common::{gradegetter::SchoologyLogin, AuthenticatedUser};
+use crypto_utils::encrypt_string;
 use tokio::sync::watch::{self};
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 use uuid::Uuid;
 
 use crate::routes::AppState;
 
+#[instrument(
+    name = "add_schoology_credentials",
+    skip(state, req),
+    fields(
+        user.username = %user.username,
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
+    )
+)]
 #[utoipa::path(
     post,
     path = "/auth/schoology/credentials",
@@ -21,7 +31,6 @@ use crate::routes::AppState;
     ),
     responses(
         (status = 204, description = "Encrypts schoology info and inserts into database"),
-        (status = 401, description = "Credentials Incorrect"),
         (status = 500, description = "Internal Server Error")
     ),
     tag = "user_auth"
@@ -31,33 +40,57 @@ pub async fn add_schoology_credentials_handler(
     Extension(user): Extension<AuthenticatedUser>,
     Json(req): Json<SchoologyLogin>,
 ) -> Result<StatusCode, StatusCode> {
+    let encrypted_email = match encrypt_string(&req.schoology_email) {
+        Ok(encrypted_email) => encrypted_email,
+        Err(err) => {
+            error!(error = %err, "[Encryption Error]: failed to encrypt email");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let encrypted_password = match encrypt_string(&req.schoology_password) {
+        Ok(encrypted_password) => encrypted_password,
+        Err(err) => {
+            error!(error = %err, "[Encryption Error]: failed to encrypt password");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
     sqlx::query!(
         "INSERT INTO schoology_auth (id, encrypted_email, encrypted_password) VALUES ($1, $2, $3)
          ON CONFLICT (id) DO UPDATE SET 
              encrypted_email = EXCLUDED.encrypted_email,
              encrypted_password = EXCLUDED.encrypted_password",
         user.uuid,
-        crypto_utils::encrypt_string(req.schoology_email.as_str()),
-        crypto_utils::encrypt_string(req.schoology_password.as_str()),
+        encrypted_email,
+        encrypted_password,
     )
     .execute(&state.pool)
     .await
     .map_err(|err| {
-        error!(
-            "Failed to store Schoology credentials for user {}: {}",
-            user.uuid, err
-        );
+        error!(error = %err, "[Database failure]: failed to add schoology information to db");
         axum::http::StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
     info!(
-        "Encrypted Schoology Credentials added to user: {:?}",
-        user.username
+        action = "gradegetter_backend.add_schoology_credentials",
+        user.id = %user.uuid,
+        user.username = %user.username,
+        "Encrypted Schoology Credentials added to user",
     );
 
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[instrument(
+    name = "delete_schoology_credentials",
+    skip(state),
+    fields(
+        user.username = %user.username,
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
+    )
+)]
 #[utoipa::path(
     delete,
     path = "/auth/schoology/credentials",
@@ -75,25 +108,33 @@ pub async fn delete_schoology_credentials_handler(
     State(state): State<AppState>,
     Extension(user): Extension<AuthenticatedUser>,
 ) -> Result<StatusCode, StatusCode> {
-    info!(
-        "Encrypted Schoology Credentials removed from user: {:?}",
-        user.username
-    );
-
     sqlx::query!("DELETE FROM schoology_auth WHERE id = $1", user.uuid)
         .execute(&state.pool)
         .await
         .map_err(|err| {
-            error!(
-                "Failed to delete Schoology credentials for user {}: {}",
-                user.uuid, err
-            );
+            error!(error = %err, "[Database failure]: failed to delete schoology information from db");
             axum::http::StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    info!(
+        action = "gradegetter_backend.delete_schoology_credentials",
+        user.id = %user.uuid,
+        user.username = %user.username,
+        "Encrypted Schoology Credentials removed from user",
+    );
 
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[instrument(
+    name = "forward_init_to_gradegetter",
+    skip(state),
+    fields(
+        user.username = %user.username,
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
+    )
+)]
 #[utoipa::path(
     get,
     path = "/auth/forward",
@@ -102,7 +143,6 @@ pub async fn delete_schoology_credentials_handler(
     ),
     responses(
         (status = 204, description = "Initilized User on GradeGetter"),
-        (status = 401, description = "Credentials Incorrect"),
         (status = 500, description = "Interal Server Error")
     ),
     tag = "user_auth"
@@ -137,6 +177,13 @@ pub async fn foward_to_gradegetter(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[instrument(
+    name = "connect_init_ws",
+    skip(ws, state),
+    fields(
+        user.id = %uuid,
+    )
+)]
 #[utoipa::path(
     get,
     path = "/auth/forward_ws/{id}",

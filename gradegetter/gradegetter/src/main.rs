@@ -26,19 +26,15 @@ use tokio::{
     },
 };
 use tokio_tungstenite::{connect_async, tungstenite::client::IntoClientRequest};
+use tracing::{debug, error, info, info_span, instrument, trace, warn, Instrument};
 use uuid::Uuid;
-
-use tracing::{debug, error, info, trace};
-use tracing_subscriber::EnvFilter;
 
 use crate::secrets::SECRETS;
 mod secrets;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
-        .init();
+    let _guard = common::tracing::init_tracing();
 
     let database_string = &SECRETS.database_url;
 
@@ -53,200 +49,24 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Token Getter Thread?
     let pool_token = Arc::clone(&pool);
-    tokio::spawn(async move {
-        loop {
-            if let Ok(users) =
-                sqlx::query!("SELECT id, encrypted_email, encrypted_password FROM schoology_auth")
-                    .fetch_all(&*pool_token)
-                    .await
-                    .map_err(|err| {
-                        tracing::info!("Database error: {}", err);
-                        axum::http::StatusCode::INTERNAL_SERVER_ERROR
-                    })
-            {
-                for user in users {
-                    let (id, email, password) =
-                        (user.id, user.encrypted_email, user.encrypted_password);
-
-                    let dec_password = match decrypt_string(password.as_str()) {
-                        Ok(dec_password) => dec_password,
-                        Err(err) => {
-                            tracing::warn!("weird issue? {}", err);
-                            "error".to_string()
-                        }
-                    };
-
-                    let dec_email = match decrypt_string(email.as_str()) {
-                        Ok(dec_email) => dec_email,
-                        Err(err) => {
-                            tracing::warn!("weird issue? {}", err);
-                            "error".to_string()
-                        }
-                    };
-
-                    if dec_email == "error" || dec_password == "error" {
-                        error!(
-                            "decyrpt_string, (token thread) skipping user due to decryption error:  {}",
-                            id
-                        );
-                        let _ = sqlx::query!(
-                            "UPDATE schoology_auth SET session_token = NULL WHERE id = $1",
-                            id
-                        )
-                        .execute(&*pool_token)
-                        .await
-                        .map_err(|err| {
-                            tracing::info!("Database error: {}", err);
-                            axum::http::StatusCode::INTERNAL_SERVER_ERROR
-                        });
-
-                        continue;
-                    }
-
-                    let token = match get_token(dec_email.as_str(), dec_password.as_str(), None)
-                        .await
-                    {
-                        Ok(token) => token,
-                        Err(err) => {
-                            tracing::error!("get_token failure with user: {}, error: {}", id, err);
-                            "error".to_string()
-                        }
-                    };
-
-                    if token == "error" {
-                        debug!("SKIPPING USER {}", id);
-                        let _ = sqlx::query!(
-                            "UPDATE schoology_auth SET session_token = NULL WHERE id = $1",
-                            id
-                        )
-                        .execute(&*pool_token)
-                        .await
-                        .map_err(|err| {
-                            tracing::info!("Database error: {}", err);
-                            axum::http::StatusCode::INTERNAL_SERVER_ERROR
-                        });
-
-                        continue;
-                    }
-
-                    let _ = sqlx::query!(
-                        "UPDATE schoology_auth SET session_token = $1 WHERE id = $2",
-                        token,
-                        id
-                    )
-                    .execute(&*pool_token)
-                    .await
-                    .map_err(|err| {
-                        tracing::info!("Database error: {}", err);
-                        axum::http::StatusCode::INTERNAL_SERVER_ERROR
-                    });
-
-                    info!("Updated token for UUID: {}", id);
-                }
-            }
-            info!("Got Token!");
-            tokio::time::sleep(std::time::Duration::from_secs(1800)).await // 30 minutes
-        }
-    });
+    setup_token_thread(pool_token);
 
     // Grade fetcher
     let pool_grades = Arc::clone(&pool);
-    tokio::spawn(async move {
-        loop {
-            if let Ok(users) = sqlx::query!("SELECT id, session_token FROM schoology_auth")
-                .fetch_all(&*pool_grades)
-                .await
-                .map_err(|err| {
-                    tracing::info!("Database error: {}", err);
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR
-                })
-            {
-                for user in users {
-                    if let (id, Some(token)) = (user.id, user.session_token) {
-                        let token = match decrypt_string(token.as_str()) {
-                            Ok(token) => token,
-                            Err(err) => {
-                                tracing::warn!("weird issue? {}", err);
-                                "error".to_string()
-                            }
-                        };
-
-                        if token == "error" {
-                            error!(
-                                "decyrpt_string, (grade thread) skipping user due to decryption error:  {}",
-                                id
-                            );
-
-                            let _ = sqlx::query!(
-                                "UPDATE schoology_auth SET session_token = NULL WHERE id = $1",
-                                id
-                            )
-                            .execute(&*pool_grades)
-                            .await
-                            .map_err(|err| {
-                                tracing::info!("Database error: {}", err);
-                                axum::http::StatusCode::INTERNAL_SERVER_ERROR
-                            });
-
-                            continue;
-                        }
-
-                        match fetch_grades(token).await {
-                            Ok(grades_json) => {
-                                let _ = sqlx::query!(
-                                "INSERT INTO grades (id, grades) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET grades = EXCLUDED.grades",
-                                    id, grades_json
-                                )
-                                .execute(&*pool_grades)
-                                .await
-                                .map_err(|err| {
-                                    tracing::error!("Database error: {}", err);
-                                    axum::http::StatusCode::INTERNAL_SERVER_ERROR
-                                });
-
-                                notify_updated_grades(id).await;
-
-                                info!("Updated grades for UUID: {}", id);
-                            }
-                            Err(e) => {
-                                let error_msg = e.to_string();
-
-                                tracing::warn!(
-                                    "Believe to be rate limited :(((( ! Sleeping for 10 seconds..."
-                                );
-                                tokio::time::sleep(Duration::from_secs(10)).await;
-                                tracing::error!("Failed to fetch grades for {}: {}", id, error_msg);
-                            }
-                        }
-                    }
-                }
-            }
-            tokio::time::sleep(std::time::Duration::from_secs(10)).await
-        }
-    });
+    setup_grade_thread(pool_grades);
 
     let pool_axum = Arc::clone(&pool);
-    let app = Router::new()
-        .route("/health", get(health))
-        /*        .route(
+    let app = Router::new().route("/health", get(health)).route(
         "/userinit",
-        get({
+        post({
             let pool_axum = Arc::clone(&pool_axum);
-            move || {
+            move |uuid: String| {
                 let pool = Arc::clone(&pool_axum);
-                async move { user_token_initalize(pool).await }
+
+                async move { user_token_initalize(pool, uuid).await }
             }
-        }),*/
-        .route(
-            "/userinit",
-            post({
-                let pool_axum = Arc::clone(&pool_axum);
-                move |uuid: String| {
-                    let pool = Arc::clone(&pool_axum);
-                    async move { user_token_initalize(pool, uuid).await }
-                }
-            }),
-        );
+        }),
+    );
 
     let listener = TcpListener::bind("0.0.0.0:3001").await.unwrap();
 
@@ -257,6 +77,164 @@ async fn main() -> Result<(), anyhow::Error> {
         .unwrap();
 
     Ok(())
+}
+
+fn setup_token_thread(pool_token: Arc<PgPool>) {
+    tokio::spawn(async move {
+        loop {
+            let db_span = info_span!("tokengetter_grab_userinfo_query");
+            if let Ok(users) =
+                sqlx::query!("SELECT id, encrypted_email, encrypted_password FROM schoology_auth")
+                    .fetch_all(&*pool_token)
+                    .instrument(db_span)
+                    .await
+                    .map_err(|err| {
+                        error!(error = %err, "[Database failure]: failed to look up users in the tokengetter thread");
+                    })
+            {
+                for user in users {
+                    let (id, email, password) =
+                        (user.id, user.encrypted_email, user.encrypted_password);
+
+                    let Ok(dec_password) = decrypt_string(password) else {
+                        error!(
+                            user.id = %id,
+                            "[Decryption Error]: decrypting password failed, (token thread) skipping user due to decryption error",
+                        );
+
+                        continue;
+                    };
+
+                    let Ok(dec_email) = decrypt_string(email) else {
+                        error!(
+                            user.id = %id,
+                            "[Decryption Error]: decrypting email failed, (token thread) skipping user due to decryption error",
+                        );
+
+                        continue;
+                    };
+
+                    let Ok(token) = get_token(dec_email.as_str(), dec_password.as_str(), id, false)
+                        .await else {
+                            error!(
+                                user.id = %id,
+                                "[Decryption Error]: decrypting email failed, (token thread) skipping user due to decryption error",
+                            );
+
+                            let db_span = info_span!("set_token_null_query");
+
+                            let _ = sqlx::query!(
+                                "UPDATE schoology_auth SET session_token = NULL WHERE id = $1",
+                                id
+                            )
+                            .execute(&*pool_token)
+                            .instrument(db_span)
+                            .await
+                            .map_err(|err| {
+                                error!(error = %err, "[Database failure]: (inside token thread); failed to set user session_token to null");
+                            });
+
+                            continue;
+                        };
+
+                    let db_span = info_span!("set_new_token_query");
+
+                    let _ = sqlx::query!(
+                        "UPDATE schoology_auth SET session_token = $1 WHERE id = $2",
+                        token,
+                        id
+                    )
+                    .execute(&*pool_token)
+                    .instrument(db_span)
+                    .await
+                    .map_err(|err| {
+                        error!(error = %err, "[Database failure]: failed to update session token");
+                    });
+
+                    info!(
+                        action = "gradegetter.update_token",
+                        user.id = %user.id,
+                        "[INFO]: Updated Token for a user!"
+                    );
+
+                }
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(1800)).await // 30 minutes
+        }
+    });
+}
+
+fn setup_grade_thread(pool_grades: Arc<PgPool>) {
+    tokio::spawn(async move {
+        loop {
+            let db_span = info_span!("gradegetter_grab_userinfo_query");
+            if let Ok(users) = sqlx::query!("SELECT id, session_token FROM schoology_auth")
+                .fetch_all(&*pool_grades)
+                .instrument(db_span)
+                .await
+                .map_err(|err| {
+                    error!(error = %err, "[Database failure]: failed to look up users in the gradegetter thread");
+                })
+            {
+                for user in users {
+                    if let (id, Some(token)) = (user.id, user.session_token) {
+                        let Ok(token) = decrypt_string(token) else {
+                            error!(
+                                "[ERROR]: decyrpt_string, (grade thread) skipping user due to decryption error:  {}",
+                                id
+                            );
+
+                            let db_span = info_span!("gradegetter_set_token_null_query");
+
+                            let _ = sqlx::query!(
+                                "UPDATE schoology_auth SET session_token = NULL WHERE id = $1",
+                                id
+                            )
+                            .execute(&*pool_grades)
+                            .instrument(db_span)
+                            .await
+                            .map_err(|err| {
+                                error!(error = %err, "[Database failure]: (inside grade thread); failed to set user session_token to null ");
+                            });
+
+                            continue;
+                        };
+
+                        match fetch_grades(token, id).await {
+                            Ok(grades_json) => {
+                                let db_span = info_span!("update_grades_query");
+
+                                let _ = sqlx::query!(
+                                "INSERT INTO grades (id, grades) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET grades = EXCLUDED.grades",
+                                    id, grades_json
+                                )
+                                .execute(&*pool_grades)
+                                .instrument(db_span)
+                                .await
+                                .map_err(|err| {
+                                    error!(error = %err, "[Database failure]: (inside grade thread); failed to update user grades");
+                                });
+
+                                notify_updated_grades(id).await;
+
+                                info!(
+                                    action = "gradegetter.update_grades",
+                                    user.id = %user.id,
+                                    "[INFO]: Updated Grades for a user!"
+                                );
+
+                            }
+                            Err(e) => {
+                                error!(error = %e, "failed to fetch grades for user");
+                                tokio::time::sleep(Duration::from_secs(10)).await;
+                            }
+                        }
+                    }
+                }
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await
+        }
+    });
 }
 
 async fn shutdown_signal() {
@@ -282,18 +260,32 @@ async fn health() -> Result<(), axum::http::StatusCode> {
     Ok(())
 }
 
+#[instrument(
+    name = "user_init",
+    skip(pool),
+    fields(
+        user.id = %uuid,
+    )
+)]
 async fn user_token_initalize(
     pool: Arc<PgPool>,
     uuid: String,
 ) -> Result<String, axum::http::StatusCode> {
+    let uuid = uuid::Uuid::parse_str(&uuid).map_err(|err| {
+        error!(error = %err, "ERROR ENCODING UUID");
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let userinit_userdata_db_span = info_span!("get_user_data_query");
     let user = sqlx::query!(
            "SELECT id, encrypted_email, encrypted_password FROM schoology_auth WHERE session_token IS NULL AND id = $1",
-            uuid::Uuid::parse_str(&uuid.as_str()).unwrap()
+            uuid
         )
         .fetch_one(&*pool)
+        .instrument(userinit_userdata_db_span)
         .await
         .map_err(|err| {
-            tracing::error!("Database error: {}", err);
+            error!(error = %err, "[Database failure]: failed to grab user info during user initalization");
             axum::http::StatusCode::INTERNAL_SERVER_ERROR
         });
 
@@ -304,52 +296,95 @@ async fn user_token_initalize(
 
     let (id, email, password) = (user.id, user.encrypted_email, user.encrypted_password);
 
-    let dec_password = decrypt_string(password.as_str());
-    let dec_email = decrypt_string(email.as_str());
-    let token = match get_token(
-        dec_email.unwrap().as_str(),
-        dec_password.unwrap().as_str(),
-        Some(id),
-    )
-    .await
-    {
+    let dec_password = match decrypt_string(password) {
+        Ok(dec_password) => dec_password,
+        Err(err) => {
+            error!(error = %err, "[Decryption Error]: failed to decrypt password");
+            return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let dec_email = match decrypt_string(email) {
+        Ok(dec_email) => dec_email,
+        Err(err) => {
+            error!(error = %err, "[Decryption Error]: failed to decrypt email");
+            return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let token = match get_token(dec_email.as_str(), dec_password.as_str(), id, true).await {
         Ok(token) => token,
         Err(err) => {
-            tracing::error!("get_token failure with user: {}, error: {}", id, err);
+            error!(error = %err, "[TokenGetter failure]: get_token failure during user init");
             return Err(axum::http::StatusCode::UNAUTHORIZED);
         }
     };
 
+    let update_token_db_span = info_span!("update_token_query");
     sqlx::query!(
         "UPDATE schoology_auth SET session_token = $1 WHERE id = $2",
         token,
         id
     )
     .execute(&*pool)
+    .instrument(update_token_db_span)
     .await
     .map_err(|err| {
-        tracing::info!("Database error: {}", err);
+        error!(error = %err, "[Database failure]: failed to set user session_token during user initalization");
         axum::http::StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    info!("user_token_initalize: Updated token for UUID: {}", id);
+    info!(
+        action = "gradegetter.update_token",
+        user.id = %user.id,
+        "[INFO]: Update token for a user during user_init!"
+    );
+
+    let Ok(token) = decrypt_string(token) else {
+        error!(
+            user.id = %id,
+            "[Decryption Error]: decrypting token failed, (user_init) skipping user due to decryption error",
+        );
+
+        let db_span = info_span!("set_token_null_query");
+
+        let _ = sqlx::query!(
+            "UPDATE schoology_auth SET session_token = NULL WHERE id = $1",
+            id
+        )
+        .execute(&*pool)
+        .instrument(db_span)
+        .await
+        .map_err(|err| {
+            error!(error = %err, "[Database failure]: failed to set user session_token to null during user initalization");
+        });
+
+        return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+    };
+
+    let update_grades_db_span = info_span!("update_grades_db_span");
 
     sqlx::query!("INSERT INTO grades (id, grades) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET grades = EXCLUDED.grades",
         id,
-        fetch_grades(decrypt_string(token.as_str()).expect("Decrypting Token String Failed"))
+        fetch_grades(token, id)
             .await.map_err(|err| {
-                tracing::error!("fetch_grades error: {}", err);
+                error!(error = %err, "[GradeGetter fetch failure]: failed fetch grades while user initalization");
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR
             })?,
         )
         .execute(&*pool)
+        .instrument(update_grades_db_span)
         .await
         .map_err(|err| {
-            tracing::error!("Database error: {}", err);
+            error!(error = %err, "[Database failure]: failed to set grades in db while user initalization");
             axum::http::StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    info!("user_token_initalize: Updated grades for UUID: {}", id);
+    info!(
+        action = "gradegetter.update_grade",
+        user.id = %user.id,
+        "[INFO]: Update grades for a user during user_init!"
+    );
 
     Ok("Hi".to_string())
 }
@@ -360,11 +395,20 @@ pub struct ForwardMessage {
     status: String,
 }
 
+#[instrument(
+    name = "get_token",
+    skip(email, password),
+    fields(
+        user.id = %user_id,
+        user.init = %user_init,
+    )
+)]
 async fn get_token(
     email: &str,
     password: &str,
-    uuid: Option<Uuid>,
-) -> Result<String, anyhow::Error> {
+    user_id: Uuid,
+    user_init: bool,
+) -> Result<Vec<u8>, anyhow::Error> {
     let executable =
         dotenvy::var("PUPPETEER_EXECUTABLE_PATH").expect("PUPPETEER_EXECUTABLE_PATH not found");
     let mut child = Command::new("node")
@@ -387,7 +431,7 @@ async fn get_token(
         .ok_or_else(|| anyhow::anyhow!("failed to capture stderr"))?;
     let mut lines = BufReader::new(stderr).lines();
 
-    if let Some(uuid) = uuid {
+    if user_init {
         let mut request =
             "ws://gradegetter_backend:3002/internal/forward_ws".into_client_request()?;
 
@@ -397,18 +441,16 @@ async fn get_token(
             .headers_mut()
             .insert("Authorization", format!("Basic {}", internal_api).parse()?);
 
-        let (ws_stream, _) = connect_async(request).await?; //HACK: unwrap
+        let (ws_stream, _) = connect_async(request).await?;
         let (mut write, _read) = ws_stream.split();
 
         tokio::spawn(async move {
             /*HACK: unwarappy */
             while let Some(line) = lines.next_line().await.unwrap() {
                 let msg = ForwardMessage {
-                    id: uuid,
+                    id: user_id,
                     status: line,
                 };
-
-                tracing::debug!("{:?}", msg);
 
                 let json = serde_json::to_string(&msg).unwrap(); //HACK: unwrap
                 write
@@ -434,23 +476,62 @@ async fn get_token(
     let token = token.trim().to_string();
 
     if token.is_empty() {
+        warn!(
+            action = "gradegetter.get_token",
+            user.id = %user_id,
+            "TokenGetter returned an empty token"
+        );
         anyhow::bail!("tokengetter returned an empty token");
     }
 
     if !token.starts_with("SESS") {
+        warn!(
+            action = "gradegetter.get_token",
+            user.id = %user_id,
+            "TokenGetter returned invalid data"
+        );
         anyhow::bail!(
             "tokengetter returned invalid session token format: {}",
             token
         );
     }
 
-    Ok(encrypt_string(&token))
+    let encrypted_token = match encrypt_string(&token) {
+        Ok(encrypted_token) => encrypted_token,
+        Err(err) => {
+            error!(error = %err, "[ERROR]: failed to encrypt token inside gradegetter");
+            anyhow::bail!("token encryption failed");
+        }
+    };
+
+    Ok(encrypted_token)
 }
 
-async fn fetch_grades(token: String) -> Result<String, anyhow::Error> {
+#[instrument(
+    name = "fetch_grades",
+    skip(token),
+    fields(
+        user.id = %user_id,
+    )
+)]
+async fn fetch_grades(token: String, user_id: Uuid) -> Result<Vec<u8>, anyhow::Error> {
+    if token.trim().is_empty() {
+        warn!(
+            action = "gradegetter.fetch_grades",
+            user.id = %user_id,
+        "somehow there is an empty token inside the fetch grades function, will be cleaned up next run"
+        );
+
+        return Err(anyhow::anyhow!("empty token bruh"));
+    }
+
     let forms = select_grade_period(token.clone())
         .await
+        .inspect_err(|err| {
+            error!(error = %err, "select_grade_peroid failed");
+        })
         .context("select_grade_period failed")?;
+
     let html = fetch_final_grades_export(
         forms.form_build_id.as_str(),
         forms.form_token.as_str(),
@@ -460,12 +541,19 @@ async fn fetch_grades(token: String) -> Result<String, anyhow::Error> {
     .await
     .context("fetch_final_grades_export failed")?;
 
-    let grades: GradesHashMap =
-        parse_grades_html(html).context("parse_grades_html failed to parse through html")?;
+    let grades: GradesHashMap = parse_grades_html(html).context("parse_grades_html failed")?;
 
     let grades = serde_json::to_value(grades)?.to_string();
 
-    Ok(encrypt_string(grades.as_str()))
+    let encrypted_grades = match encrypt_string(&grades) {
+        Ok(encrypted_grades) => encrypted_grades,
+        Err(err) => {
+            error!(error = %err, "token encryption failed");
+            anyhow::bail!("grade encryption failed");
+        }
+    };
+
+    Ok(encrypted_grades)
 }
 
 static FORM_ID_RE: LazyLock<Regex> =
@@ -494,14 +582,23 @@ struct QuarterForms {
 }
 
 // this function gets the form token, form build id, and quarter information
+#[instrument(name = "fetch_export_initial_form_data", skip(token), fields())]
 async fn fetch_export_initial_form_data(token: String) -> Result<QuarterForms, anyhow::Error> {
+    debug!("ENTERED FETCH EXPORT");
+
     let mut form_build_id = "N/A".to_string();
     let mut form_token = "N/A".to_string();
 
     let client = reqwest::Client::builder().build()?;
 
     let mut headers = reqwest::header::HeaderMap::new();
+
+    debug!("before parse");
+
     headers.insert("Cookie", token.parse()?);
+
+    debug!("after parse");
+
     let req = client
         .request(
             reqwest::Method::GET,
@@ -509,7 +606,9 @@ async fn fetch_export_initial_form_data(token: String) -> Result<QuarterForms, a
         )
         .headers(headers);
 
-    let response = req.send().await?;
+    let response = req.send().await.inspect_err(|err| {
+        error!(error = ?err, "sending the request for fetch_export_initial_form_data failed");
+    })?;
     let body = response.text().await?;
 
     if let Some(caps) = FORM_ID_RE.captures(body.as_str()) {
@@ -533,6 +632,7 @@ async fn fetch_export_initial_form_data(token: String) -> Result<QuarterForms, a
         .map(|c| c.extract::<1>().1[0].to_string())
         .collect();
 
+    // BUG: crash here possibly fixed...but just a warning
     for id in &quater_ids[quater_ids.len() - 4..] {
         trace!("quarter ids: {id}");
         grading_periods.insert(format!("grading_period[{}]", id), id.to_string());
@@ -558,6 +658,7 @@ struct ClassForms {
 
 // This inputs the form build, form id, and quarter values from last from the last function (fetch_export_initial_form_data)
 // and selects the grading period
+#[instrument(name = "select_grade_period", skip(token), fields())]
 async fn select_grade_period(token: String) -> Result<ClassForms, anyhow::Error> {
     let client = reqwest::Client::builder().build()?;
 
@@ -640,6 +741,7 @@ async fn select_grade_period(token: String) -> Result<ClassForms, anyhow::Error>
     Ok(output)
 }
 
+#[instrument(name = "fetch_class_ids", skip(body), fields())]
 async fn fetch_class_ids(body: String) -> Result<HashMap<String, String>, anyhow::Error> {
     let mut hashmap: HashMap<String, String> = HashMap::new();
 
@@ -656,6 +758,11 @@ async fn fetch_class_ids(body: String) -> Result<HashMap<String, String>, anyhow
 type ClassIdsHashMap = HashMap<String, String>;
 
 // Selects classes and gets the final export, creates html file
+#[instrument(
+    name = "fetch_final_grades_export",
+    skip(form_build_id, form_token, class_ids_hashmap, token),
+    fields()
+)]
 async fn fetch_final_grades_export(
     form_build_id: &str,
     form_token: &str,
@@ -711,12 +818,15 @@ async fn fetch_final_grades_export(
     Ok(body)
 }
 
+#[instrument(name = "parse_grades_html", skip(html), fields())]
 fn parse_grades_html(html: String) -> Result<GradesHashMap, anyhow::Error> {
     let document = scraper::Html::parse_document(html.as_str());
     let grade_selector = scraper::Selector::parse("td.grade, td.grade.no-grade")
         .expect("could not parse grade_selector");
 
-    let row_selector = scraper::Selector::parse("tr").expect("could not parse row_selector");
+    let Ok(row_selector) = scraper::Selector::parse("tr") else {
+        anyhow::bail!("could not parse row_selector");
+    };
 
     let mut course_grades: GradesHashMap = BTreeMap::new();
     let mut current_course: Option<String> = None;
@@ -759,6 +869,7 @@ fn parse_grades_html(html: String) -> Result<GradesHashMap, anyhow::Error> {
     Ok(course_grades)
 }
 
+#[instrument(name = "notify_updated_grades", skip(), fields(user.id = %user_id))]
 async fn notify_updated_grades(user_id: Uuid) {
     let message = serde_json::json!({
         "namespace": "gradegetter",

@@ -12,12 +12,7 @@ regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 scraper.workspace = true
-sqlx = { workspace = true, features = [
-  "runtime-tokio-rustls",
-  "postgres",
-  "json",
-  "chrono",
-  "uuid"]}
+sqlx.workspace = true
 uuid.workspace = true
 dotenvy.workspace = true
 crypto_utils.workspace = true

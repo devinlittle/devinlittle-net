@@ -1,12 +1,21 @@
 use axum::{extract::State, Extension, Json};
 use crypto_utils::decrypt_string;
 use hyper::StatusCode;
-use tracing::info;
+use tracing::{error, info, instrument, warn};
 
 use crate::routes::AppState;
 
 use common::{gradegetter::GradesHashMap, AuthenticatedUser};
 
+#[instrument(
+    name = "fetch_grades",
+    skip(state),
+    fields(
+        user.username = %user.username,
+        user.id = %user.uuid,
+        user.session_id = %user.session_id,
+    )
+)]
 #[utoipa::path(
     get,
     path = "/grades",
@@ -29,22 +38,31 @@ pub async fn grades_handler(
         .fetch_optional(&state.pool)
         .await
         .map_err(|err| {
-            tracing::info!("Database error: {}", err);
+            error!(error = %err, "[Database failure]: failed to grab grade info from db");
             axum::http::StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
     let encrypted_grades = match grades_row {
         Some(encrypted_grades) => encrypted_grades,
-        None => return { Err(StatusCode::NOT_FOUND) },
+        None => {
+            warn!(
+                action = "gradegetter_backend.fetch_grades",
+                user.id = %user.uuid,
+                user.username = %user.username,
+                "Grades Not Found"
+            );
+
+            return Err(StatusCode::NOT_FOUND);
+        }
     };
 
-    let grades = decrypt_string(encrypted_grades.grades.as_str()).map_err(|err| {
-        tracing::error!("failed to decrypt grades: {}", err);
+    let grades = decrypt_string(encrypted_grades.grades).map_err(|err| {
+        error!(error = %err, "[Encryption Error]: failed to encrypt password");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
     let grades: GradesHashMap = serde_json::from_str(&grades).map_err(|err| {
-        tracing::error!("failed to parse grades JSON: {}", err);
+        error!(error = %err, "[Encryption Error]: failed to parse grades JSON");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
