@@ -4,9 +4,6 @@
 /// <reference types="@sveltejs/kit" />
 /// <reference types="../.svelte-kit/ambient.d.ts" />
 
-
-/// <reference types="@sveltejs/kit" />
-/// <reference types="@sveltejs/kit" />
 import { build, files, version } from '$service-worker';
 
 const self = globalThis.self as unknown as ServiceWorkerGlobalScope;
@@ -37,28 +34,36 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;
-  try {
-    const data = event.data.json();
-    console.log('[SW] push received:', data);
 
-    const title = data?.payload?.title ?? data?.title ?? 'Notification';
-    const content = data?.payload?.content ?? data?.body ?? '';
-    const sender_username = data?.payload?.sender_username ?? '';
+  event.waitUntil(
+    (async () => {
+      try {
+        const data = event.data.json();
+        console.log('[SW] push received:', data);
 
-    event.waitUntil(
-      self.registration.showNotification(`${title} - ${sender_username}`, {
-        body: content,
-        icon: '/favicon.png',
-        badge: '/favicon.png',
-        data: data?.payload ?? data
-      })
-    );
-  } catch (err) {
-    console.error('[SW] Error parsing push data:', err);
-  }
+        const title = data?.payload?.title ?? data?.title ?? 'Notification';
+        const content = data?.payload?.content ?? data?.body ?? '';
+        const sender_username = data?.payload?.sender_username ?? '';
+
+        await self.registration.showNotification(`${title} - ${sender_username}`, {
+          body: content,
+          icon: '/favicon.png',
+          badge: '/favicon.png',
+          data: data?.payload ?? data
+        });
+      } catch (err) {
+        console.error('[SW] Error processing push data:', err);
+
+        await self.registration.showNotification('New Message', {
+          body: 'You received a new notification.',
+          icon: '/favicon.png'
+        });
+      }
+    })()
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(clients.openWindow('/'));
+  event.waitUntil(self.clients.openWindow('/'));
 });
