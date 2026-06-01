@@ -1,4 +1,4 @@
-import { auth, createClient, refresh } from "./auth.svelte";
+import { auth, createClient, getRefreshStatus } from "./auth.svelte";
 import { fetchGrades } from "./gradegetter.svelte";
 import { handleNanoPass, type NanoPassMessage } from "./nanopass.svelte";
 import { handleKeySync, handleSmallTalkNotes, type SmallTalkNoteMessage } from "./smalltalk.svelte";
@@ -250,7 +250,7 @@ export async function sendMessage(msg: string, target_user_id: string) {
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      refresh();
+      await getRefreshStatus();
       sendMessage(msg, target_user_id);
     }
 

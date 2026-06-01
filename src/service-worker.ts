@@ -24,11 +24,13 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
-    }).then(() => self.clients.claim())
+    (async () => {
+      await caches.keys().then((keys) => {
+        return Promise.all(
+          keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        );
+      }).then(() => self.clients.claim())
+    })()
   );
 });
 
@@ -38,7 +40,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     (async () => {
       try {
-        const data = event.data.json();
+        const data = event.data?.json();
         console.log('[SW] push received:', data);
 
         const title = data?.payload?.title ?? data?.title ?? 'Notification';

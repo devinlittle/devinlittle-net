@@ -1,24 +1,6 @@
 import { goto } from "$app/navigation";
 import { Fetcher } from "openapi-typescript-fetch";
 import { API_URL } from "./constants.svelte";
-/* export const fetchMarkdownPosts = async () => {
-  const allPostFiles = import.meta.glob('/src/routes/projects/*.md');
-  const iterablePostFiles = Object.entries(allPostFiles);
-
-  const allPosts = await Promise.all(
-    iterablePostFiles.map(async ([path, resolver]) => {
-      const { metadata } = await resolver();
-      const postPath = path.slice(11, -3);
-
-      return {
-        meta: metadata,
-        path: postPath
-      };
-    })
-  );
-
-  return allPosts ;
-}; */
 
 // this "auth" var is for state
 export let auth = $state({
@@ -57,7 +39,7 @@ export function createClient<T>(baseUrl: string) {
 
           if (res.status === 401 || res.status === 403) {
             try {
-              await preformRefresh(url, init, next);
+              await apiPreformRefresh(url, init, next);
             } catch (err) {
               return res;
             }
@@ -67,7 +49,7 @@ export function createClient<T>(baseUrl: string) {
         } catch (err) {
           if (err.status === 401 || err.status === 403) {
             try {
-              await preformRefresh(url, init, next);
+              await apiPreformRefresh(url, init, next);
             } catch (err_not_used) {
               return err;
             }
@@ -83,7 +65,7 @@ export function createClient<T>(baseUrl: string) {
 
 let refreshPromise: Promise<boolean> | null = null;
 
-async function getRefreshStatus() {
+export async function getRefreshStatus() {
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -97,7 +79,7 @@ async function getRefreshStatus() {
   }
 }
 
-async function preformRefresh(url: any, init: any, next: any) {
+async function apiPreformRefresh(url: any, init: any, next: any) {
   const ok = await getRefreshStatus();
   if (ok) {
     const retryHeaders = new Headers(init.headers);
@@ -208,7 +190,7 @@ export async function initAuth() {
   }
 }
 
-export async function refresh() {
+async function refresh() {
   if (localStorage.getItem("access_token") === null) { clear(); return false; }
 
   const res = await fetch(`${API_URL}/auth/refresh`, {

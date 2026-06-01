@@ -1,11 +1,11 @@
-<script>
+<script lang="ts">
   import Header from "./Header.svelte";
 
   import { onMount } from "svelte";
   import {
     auth,
     get_ready_for_devin_grfd,
-    initAuth,
+    getRefreshStatus,
   } from "$lib/utils/auth.svelte";
   import {
     connectNotifications,
@@ -18,17 +18,18 @@
 
     document.addEventListener("visibilitychange", async () => {
       if (document.visibilityState === "visible" && getSocket() === null) {
-        await initAuth();
+        await getRefreshStatus();
         connectNotifications();
       }
     });
   });
 
-  $effect(async () => {
+  $effect(() => {
     if (socketState.value == "disconnected") {
       console.log("connecting as was previously disconnected");
-      await initAuth();
-      connectNotifications();
+      getRefreshStatus().then(() => {
+        connectNotifications();
+      });
     }
   });
 

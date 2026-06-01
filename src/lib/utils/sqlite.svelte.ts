@@ -1,5 +1,5 @@
 import type { SmallTalkNotesDecryptedNote } from '$lib/types/smalltalk.types.js'
-import { auth, refresh, authApi, global_private_key } from './auth.svelte'
+import { auth, authApi, global_private_key, getRefreshStatus } from './auth.svelte'
 import { addNotification } from './notifications.svelte.js'
 import { getDb } from './sqlite.js'
 
@@ -217,7 +217,8 @@ export async function generate_and_store_keypair(): Promise<{ public_key: string
   let patchPubkey = authApi.path(`/me`).method("patch").create();
   await patchPubkey({ "public_key": public_key_b64 });
 
-  await refresh();
+  // INFO: refresh here to have the jwt contain the newly added pub key
+  await getRefreshStatus();
 
   addNotification({
     type: "important_info",
