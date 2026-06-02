@@ -138,6 +138,8 @@ export interface components {
     schemas: {
         AuthenticatedUser: {
             role: components["schemas"]["UserRole"];
+            /** Format: uuid */
+            session_id: string;
             username: string;
             /** Format: uuid */
             uuid: string;
@@ -152,6 +154,9 @@ export interface components {
             iat: string;
             public_key?: string | null;
             roles: components["schemas"]["HashMap"];
+            /** Format: uuid */
+            session_id: string;
+            /** Format: uuid */
             sub: string;
             username: string;
         };
@@ -163,7 +168,7 @@ export interface components {
         /** @enum {string} */
         ForwardStatus: "Started,1" | "Navigated to Schoology login,2" | "Typed in Email,3" | "Entered Email,4" | "Typed in Password,5" | "Enter Password,6" | "Finished,7" | "Incorrect Email or Password,E";
         HashMap: {
-            [key: string]: "devin" | "owen" | "trusted" | "user";
+            [key: string]: "devin" | "owen" | "mrd" | "trusted" | "user";
         };
         SchoologyLogin: {
             /** @example email@exmaple.com */
@@ -172,7 +177,7 @@ export interface components {
             schoology_password: string;
         };
         /** @enum {string} */
-        UserRole: "devin" | "owen" | "trusted" | "user";
+        UserRole: "devin" | "owen" | "mrd" | "trusted" | "user";
     };
     responses: never;
     parameters: never;
@@ -193,13 +198,6 @@ export interface operations {
         responses: {
             /** @description Initilized User on GradeGetter */
             204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Credentials Incorrect */
-            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -265,13 +263,6 @@ export interface operations {
         responses: {
             /** @description Encrypts schoology info and inserts into database */
             204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Credentials Incorrect */
-            401: {
                 headers: {
                     [name: string]: unknown;
                 };

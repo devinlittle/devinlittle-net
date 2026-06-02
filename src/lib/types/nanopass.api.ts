@@ -368,6 +368,20 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description the lisiting requested to remove is not the user's listing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description listing not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description uhmmm...failed */
             500: {
                 headers: {
@@ -397,8 +411,15 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description uhmmm...failed */
-            500: {
+            /** @description the lisiting requested to modify is not the user's listing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description listing not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -88,7 +88,6 @@ async function apiPreformRefresh(url: any, init: any, next: any) {
     return await next(url, { ...init, headers: retryHeaders });
   }
   return new Error("Refresh failed")
-  //throw new Error("Refresh failed");
 }
 
 import type { paths as AuthPaths, components } from "$lib/types/auth.api";

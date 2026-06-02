@@ -326,6 +326,8 @@ export interface components {
         };
         AuthenticatedUser: {
             role: components["schemas"]["UserRole"];
+            /** Format: uuid */
+            session_id: string;
             username: string;
             /** Format: uuid */
             uuid: string;
@@ -344,6 +346,8 @@ export interface components {
             iat: string;
             public_key?: string | null;
             roles: components["schemas"]["HashMap"];
+            /** Format: uuid */
+            session_id: string;
             /** Format: uuid */
             sub: string;
             username: string;

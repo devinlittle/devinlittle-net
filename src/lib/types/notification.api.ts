@@ -154,6 +154,8 @@ export interface components {
     schemas: {
         AuthenticatedUser: {
             role: components["schemas"]["UserRole"];
+            /** Format: uuid */
+            session_id: string;
             username: string;
             /** Format: uuid */
             uuid: string;
@@ -165,11 +167,14 @@ export interface components {
             iat: string;
             public_key?: string | null;
             roles: components["schemas"]["HashMap"];
+            /** Format: uuid */
+            session_id: string;
+            /** Format: uuid */
             sub: string;
             username: string;
         };
         HashMap: {
-            [key: string]: "devin" | "owen" | "trusted" | "user";
+            [key: string]: "devin" | "owen" | "mrd" | "trusted" | "user";
         };
         /** @enum {string} */
         Namespaces: "notification" | "nanopass" | "gradegetter" | "smalltalk_keysync" | "smalltalk_notes";
@@ -190,7 +195,7 @@ export interface components {
             p256dh: string;
         };
         /** @enum {string} */
-        UserRole: "devin" | "owen" | "trusted" | "user";
+        UserRole: "devin" | "owen" | "mrd" | "trusted" | "user";
     };
     responses: never;
     parameters: never;
