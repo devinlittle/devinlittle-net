@@ -69,7 +69,7 @@ async fn main() {
 
     let app = Router::new().merge(routes::create_routes(pool.clone()).layer(cors));
 
-    let host_on = "0.0.0.0:3003";
+    let host_on = "[::]:3003";
 
     let handle = axum_server::Handle::new();
     let shutdown_signal_handler = shutdown_signal(handle.clone());

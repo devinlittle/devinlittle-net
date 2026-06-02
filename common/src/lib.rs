@@ -19,6 +19,7 @@ pub mod notification;
 #[cfg(feature = "smalltalk")]
 pub mod smalltalk;
 
+pub mod internal;
 pub mod tracing;
 
 #[derive(Clone, ToSchema, Serialize, Deserialize, Debug)]
@@ -51,9 +52,11 @@ pub enum ServiceName {
     #[serde(alias = "Global")]
     Global,
     #[serde(alias = "Gradegetter")]
-    Gradegetter,
+    GradeGetter,
+    #[serde(alias = "Nanopass")]
+    NanoPass,
     #[serde(alias = "Smalltalk")]
-    Smalltalk,
+    SmallTalk,
     #[serde(alias = "Notifications")]
     Notifications,
     #[serde(alias = "PodcastSchoolProject")]

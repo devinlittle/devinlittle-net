@@ -47,7 +47,7 @@ pub async fn jwt_auth(
     let username = decoded_jwt.username;
     let role = decoded_jwt
         .roles
-        .get(&common::ServiceName::Gradegetter)
+        .get(&common::ServiceName::SmallTalk)
         .or_else(|| decoded_jwt.roles.get(&common::ServiceName::Global))
         .unwrap_or(&common::UserRole::User);
 
@@ -119,7 +119,7 @@ pub async fn jwt_auth(
             .unwrap_or_default();
 
         let db_role = db_role
-            .get(&common::ServiceName::Gradegetter)
+            .get(&common::ServiceName::SmallTalk)
             .or_else(|| db_role.get(&common::ServiceName::Global))
             .unwrap_or(&common::UserRole::User);
 
