@@ -9,7 +9,7 @@ ARG APP_NAME
 WORKDIR /app
 COPY . .
 
-RUN apk add --no-cache clang lld musl-dev git perl make curl
+RUN apk add --no-cache clang lld musl-dev git perl make curl protoc
 ENV RUSTFLAGS="-C link-arg=-fuse-ld=lld"
 
 ENV SQLX_OFFLINE=true
