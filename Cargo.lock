@@ -729,6 +729,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "dashmap",
  "dotenvy",
  "opentelemetry",
  "opentelemetry-otlp",
@@ -741,6 +742,7 @@ dependencies = [
  "strum",
  "thiserror 2.0.18",
  "tonic",
+ "tonic-prost",
  "tonic-prost-build",
  "tracing",
  "tracing-appender",
@@ -4472,6 +4474,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "service_connector"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "prost",
+ "tokio",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
 ]
 
 [[package]]

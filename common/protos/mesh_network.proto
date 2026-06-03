@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package mesh.infra;
+
+service MeshNetworkService {
+  rpc Heartbeat (Ping) returns (Pong);
+  rpc BroadcastDisconnect (DisconnectNotice) returns (MeshAck);
+}
+
+message Ping { string node_id = 1; }
+message Pong { string node_id = 1; }
+
+message DisconnectNotice {
+  string dead_node_id = 1;
+}
+message MeshAck { bool success = 1; }
+

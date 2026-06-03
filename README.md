@@ -4,8 +4,7 @@
 
 ## EXPECT VERY BAD DOCUMENTATION FOR A WHILE WHILE THE PROJECT GROWS
 
-This monorepo provides all of the services DevinLittle.net uses:
-
+This monorepo provides all of the services DevinLittle.Net uses:
 currnetly includes:
 
 * auth service
@@ -23,4 +22,20 @@ ports used:
 * 3004 -- nanopass_backend service
 * 3005 -- smalltalk_backend service
 
+# add tech stack
+
 ---
+
+# Add roadmap svg here containing:
+
+* document creation + how everything interacts:
+  * add mermaid docs
+
+* add tracing and better logging to every crate
+* talk about adding smalltalk_messaging
+* adding my own error types for gradegetter
+
+## in svg add internal service section:
+* add internal mesh network powered by webrtc and grpc
+* add service_connector bin which is powered by grpc
+* create protobufs
