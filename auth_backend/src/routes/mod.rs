@@ -1,6 +1,6 @@
 use axum::{
     routing::{delete, get, patch, post},
-    Router,
+    Json, Router,
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
 use sqlx::PgPool;
@@ -8,7 +8,7 @@ use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, HttpAuthScheme, HttpBuilder, SecurityScheme},
     OpenApi,
 };
-use utoipa_swagger_ui::SwaggerUi;
+use utoipa_scalar::{Scalar, Servable};
 
 mod admin;
 mod auth;
@@ -125,12 +125,21 @@ pub fn create_routes(pool: PgPool) -> Router {
         .with_default_metrics()
         .build_pair();
 
+    let openapi = DaApiDoc::openapi();
+
     let routes_without_middleware = Router::new()
         .route("/register", post(auth::register_handler))
         .route("/login", post(auth::login_handler))
         .route("/refresh", post(auth::refresh_handler))
         .route("/logout", get(auth::logout_handler))
         .route("/metrics", get(|| async move { metric_handle.render() }))
+        .route(
+            "/api-docs/openapi.json",
+            get({
+                let json_spec = openapi.clone();
+                move || async { Json(json_spec) }
+            }),
+        )
         .route("/health", get(health));
 
     let routes_with_middleware = Router::new()
@@ -170,7 +179,7 @@ pub fn create_routes(pool: PgPool) -> Router {
         .merge(routes_with_middleware)
         .merge(internal_routes)
         .merge(routes_without_middleware)
-        .merge(SwaggerUi::new("/swegger-ui").url("/api-docs/openapi.json", DaApiDoc::openapi()))
+        .merge(Scalar::with_url("/scalar", openapi))
         .with_state(pool)
         .layer(prometheus_layer)
 }

@@ -1,6 +1,6 @@
 use axum::{
     routing::{delete, get, patch, post},
-    Router,
+    Json, Router,
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
 use common::smalltalk::{SmalltalkNotesEvent, SmalltalkNotesMessage};
@@ -15,7 +15,7 @@ use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     OpenApi,
 };
-use utoipa_swagger_ui::SwaggerUi;
+use utoipa_scalar::{Scalar, Servable};
 use uuid::Uuid;
 
 use crate::utils::secrets::SECRETS;
@@ -48,8 +48,7 @@ pub mod notes;
         )
     ),
     modifiers(&JwtBearer, &InternalAuth),
-    tags(
-        (name = "smalltalk_notes", description = "Endpoints relating to SmallTalk Notes"),
+    tags( (name = "smalltalk_notes", description = "Endpoints relating to SmallTalk Notes"),
         (name = "internal", description = "Internal Endpoints")
     )
 )]
@@ -136,6 +135,8 @@ pub fn create_routes(pool: PgPool) -> Router {
         .with_default_metrics()
         .build_pair();
 
+    let openapi = DaApiDoc::openapi();
+
     let seen_users = Arc::new(RwLock::new(HashSet::new()));
     let client = Client::new();
 
@@ -147,7 +148,14 @@ pub fn create_routes(pool: PgPool) -> Router {
 
     let routes_without_middleware = Router::new()
         .route("/health", get(health))
-        .route("/metrics", get(|| async move { metric_handle.render() }));
+        .route("/metrics", get(|| async move { metric_handle.render() }))
+        .route(
+            "/api-docs/openapi.json",
+            get({
+                let json_spec = openapi.clone();
+                move || async { Json(json_spec) }
+            }),
+        );
 
     let routes_with_middleware = Router::new()
         .route("/notes/sync", get(notes::note_sync))
@@ -180,7 +188,7 @@ pub fn create_routes(pool: PgPool) -> Router {
         .merge(routes_with_middleware)
         .merge(internal_routes)
         .merge(routes_without_middleware)
-        .merge(SwaggerUi::new("/swegger-ui").url("/api-docs/openapi.json", DaApiDoc::openapi()))
+        .merge(Scalar::with_url("/scalar", openapi))
         .with_state(app_state)
         .layer(prometheus_layer)
 }
