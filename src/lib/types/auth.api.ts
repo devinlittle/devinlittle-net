@@ -375,7 +375,7 @@ export interface components {
             username: string;
         };
         /** @enum {string} */
-        ServiceName: "global" | "gradegetter" | "smalltalk" | "notifications" | "podcastschoolproject";
+        ServiceName: "global" | "gradegetter" | "nanopass" | "smalltalk" | "notifications" | "podcastschoolproject";
         UpdateProfileInput: {
             bio?: string | null;
             last_seen_visible?: boolean | null;

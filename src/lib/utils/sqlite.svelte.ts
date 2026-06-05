@@ -94,11 +94,26 @@ async function run_migrations() {
   let current_version = 0
   try {
     const rows = await db.exec(
-      `SELECT value FROM meta WHERE key = 'db_version'`
+      `SELECT value FROM meta WHERE key = 'db_version';`
     )
-    if (rows.length > 0) {
-      current_version = parseInt(rows[0].value)
+
+    if (rows && rows.length > 0) {
+      current_version = parseInt(rows[0].value, 10);
     }
+
+    console.debug(`[DB]: Loading...`);
+
+    for (let i = current_version; i < MIGRATIONS.length; i++) {
+      const next_version = i + 1;
+
+      await db.run(
+        `INSERT OR REPLACE INTO meta (key, value) VALUES ('db_version', ?);`,
+        [String(next_version)]
+      );
+
+      current_version = next_version;
+    }
+
   } catch {
     current_version = 0
   }
@@ -107,14 +122,16 @@ async function run_migrations() {
     for (const sql of MIGRATIONS[i]) {
       await db.exec(sql)
     }
+
     await db.exec(
       `INSERT OR REPLACE INTO meta(key, value) VALUES('db_version', ?)`,
       [String(i + 1)]
     )
-    console.debug(`migration ${i + 1} done`)
+
+    console.debug(`[DB]: Migration ${i + 1} done`);
   }
 
-  console.log(`[LOCAL DB VERSION]: ${current_version}`)
+  console.log(`[DB]: DB ready and loaded; Active Version: ${current_version}`);
 }
 
 // --- private key management ---
