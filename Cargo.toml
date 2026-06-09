@@ -13,6 +13,7 @@ members = [
 
 [workspace.dependencies]
 tokio = {version = "1", features = ["full"]}
+tokio-stream = "0.1"
 axum = {version = "0.8.9", features = ["macros"]}
 axum-extra = "0.12.6"
 axum-server = {version = "0.8", features = ["tls-rustls"]}
@@ -66,6 +67,7 @@ common = { path = "./common" }
 strum = { version = "0.28", features = ["derive"] }
 
 tonic = "0.14"
+tonic-reflection = "0.14"
 prost = "0.14"
 tonic-prost = "0.14"
 tonic-prost-build = "0.14"

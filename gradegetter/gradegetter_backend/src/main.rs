@@ -17,7 +17,7 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
-    let _gaurd = common::tracing::init_tracing();
+    let _guard = common::tracing::init_tracing();
 
     rustls::crypto::ring::default_provider()
         .install_default()

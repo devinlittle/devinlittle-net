@@ -11,7 +11,8 @@ message ClientMessage {
   
   oneof payload {
     RegisterRequest register = 2;
-    SignalEnvelope signal = 3;
+    bool RegisterCompletion = 3;
+    SignalEnvelope signal = 4;
   }
 }
 
@@ -24,7 +25,7 @@ message ServerMessage {
 }
 
 message RegisterRequest {
-  bool is_reconnect = 1; 
+  bool is_reconnect = 1;
 }
 
 message BootstrapSnapshot {
@@ -39,5 +40,5 @@ message SignalEnvelope {
   string source_node_id = 1;
   string target_node_id = 2;
   
-  string raw_json = 3; 
+  string raw_json = 3;
 }

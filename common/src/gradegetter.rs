@@ -42,6 +42,4 @@ pub enum ForwardStatus {
     ErrorInSetup,
 }
 
-// TODO: add gradegetter message + events
-
 pub type GradesHashMap = BTreeMap<String, Vec<Option<f32>>>;

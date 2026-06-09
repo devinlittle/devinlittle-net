@@ -160,7 +160,7 @@ pub async fn foward_to_gradegetter(
     let (tx, rx) = watch::channel(user.uuid.to_string());
     state.channels.insert(user.uuid.to_string(), tx);
 
-    let uuid = user.uuid.to_string();
+    let uuid = user.uuid;
     let channels = state.channels.clone();
 
     tokio::spawn(async move {
@@ -168,7 +168,7 @@ pub async fn foward_to_gradegetter(
         let client = reqwest::Client::new();
         let result = client
             .post("http://gradegetter:3001/userinit")
-            .body(uuid.clone())
+            .body(uuid.to_string())
             .send()
             .await;
 
@@ -177,7 +177,7 @@ pub async fn foward_to_gradegetter(
             Err(e) => tracing::error!("failed to initialize user: {e}"),
         }
 
-        channels.remove(&uuid)
+        channels.remove(&uuid.to_string())
     });
 
     Ok(StatusCode::NO_CONTENT)

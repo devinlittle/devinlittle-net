@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{Namespaces, ServiceName, UserRole, UserRoles};
 
 // used in auth_backend/src/routes/admin.rs
-#[derive(Serialize, ToSchema, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, ToSchema)]
 pub struct Users {
     pub id: Uuid,
     pub username: String,

@@ -8,6 +8,7 @@ dev_build.sh
 /docker-hoopla/
 init-db.sh
 **/*.mp4
+logs/
 
 # OS Specific
 .DS_STORE

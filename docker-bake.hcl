@@ -45,3 +45,9 @@ target "smalltalk_backend" {
     dockerfile = "Dockerfile.smalltalk_backend"
     tags = ["${REGISTRY}/smalltalk_backend:${TAG}"]
 }
+
+target "service_connector" {
+    inherits = ["settings"]
+    dockerfile = "Dockerfile.service_connector"
+    tags = ["${REGISTRY}/service_connector:${TAG}"]
+}

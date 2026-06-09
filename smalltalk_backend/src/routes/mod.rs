@@ -89,7 +89,7 @@ impl utoipa::Modify for InternalAuth {
     responses(
         (status = 200, description = "returns 200 if service alive", body = String),
     ),
-    tag = "internal"
+    tag = "none"
 )]
 async fn health() -> StatusCode {
     StatusCode::OK
