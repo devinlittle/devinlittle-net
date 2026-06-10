@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import {
     notifications,
     registerDismiss,
@@ -8,7 +8,7 @@
 
   let dying = $state(new Set());
 
-  function dismiss(id) {
+  function dismiss(id: any) {
     dying = new Set([...dying, id]);
     setTimeout(() => {
       dying.delete(id);
@@ -17,7 +17,7 @@
     }, 500);
   }
 
-  function exitStyle(id) {
+  function exitStyle(id: any) {
     const seed = id.charCodeAt(0) + id.charCodeAt(4);
     const x = ((seed * 137) % 800) - 400;
     const y = ((seed * 53) % 600) - 300;
@@ -25,12 +25,12 @@
     return `--ex: ${x}px; --ey: ${y}px; --erot: ${rot}deg;`;
   }
 
-  function handleAccept(n) {
+  function handleAccept(n: any) {
     if (n.onAccept) n.onAccept();
     dismiss(n.id);
   }
 
-  function handleDecline(n) {
+  function handleDecline(n: any) {
     if (n.onDecline) n.onDecline();
     dismiss(n.id);
   }

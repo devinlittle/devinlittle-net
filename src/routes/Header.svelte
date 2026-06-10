@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { page } from "$app/state";
   import { auth, logout } from "$lib/utils/auth.svelte.js";
   import github from "$lib/images/github.svg";
