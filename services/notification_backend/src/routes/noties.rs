@@ -1,0 +1,512 @@
+use std::{
+    collections::HashSet,
+    str::FromStr,
+    sync::{Arc, RwLock},
+};
+
+use axum::{
+    extract::{ws::Message, Path, State, WebSocketUpgrade},
+    response::IntoResponse,
+    Extension, Json,
+};
+use hyper::StatusCode;
+use serde_json::Value;
+use sqlx::PgPool;
+use tokio::{select, sync::broadcast};
+use uuid::Uuid;
+use web_push::{
+    ContentEncoding, IsahcWebPushClient, SubscriptionInfo, WebPushClient, WebPushMessageBuilder,
+};
+
+use crate::{
+    routes::{AppState, ConnectedUsers},
+    utils::{jwt::jwt_parse, secrets::SECRETS},
+};
+
+use common::{
+    nanopass::RemoveSessionInternalInput,
+    notification::{Bootstrap, PushSubscription, SendNotification, SubscribeRequest},
+    AuthenticatedUser, UserRole,
+};
+
+#[utoipa::path(
+    get,
+    path = "/ws/{id}",
+    params(
+        ("String", description = "contains 'global' or a uuid")
+    ),
+    responses(
+        (status = 101, description = "swithcing to websockets"),
+    )
+)]
+pub async fn notify(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+    Path(path_uuid): Path<String>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |mut socket| async move {
+        if path_uuid == "global" {
+            let mut global_rx = state.global_channel.subscribe();
+            while let Ok(msg) = global_rx.recv().await {
+                if socket.send(Message::Text(msg.into())).await.is_err() {
+                    break;
+                }
+            }
+            return;
+        }
+
+        // Intial process
+        // First message needs to be a BOOTSTRAP w/ token
+        let Some(Ok(Message::Text(msg))) = socket.recv().await else { return; };
+        if !msg.contains("BOOTSTRAP") {
+            return;
+        }
+        let Some(bootstrap_json) = msg.find(":").map(|x| &msg[x + 1..]) else { return; };
+
+        let Ok(bootstrap_json) = serde_json::from_str::<Bootstrap>(bootstrap_json) else { return; };
+
+        let user = match jwt_parse(axum::extract::State(state.clone()), &bootstrap_json.token).await
+        {
+            Ok(user) => user,
+            Err(_) => return,
+        };
+
+        let path_uuid = match Uuid::from_str(path_uuid.as_str()) {
+            Ok(path_uuid) => path_uuid,
+            Err(_) => return,
+        };
+
+        if user.uuid != path_uuid {
+            socket
+                .send(
+                    format!(
+                        "UUID in Token doesn't match with websocket path; {} != {}",
+                        user.uuid, path_uuid
+                    )
+                    .into(),
+                )
+                .await
+                .unwrap_or_default();
+            return;
+        }
+
+        let is_admin = user.role.is_admin();
+
+        let session_id = user.session_id;
+
+        // Populating online_users per user hashset!!
+        if let Some(hashset) = state.online_users.get(&user.uuid) {
+            let mut write = hashset.write().unwrap();
+            write.insert(session_id);
+            tracing::debug!("Added session to existing active_user entry: {:?}", *write);
+        } else {
+            let mut new_set = HashSet::new();
+            new_set.insert(session_id);
+            tracing::debug!("Created new active_user entry: {:?}", new_set);
+            state
+                .online_users
+                .insert(user.uuid, Arc::new(RwLock::new(new_set)));
+        }
+
+        // TODO: set active to true on auth_db thru internal call
+        // announce to all users with conversations that user is now active
+
+        if !state.connected_users.contains_key(&user.uuid) {
+            let (tx, _) = broadcast::channel::<String>(32);
+            state.connected_users.insert(user.uuid, tx);
+        }
+        socket
+            .send(Message::Text("Channel Created".into()))
+            .await
+            .ok();
+
+        let online_len = if let Some(read) = state.online_users.get(&user.uuid) {
+            let read = match read.read() {
+                Ok(read) => read,
+                Err(poisoned) => {
+                    tracing::error!("LOCK POISONED FOR USER {}", user.uuid);
+                    poisoned.into_inner()
+                }
+            };
+
+            read.len()
+        } else {
+            0
+        };
+
+        // From this line forward, user is in connected_users and the endpoint is setup
+        tracing::info!(
+            "{} has connected with {} device(s) connected ",
+            user.username,
+            online_len
+        );
+
+        let mut global_rx = state.global_channel.subscribe();
+        let tx = if let Some(tx) = state.connected_users.get(&user.uuid) {
+            tx.subscribe()
+        } else {
+            let (tx, _) = broadcast::channel(32);
+            state.connected_users.insert(user.uuid, tx.clone());
+            state.connected_users.get(&user.uuid).unwrap().subscribe()
+        };
+        let mut user_rx = tx;
+
+        let admin_tx = if let Some(tx) = state.role_channel.get(&UserRole::Devin) {
+            tx.subscribe()
+        } else {
+            let (tx, _) = broadcast::channel(32);
+            state.role_channel.insert(UserRole::Devin, tx.clone());
+            state
+                .role_channel
+                .get(&UserRole::Devin)
+                .unwrap()
+                .subscribe()
+        };
+        let mut admin_rx = admin_tx;
+
+        loop {
+            select! {
+                msg = socket.recv() => {
+                        let msg = match msg {
+                            Some(Ok(msg)) => msg,
+                            _ => break,
+                        };
+                        let msg = msg.to_text().unwrap_or_default();
+
+                        let send_req = match serde_json::from_str::<SendNotification>(msg) {
+                            Ok(send_req) => send_req,
+                            Err(_) => break,
+                        };
+
+                        let recipient_uuid = match Uuid::from_str(send_req.recipient.as_str()) {
+                            Ok(recipient_uuid) => recipient_uuid,
+                            Err(_) => break,
+                        };
+
+                        if let Some(tx) = state.connected_users.get(&recipient_uuid) {
+                            tx.send(send_req.content)
+                              .map_err(|err| tracing::error!("error sending to user_tx: {}", err))
+                              .ok();
+                        }
+                        tracing::trace!("This is a send request");
+                },
+                msg = global_rx.recv() => {
+                    match msg {
+                        Ok(msg) => {
+                            if socket.send(Message::Text(msg.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                        Err(_) => break,
+                    }
+                },
+                msg = user_rx.recv() => {
+                    match msg {
+                        Ok(msg) => {
+                            if socket.send(Message::Text(msg.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                        Err(_) => break,
+                    }
+                },
+                msg = admin_rx.recv(), if is_admin => {
+                    match msg {
+                        Ok(msg) => {
+                            if socket.send(Message::Text(msg.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                        Err(_) => break,
+                    }
+                },
+            }
+        }
+
+        let remove_ses = RemoveSessionInternalInput {
+            user_id: user.uuid,
+            session_id,
+        };
+
+        tokio::spawn(async move {
+            let _ = reqwest::Client::new()
+                .post("http://nanopass_backend:3004/internal/session_cleanup")
+                .header(
+                    "Authorization",
+                    format!("Basic {}", SECRETS.internal_api_key.as_str()),
+                )
+                .json(&remove_ses)
+                .send()
+                .await
+                .map_err(|err| tracing::error!("failed to send session cleanup: {}", err));
+        });
+
+        // session clean up logic
+        tracing::debug!("SESSION REMOVAL LOGIC ABOUT TO RUN");
+        let is_empty = if let Some(hashset_ref) = state.online_users.get(&user.uuid) {
+            let mut write = match hashset_ref.write() {
+                Ok(guard) => guard,
+                Err(poisoned) => {
+                    tracing::error!("LOCK POISONED FOR USER {}", user.uuid);
+                    poisoned.into_inner()
+                }
+            };
+
+            write.remove(&session_id);
+            write.is_empty()
+        } else {
+            false
+        };
+
+        if is_empty {
+            // TODO: add current timestamp as last_active timestamp and active as false
+            // announce to all users that account now inactive sending timestamp
+            state.online_users.remove(&user.uuid);
+            state.connected_users.remove(&user.uuid);
+            tracing::debug!("No sessions remaining for {}, removing entry", user.uuid);
+        } else {
+            tracing::debug!("session_id: {} removed for {}", session_id, user.uuid);
+        }
+
+        let online_len = if let Some(read) = state.online_users.get(&user.uuid) {
+            let read = match read.read() {
+                Ok(read) => read,
+                Err(poisoned) => {
+                    tracing::error!("LOCK POISONED FOR USER {}", user.uuid);
+                    poisoned.into_inner()
+                }
+            };
+
+            read.len()
+        } else {
+            0
+        };
+
+        tracing::info!(
+            "{} has disconnected now with {} device(s) connected ",
+            user.username,
+            online_len
+        );
+
+        tracing::debug!("this is connected_users: {:?}", state.connected_users);
+    })
+}
+// INFO: THIS IS INTENTIONAL, REMEMBER, `notification_backend` IS A SMART BUT MOSTLY DUMB PIPE
+#[utoipa::path(
+    post,
+    path = "/user_message/{id}",
+    request_body(
+        content = String, 
+        description = "The raw message body", 
+        content_type = "text/plain"
+    ),
+    params(
+        ("id" = String, Path, description = "contains a uuid")
+    ),
+    security(
+        ("bearer_auth" = []),
+    ),
+    responses(
+        (status = 200, description = "message sent to channel"),
+        (status = 401, description = "uuid can't be parsed; JWT error"),
+        (status = 500, description = "some server error or whatever"),
+    )
+)]
+pub async fn user_message(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    body: String,
+) -> StatusCode {
+    let uuid = match Uuid::from_str(uuid.as_str()) {
+        Ok(uuid) => uuid,
+        Err(_) => return StatusCode::UNAUTHORIZED,
+    };
+
+    let message = body;
+
+    let Some(tx) = state.connected_users.get(&uuid) else { return push_to_browser(state.pool, state.web_push_client, uuid, message).await };
+
+    match tx.send(message.clone()) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => {
+            if notify_user(&state.pool, &state.web_push_client, uuid, message)
+                .await
+                .is_ok()
+            {
+                StatusCode::OK
+            } else {
+                tracing::error!("there was an error sending to a usr");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        }
+    }
+}
+
+async fn push_to_browser(
+    pool: PgPool,
+    web_push_client: IsahcWebPushClient,
+    user_id: Uuid,
+    message: String,
+) -> StatusCode {
+    let data: Value = serde_json::from_str(&message).unwrap_or_default();
+
+    match data.get("namespace").and_then(|n| n.as_str()) {
+        Some("notification") => {
+            /*let title = data["payload"]["title"].as_str().unwrap_or("");
+            let content = data["payload"]["content"].as_str().unwrap_or("");
+            let sender_username = data["payload"]["sender_username"].as_str().unwrap_or(""); */
+
+            if notify_user(&pool, &web_push_client, user_id, message)
+                .await
+                .is_ok()
+            {
+                StatusCode::OK
+            } else {
+                tracing::error!("there was an error sending to a usr");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        }
+        _ => StatusCode::NOT_FOUND, // message is not notification-type message
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/subscribe",
+    request_body = SubscribeRequest,
+    security(
+        ("bearer_auth" = []),
+    ),
+    responses(
+        (status = 201, description = "endpoint and keys added to db for user"),
+        (status = 500, description = "some server error or whatever"),
+    )
+)]
+
+pub async fn push_api_subscribe(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+    Json(req): Json<SubscribeRequest>,
+) -> Result<impl IntoResponse, StatusCode> {
+    sqlx::query!(
+        r#"
+        INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (endpoint) DO UPDATE
+            SET p256dh = EXCLUDED.p256dh,
+                auth   = EXCLUDED.auth,
+                user_id = EXCLUDED.user_id
+        "#,
+        user.uuid,
+        req.endpoint,
+        req.keys.p256dh,
+        req.keys.auth,
+    )
+    .execute(&state.pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok((StatusCode::CREATED).into_response())
+}
+
+pub async fn get_user_subscriptions(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<PushSubscription>, sqlx::Error> {
+    sqlx::query_as!(
+        PushSubscription,
+        "SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1",
+        user_id
+    )
+    .fetch_all(pool)
+    .await
+}
+
+pub async fn notify_user(
+    pool: &PgPool,
+    client: &IsahcWebPushClient,
+    user_id: Uuid,
+    message: String,
+) -> anyhow::Result<()> {
+    let subs = get_user_subscriptions(pool, user_id).await?;
+
+    let payload = message;
+
+    for sub in subs {
+        let info = SubscriptionInfo::new(&sub.endpoint, &sub.p256dh, &sub.auth);
+
+        let sig = SECRETS
+            .vapid_private_key
+            .clone()
+            .add_sub_info(&info)
+            .build()?;
+
+        let mut builder = WebPushMessageBuilder::new(&info);
+        builder.set_payload(ContentEncoding::Aes128Gcm, payload.as_bytes());
+        builder.set_vapid_signature(sig);
+
+        match client.send(builder.build()?).await {
+            Ok(_) => {}
+            Err(web_push::WebPushError::EndpointNotValid(_))
+            | Err(web_push::WebPushError::EndpointNotFound(_)) => {
+                sqlx::query!(
+                    "DELETE FROM push_subscriptions WHERE endpoint = $1",
+                    sub.endpoint
+                )
+                .execute(pool)
+                .await?;
+            }
+            Err(e) => tracing::warn!("Push failed for {}: {}", sub.endpoint, e),
+        }
+    }
+
+    Ok(())
+}
+
+async fn _announce_that_the_user_about_to_be_mentioned_is_now_gonna_be_offline(
+    user: Uuid,
+    announce_to: Vec<Uuid>,
+    channels: &ConnectedUsers,
+) -> () {
+    for id in announce_to {
+        let Some(tx) = channels.get(&id) else {return};
+
+        let message = serde_json::json!({
+            "namespace": "smalltalk",
+            "payload": {
+                "type": "UserOffline",
+                "user_id": user
+            }
+        })
+        .to_string();
+
+        match tx.send(message) {
+            Ok(_) => (),
+            Err(_) => return,
+        }
+    }
+}
+
+async fn _announce_that_the_user_about_to_be_mentioned_is_now_gonna_be_online(
+    user: Uuid,
+    announce_to: Vec<Uuid>,
+    channels: &ConnectedUsers,
+) -> () {
+    for id in announce_to {
+        let Some(tx) = channels.get(&id) else {return};
+
+        let message = serde_json::json!({
+            "namespace": "smalltalk",
+            "payload": {
+                "type": "UserOnline",
+                "user_id": user
+            }
+        })
+        .to_string();
+
+        match tx.send(message) {
+            Ok(_) => (),
+            Err(_) => return,
+        }
+    }
+}

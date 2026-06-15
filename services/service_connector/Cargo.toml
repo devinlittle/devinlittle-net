@@ -1,0 +1,22 @@
+[package]
+name = "service_connector"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio.workspace = true
+tokio-stream.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+tonic.workspace = true
+tonic-reflection.workspace = true
+prost.workspace = true
+tonic-prost.workspace = true
+dashmap.workspace = true
+uuid.workspace = true
+common.workspace = true
+
+[build-dependencies]
+anyhow.workspace = true
+tonic-prost-build.workspace = true
+

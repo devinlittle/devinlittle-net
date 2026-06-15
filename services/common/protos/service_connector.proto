@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package mesh.service_connector;
+
+service MeshNetworkService {
+  rpc ConnectNode (stream ClientMessage) returns (stream ServerMessage);
+}
+
+message ClientMessage {
+  string from_node_id = 1;
+  
+  oneof payload {
+    RegisterRequest register = 2;
+    bool RegisterCompletion = 3;
+    SignalEnvelope signal = 4;
+  }
+}
+
+message ServerMessage {
+  oneof payload {
+    BootstrapSnapshot snapshot = 1;
+    PeerAnnouncement announcement = 2;
+    SignalEnvelope signal = 3;
+  }
+}
+
+message RegisterRequest {
+  bool is_reconnect = 1;
+}
+
+message BootstrapSnapshot {
+  repeated string active_node_ids = 1;
+}
+
+message PeerAnnouncement {
+  string joined_node_id = 1;
+}
+
+message SignalEnvelope {
+  string source_node_id = 1;
+  string target_node_id = 2;
+  
+  string raw_json = 3;
+}

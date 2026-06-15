@@ -1,0 +1,86 @@
+[workspace]
+resolver = "3"
+members = [
+  "auth_backend/",
+  "gradegetter/gradegetter",
+  "gradegetter/gradegetter_backend/",
+  "notification_backend/",
+  "nanopass_backend/",
+  "smalltalk_backend",
+  "common",
+  "service_connector",
+  "crates/crypto_utils",
+  "crates/friendly_namer"]
+
+
+[workspace.dependencies]
+tokio = {version = "1", features = ["full"]}
+tokio-stream = "0.1"
+axum = {version = "0.8.9", features = ["macros"]}
+axum-extra = "0.12.6"
+axum-server = {version = "0.8", features = ["tls-rustls"]}
+axum-prometheus = "0.10"
+hyper = {version = "1.10"}
+hyper-tls = "0.6.0"
+tower-http = { version = "0.6.11", features = ["cors"]}
+tower = "0.5.3"
+utoipa = {version = "5.5", features = ["axum_extras", "uuid", "chrono"]}
+utoipa-scalar = {version = "0.3", features = ["axum"]}
+rustls = { version = "0.23.40" }
+reqwest = {version = "0.13", default-features = false, features = ["json", "rustls"]}
+tokio-tungstenite = { version = "0.29", features = ["native-tls"] }
+futures-util = "0.3.32"
+serde = {version = "1", features = ["derive"]}
+serde_json = {version = "1"}
+serde_with = { version = "3", features = ["chrono_0_4"] }
+sha2 = {version = "0.11"}
+chrono = { version = "0.4", features = ["serde"] }
+argon2 = "0.5"
+sqlx = { version = "0.8.6", features = [
+  "runtime-tokio-rustls",
+  "postgres",
+  "migrate",
+  "json",
+  "chrono",
+  "uuid"]}
+uuid = {version = "1.23", features = ["v4", "serde"]}
+jsonwebtoken = { version = "10", features = ["aws_lc_rs"] }
+web-push = "0.11"
+dashmap = "6.2"
+tracing = "0.1.44"
+tracing-subscriber = {version = "0.3", features = ["env-filter", "json"] }
+tracing-appender = "0.2"
+tracing-opentelemetry = "0.33"
+opentelemetry = "0.32"
+opentelemetry_sdk = { version = "0.32", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.32", features = ["grpc-tonic", "trace"] }
+anyhow = "1.0"
+thiserror = "2"
+dotenvy = "0.15.7"
+constant_time_eq = "0.5"
+regex = "1"
+scraper = "0.27"
+aes-gcm = "0.10"
+aes = "0.9"
+rand = "0.10"
+base64 = "0.22"
+crypto_utils = { path = "./crates/crypto_utils" }
+common = { path = "./common" }
+strum = { version = "0.28", features = ["derive"] }
+
+tonic = "0.14"
+tonic-reflection = "0.14"
+prost = "0.14"
+tonic-prost = "0.14"
+tonic-prost-build = "0.14"
+webrtc = "0.17"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = "fat"
+opt-level = 3
+strip = true
+debug = false
+debug-assertions = false
+overflow-checks = false

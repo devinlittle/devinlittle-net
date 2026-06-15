@@ -1,0 +1,69 @@
+{{- $gb := index .Values "gradegetter-backend" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gradegetter-backend
+spec:
+  replicas: {{ $gb.replicaCount }}
+  selector:
+    matchLabels:
+      app: gradegetter-backend
+  template:
+    metadata:
+      labels:
+        app: gradegetter-backend
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecret }}
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command:
+            - sh
+            - -c
+            - until nc -z {{ .Release.Name }}-postgresql 5432; do echo "waiting"; sleep 2; done
+        - name: run-migrations
+          image: "{{ $gb.image.repository }}:{{ $gb.image.tag }}"
+          command: ["/bin/sqlx", "migrate", "run", "--source", "/migrations"]
+          env:
+            - name: DATABASE_URL
+              value: "postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql:5432/gg"
+      containers:
+        - name: gradegetter-backend
+          image: "{{ $gb.image.repository }}:{{ $gb.image.tag }}"
+          imagePullPolicy: {{ $gb.image.pullPolicy }}
+          ports:
+            - containerPort: {{ $gb.port }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ $gb.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          env:
+            - name: PORT
+              value: {{ $gb.port | quote }}
+            - name: RUST_LOG
+              value: {{ $gb.env.RUST_LOG }}
+            - name: DATABASE_URL
+              value: "postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql:5432/gg"
+            - name: HASH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: HASH_SECRET
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: JWT_SECRET
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: ENCRYPTION_KEY
+            - name: INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: INTERNAL_API_KEY

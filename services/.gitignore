@@ -1,0 +1,23 @@
+# Build Artifacts
+/target/
+node_modules/
+recordings/
+/recordings/
+build.sh
+dev_build.sh
+/docker-hoopla/
+init-db.sh
+**/*.mp4
+logs/
+
+# OS Specific
+.DS_STORE
+
+# Rust Stuff
+**/*.rs.bk
+
+# Editor Specific
+*.swp
+*.swo
+*~
+docker-compose.yaml
