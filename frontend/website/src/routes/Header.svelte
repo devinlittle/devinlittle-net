@@ -125,7 +125,7 @@
   </nav>
 
   <div class="corner">
-    <a href="https://github.com/devinlittle/devinlittlenet">
+    <a href="https://github.com/devinlittle/devinlittle-net">
       <img src={github} alt="GitHub" />
     </a>
   </div>
