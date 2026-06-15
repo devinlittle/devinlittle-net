@@ -3,7 +3,7 @@ use axum::{
     Json, Router,
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
-use common::smalltalk::{SmalltalkNotesEvent, SmalltalkNotesMessage};
+use backend_common::smalltalk::{SmalltalkNotesEvent, SmalltalkNotesMessage};
 use hyper::StatusCode;
 use reqwest::Client;
 use sqlx::PgPool;
@@ -40,11 +40,11 @@ pub mod notes;
     ),
     components(
         schemas(
-            common::AuthenticatedUser,
-            common::Claims,
-            common::smalltalk::SmalltalkNote,
-            common::smalltalk::SmalltalkNotesGroup,
-            common::smalltalk::SmalltalkNotesMessage,
+            backend_common::AuthenticatedUser,
+            backend_common::Claims,
+            backend_common::smalltalk::SmalltalkNote,
+            backend_common::smalltalk::SmalltalkNotesGroup,
+            backend_common::smalltalk::SmalltalkNotesMessage,
         )
     ),
     modifiers(&JwtBearer, &InternalAuth),
@@ -106,7 +106,7 @@ impl AppState {
     pub async fn broadcast_note_event(&self, user_id: Uuid, event: SmalltalkNotesEvent) {
         let message = SmalltalkNotesMessage {
             id: Uuid::new_v4(),
-            namespace: common::Namespaces::SmallTalkNotes,
+            namespace: backend_common::Namespaces::SmallTalkNotes,
             payload: event,
         };
 

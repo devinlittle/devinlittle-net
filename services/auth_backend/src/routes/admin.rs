@@ -15,7 +15,7 @@ use crate::{
     util::secrets::SECRETS,
 };
 
-use common::{
+use backend_common::{
     auth::{ChangeRoleInput, Message, NotificationPayload, NotificationType, Users},
     AuthenticatedUser, Namespaces, UserRole,
 };

@@ -1,10 +1,13 @@
 [package]
 name = "auth_backend"
 version = "0.0.1"
-edition = "2024"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
-common = { workspace = true, features = ["auth"] }
+backend-common = { workspace = true, features = ["auth"] }
 
 tokio.workspace = true
 axum.workspace = true

@@ -4,7 +4,7 @@ use axum::{
     Json, Router,
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
-use common::nanopass::{FileListing, NanoPassMessage, NanoPassPayload, Visibility};
+use backend_common::nanopass::{FileListing, NanoPassMessage, NanoPassPayload, Visibility};
 use dashmap::DashMap;
 use hyper::StatusCode;
 use std::sync::Arc;
@@ -36,11 +36,11 @@ mod internal;
     ),
     components(
         schemas(
-            common::nanopass::RemoveListingInput,
-            common::nanopass::RemoveSessionInput,
-            common::nanopass::RemoveSessionInternalInput,
-            common::nanopass::FileListingInput,
-            common::nanopass::NanoPassMessage,
+            backend_common::nanopass::RemoveListingInput,
+            backend_common::nanopass::RemoveSessionInput,
+            backend_common::nanopass::RemoveSessionInternalInput,
+            backend_common::nanopass::FileListingInput,
+            backend_common::nanopass::NanoPassMessage,
         )
     ),
     modifiers(&JwtBearer, &InternalAuth),
@@ -102,7 +102,7 @@ impl AppState {
     pub async fn broadcast_nanopass_event(&self, listing: &FileListing, event: NanoPassPayload) {
         let message = NanoPassMessage {
             id: Uuid::new_v4(),
-            namespace: common::Namespaces::NanoPass,
+            namespace: backend_common::Namespaces::NanoPass,
             from_session_id: None,
             from_user_id: None,
             target_user_id: Some(listing.owner_id),

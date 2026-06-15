@@ -16,7 +16,7 @@ use uuid::Uuid;
 
 use crate::util::{hash::validate, secrets::SECRETS};
 
-use common::{
+use backend_common::{
     auth::{
         ActiveSessions, AddRecoveryInfoInputs, ByIdsInput, UpdateProfileInput,
         VerifyRecoveryInfoInputs, VerifyRecoveryInfoOutputs,

@@ -1,0 +1,10 @@
+[package]
+name = "friendly-namer"
+version = "0.1.0"
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+license = "LGPL-3.0-only"
+
+
+[dependencies]

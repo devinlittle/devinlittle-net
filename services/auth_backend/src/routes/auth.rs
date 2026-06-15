@@ -16,7 +16,7 @@ use sqlx::{types::uuid, PgPool};
 use tracing::{debug, error, info, info_span, instrument, warn, Instrument};
 use uuid::Uuid;
 
-use common::{
+use backend_common::{
     auth::{LoginInput, LoginOutput, RegisterInput},
     Claims,
 };
@@ -84,7 +84,7 @@ struct UserRow {
 }
 
 impl UserRow {
-    pub fn try_into_roles(&self) -> Result<common::UserRoles, StatusCode> {
+    pub fn try_into_roles(&self) -> Result<backend_common::UserRoles, StatusCode> {
         serde_json::from_value(self.roles.clone()).map_err(|e| {
             error!("Role mapping failed: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR

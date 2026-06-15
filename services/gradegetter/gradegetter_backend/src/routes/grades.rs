@@ -5,7 +5,7 @@ use tracing::{error, info, info_span, instrument, warn, Instrument};
 
 use crate::routes::AppState;
 
-use common::{gradegetter::GradesHashMap, AuthenticatedUser};
+use backend_common::{gradegetter::GradesHashMap, AuthenticatedUser};
 
 #[instrument(
     name = "fetch_grades",

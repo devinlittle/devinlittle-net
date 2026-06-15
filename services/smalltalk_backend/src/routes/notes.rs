@@ -3,14 +3,14 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
-use chrono::{DateTime, Utc};
-use common::{
+use backend_common::{
     smalltalk::{
         NoteCreateRequest, NoteGroupCreateRequest, NotePatchRequest, NotesGroupPatchRequest,
         SmalltalkNote, SmalltalkNotesEvent, SmalltalkNotesGroup, SmalltalkNotesSyncResponse,
     },
     AuthenticatedUser,
 };
+use chrono::{DateTime, Utc};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, QueryBuilder};

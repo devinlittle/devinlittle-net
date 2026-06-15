@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use common::UserRoles;
+use backend_common::UserRoles;
 use hyper::StatusCode;
 use sqlx::PgPool;
 use uuid::Uuid;

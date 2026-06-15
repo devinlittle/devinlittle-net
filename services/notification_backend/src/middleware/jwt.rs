@@ -11,7 +11,7 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
-use common::{AuthenticatedUser, Claims};
+use backend_common::{AuthenticatedUser, Claims};
 use jsonwebtoken::{DecodingKey, Validation};
 
 pub async fn jwt_auth(
@@ -47,9 +47,9 @@ pub async fn jwt_auth(
     let username = decoded_jwt.username;
     let role = decoded_jwt
         .roles
-        .get(&common::ServiceName::Notifications)
-        .or_else(|| decoded_jwt.roles.get(&common::ServiceName::Global))
-        .unwrap_or(&common::UserRole::User)
+        .get(&backend_common::ServiceName::Notifications)
+        .or_else(|| decoded_jwt.roles.get(&backend_common::ServiceName::Global))
+        .unwrap_or(&backend_common::UserRole::User)
         .clone();
 
     let session_id = decoded_jwt.session_id;

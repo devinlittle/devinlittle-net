@@ -1,10 +1,13 @@
 [package]
 name = "smalltalk_backend"
 version = "0.0.1"
-edition = "2024"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
-common = {workspace = true, features = ["smalltalk"]}
+backend-common = {workspace = true, features = ["smalltalk"]}
 
 tokio.workspace = true
 axum = { workspace = true, features = ["ws"] }

@@ -24,7 +24,7 @@ pub mod mesh {
 use crate::mesh::service_connector::{
     BootstrapSnapshot, ClientMessage, PeerAnnouncement, ServerMessage, SignalEnvelope,
 };
-use common::tracing::init_tracing;
+use backend_common::tracing::init_tracing;
 use mesh::service_connector::mesh_network_service_server::{
     MeshNetworkService, MeshNetworkServiceServer,
 };

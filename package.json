@@ -1,0 +1,22 @@
+{
+  "name": "devinlittle-net",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Devin Little <devinlittlee@gmail.com>",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://git.home.devinlittle.net/devin/devinlittle-net"
+  },
+  "workspaces": [
+    "frontend/website",
+    "services/gradegetter/tokengetter/",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "dev:website": "bun run --filter devinlittle-website dev",
+    "build:website": "bun run --filter devinlittle-website build",
+    "gen:api": "bun run --filter devinlittle-website gen:api"
+  }
+}

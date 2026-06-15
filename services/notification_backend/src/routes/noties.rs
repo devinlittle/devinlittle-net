@@ -23,7 +23,7 @@ use crate::{
     utils::{jwt::jwt_parse, secrets::SECRETS},
 };
 
-use common::{
+use backend_common::{
     nanopass::RemoveSessionInternalInput,
     notification::{Bootstrap, PushSubscription, SendNotification, SubscribeRequest},
     AuthenticatedUser, UserRole,

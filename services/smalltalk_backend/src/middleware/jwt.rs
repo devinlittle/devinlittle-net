@@ -8,7 +8,7 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
-use common::{AuthenticatedUser, Claims, UserRoles};
+use backend_common::{AuthenticatedUser, Claims, UserRoles};
 use jsonwebtoken::{DecodingKey, Validation};
 use std::sync::Arc;
 
@@ -47,9 +47,9 @@ pub async fn jwt_auth(
     let username = decoded_jwt.username;
     let role = decoded_jwt
         .roles
-        .get(&common::ServiceName::SmallTalk)
-        .or_else(|| decoded_jwt.roles.get(&common::ServiceName::Global))
-        .unwrap_or(&common::UserRole::User);
+        .get(&backend_common::ServiceName::SmallTalk)
+        .or_else(|| decoded_jwt.roles.get(&backend_common::ServiceName::Global))
+        .unwrap_or(&backend_common::UserRole::User);
 
     let session_id = decoded_jwt.session_id;
 
@@ -119,9 +119,9 @@ pub async fn jwt_auth(
             .unwrap_or_default();
 
         let db_role = db_role
-            .get(&common::ServiceName::SmallTalk)
-            .or_else(|| db_role.get(&common::ServiceName::Global))
-            .unwrap_or(&common::UserRole::User);
+            .get(&backend_common::ServiceName::SmallTalk)
+            .or_else(|| db_role.get(&backend_common::ServiceName::Global))
+            .unwrap_or(&backend_common::UserRole::User);
 
         if db_role != role {
             // db role value is different then provided jwt;

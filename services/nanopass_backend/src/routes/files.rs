@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::routes::AppState;
 
-use common::{
+use backend_common::{
     nanopass::{FileListing, FileListingInput, RemoveListingInput, RemoveSessionInput, Visibility},
     AuthenticatedUser,
 };
@@ -107,7 +107,7 @@ pub async fn create_listing(
         state
             .broadcast_nanopass_event(
                 &file_listing,
-                common::nanopass::NanoPassPayload::ListingAdded {
+                backend_common::nanopass::NanoPassPayload::ListingAdded {
                     listing: file_listing.clone(),
                 },
             )
@@ -163,7 +163,7 @@ pub async fn modify_listing(
                 state
                     .broadcast_nanopass_event(
                         &listing,
-                        common::nanopass::NanoPassPayload::ListingRemoved {
+                        backend_common::nanopass::NanoPassPayload::ListingRemoved {
                             listing: listing.clone(),
                         },
                     )
@@ -177,7 +177,7 @@ pub async fn modify_listing(
             state
                 .broadcast_nanopass_event(
                     &owned,
-                    common::nanopass::NanoPassPayload::ListingModified {
+                    backend_common::nanopass::NanoPassPayload::ListingModified {
                         listing: owned.clone(),
                     },
                 )
@@ -253,7 +253,7 @@ pub async fn remove_listing(
             state
                 .broadcast_nanopass_event(
                     &owned,
-                    common::nanopass::NanoPassPayload::ListingRemoved {
+                    backend_common::nanopass::NanoPassPayload::ListingRemoved {
                         listing: owned.clone(),
                     },
                 )
@@ -333,7 +333,7 @@ pub async fn remove_all_session_listings(
         state
             .broadcast_nanopass_event(
                 listing,
-                common::nanopass::NanoPassPayload::ListingRemoved {
+                backend_common::nanopass::NanoPassPayload::ListingRemoved {
                     listing: listing.clone(),
                 },
             )

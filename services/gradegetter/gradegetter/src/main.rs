@@ -3,7 +3,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use common::gradegetter::GradesHashMap;
+use backend_common::gradegetter::GradesHashMap;
 use crypto_utils::{decrypt_string, encrypt_string};
 use futures_util::{SinkExt, StreamExt};
 use regex::Regex;
@@ -34,7 +34,7 @@ mod secrets;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let _guard = common::tracing::init_tracing();
+    let _guard = backend_common::tracing::init_tracing();
 
     let database_string = &SECRETS.database_url;
 

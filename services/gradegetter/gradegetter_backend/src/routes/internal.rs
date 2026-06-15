@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::routes::AppState;
 
-use common::gradegetter::{ForwardMessage, ForwardStatus};
+use backend_common::gradegetter::{ForwardMessage, ForwardStatus};
 
 #[utoipa::path(
     get,

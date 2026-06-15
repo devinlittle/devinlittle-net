@@ -1,10 +1,13 @@
 [package]
 name = "nanopass_backend"
 version = "0.0.1"
-edition = "2024"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
-common = { workspace = true, features = ["nanopass", "notifications"]}
+backend-common = { workspace = true, features = ["nanopass", "notifications"]}
 
 tokio.workspace = true
 axum = { workspace = true, features = ["ws", "macros"] }

@@ -39,10 +39,10 @@ pub mod internal;
     ),
     components(
         schemas(
-            common::AuthenticatedUser,
-            common::Claims,
-            common::gradegetter::SchoologyLogin,
-            common::gradegetter::ForwardMessage,
+            backend_common::AuthenticatedUser,
+            backend_common::Claims,
+            backend_common::gradegetter::SchoologyLogin,
+            backend_common::gradegetter::ForwardMessage,
         )
     ),
     modifiers(&JwtBearer, &InternalAuth),

@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use common::notification::RoleMessage;
+use backend_common::notification::RoleMessage;
 use hyper::StatusCode;
 use uuid::Uuid;
 

@@ -3,7 +3,7 @@ use axum::{
     Json, Router,
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
-use common::UserRole;
+use backend_common::UserRole;
 use dashmap::DashMap;
 use hyper::StatusCode;
 use sqlx::PgPool;
@@ -41,12 +41,12 @@ mod noties;
     ),
     components(
         schemas(
-            common::AuthenticatedUser,
-            common::Claims,
-            common::notification::RoleMessage,
-            common::notification::SubscribeRequest,
-            common::notification::SendNotification,
-            common::Namespaces,
+            backend_common::AuthenticatedUser,
+            backend_common::Claims,
+            backend_common::notification::RoleMessage,
+            backend_common::notification::SubscribeRequest,
+            backend_common::notification::SendNotification,
+            backend_common::Namespaces,
         )
     ),
     modifiers(&JwtBearer, &InternalAuth),

@@ -1,6 +1,12 @@
 {
-  "name": "devinlittlenet",
-  "version": "0.0.1",
+  "name": "devinlittle-website",
+  "version": "0.1.0",
+  "author": "Devin Little <devinlittlee@gmail.com>",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://git.home.devinlittle.net/devin/devinlittle-net"
+  },
   "scripts": {
     "start:prod": "node --env-file=template.env build",
     "dev": "vite dev",
@@ -15,12 +21,12 @@
     "@neoconfetti/svelte": "^1.0.0",
     "@sveltejs/adapter-node": "^5.5.4",
     "@sveltejs/enhanced-img": "^0.3.10",
-    "@sveltejs/kit": "^2.62.0",
+    "@sveltejs/kit": "^2.65.1",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "mdsvex": "^0.12.7",
     "openapi-typescript": "^7.13.0",
-    "svelte": "^5.56.1",
-    "svelte-check": "^4.5.0",
+    "svelte": "^5.56.3",
+    "svelte-check": "^4.6.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.5"
   },

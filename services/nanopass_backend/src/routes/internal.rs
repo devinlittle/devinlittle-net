@@ -1,5 +1,5 @@
 use axum::{extract::State, Json};
-use common::nanopass::{FileListing, RemoveSessionInternalInput};
+use backend_common::nanopass::{FileListing, RemoveSessionInternalInput};
 use hyper::StatusCode;
 
 use crate::routes::AppState;
@@ -36,7 +36,7 @@ pub async fn internal_remove_all_session_listings(
         state
             .broadcast_nanopass_event(
                 listing,
-                common::nanopass::NanoPassPayload::ListingRemoved {
+                backend_common::nanopass::NanoPassPayload::ListingRemoved {
                     listing: listing.clone(),
                 },
             )

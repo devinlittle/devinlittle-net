@@ -18,7 +18,7 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
-    //    let _guard = common::tracing::init_tracing();
+    //    let _guard = backend_common::tracing::init_tracing();
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .init();

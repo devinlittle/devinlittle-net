@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
-use common::{gradegetter::SchoologyLogin, AuthenticatedUser};
+use backend_common::{gradegetter::SchoologyLogin, AuthenticatedUser};
 use crypto_utils::encrypt_string;
 use tokio::sync::watch::{self};
 use tracing::{error, info, info_span, instrument, Instrument};
