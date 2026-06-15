@@ -1,0 +1,45 @@
+<script>
+  //  let { data } = $props();
+</script>
+
+<svelte:head>
+  <title>DevinLittle.net - Projects</title>
+  <meta name="description" content="Devin's Projects section" />
+</svelte:head>
+
+<h1>Projects</h1>
+
+<!--> COMMENTING OUT FOR NOW <div class="eachLoop">
+  {#each data.posts as v}
+    <div>
+      <br />
+      <Preview
+        articleLink={v.path}
+        articleTitle={v.meta.title}
+        articleImage={v.meta.image}
+      />
+      <br />
+    </div>
+  {/each}
+</div>  
+
+<Preview
+  articleLink="/projects/gradegetter"
+  articleTitle="My gradegetter project"
+/>
+<!-->
+
+<!-->Content Here!</!-->
+
+<style>
+  .eachLoop {
+    display: flex;
+    flex-direction: row;
+  }
+
+  @media (max-width: 850px) {
+    .eachLoop {
+      flex-direction: column;
+    }
+  }
+</style>
