@@ -1,12 +1,3 @@
-# The backend!
+# Authentication
 
-## Setup
-
-```bash
-cp ./env.template ./.env
-# The INTERNAL_API_KEY var is just (username:password) but base64 encoded
-```
-
-## When deployed, all routes have an OpenAPI Doc accesable thru "/api-docs/openapi.json" and a swagger-ui too located at /swegger-ui
-
-
+Is it authentication or authorizatoin?! WHO KNOWS but what i know is that this is really borind and basic, check out the scalar if u want more indepth info on it and its routes, that kinda goes for all services too.

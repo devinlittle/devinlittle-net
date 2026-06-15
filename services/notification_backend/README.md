@@ -1,9 +1,10 @@
 # Notifications
 
-listens on port 3003
-has routes:
-* /ws/{id}
+Notifications provides a pub/sub service in which every app uses to provide real time event based data stuffies.
+Notifications is essentially a dumb pipe that clients use for routing between users and or their sessions. 
 
-on connection to the websocket user has to send BOOTSTRAP:{JWT_BEARER} if id provided
-if id == global then no need to bootstrap
+* GradeGetter uses Notifications for real time grade updates
+* NanoPass utilizes Notifications as a signalling server and to populate nanopass FileListings
+* SmallTalk utilizes Notifications for real time updates (typing indicators, note updates, read receipts, status indicators, etc)
 
+Notifications is foundational to create the real time feeling that defines DevinLittle.Net
