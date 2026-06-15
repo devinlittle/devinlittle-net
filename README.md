@@ -11,13 +11,13 @@ DevinLittle.Net started out as a personal collection of tools built to improve m
 This monorepo isolates my frontend, backend services, applications, and shared libraries. Click on any directory to view its specific documentation.
 
 * [**`services/`**](./services) - the backend which is composed of microservices
-    * `auth_backend/` - Authentication and User Data handleing
-    * `gradegetter/` - the GradeGetter stack
-    * `nanopass_backend/` - storing ephemeral nanopass metadata
-    * `notification_backend/` - pub/sub service
-    * `smalltalk_backend/` - notes + messaging
-    * `backend-common/` - the common library that all services depend on
-    * `service_connector/` - the WebRTC signalling server for the internal mesh network
+    * [`auth_backend/`](./services/auth_backend) - Authentication and User Data handleing
+    * [`gradegetter/`](./services/gradegetter) - the GradeGetter stack
+    * [`nanopass_backend/`](./services/nanopass_backend) - storing ephemeral nanopass metadata
+    * [`notification_backend/`](./services/notification_backend) - pub/sub service
+    * [`smalltalk_backend/`](./services/smalltalk_backend) - notes + messaging
+    * [`backend-common/`](./services/backend-common) - the common library that all services depend on
+    * [`service_connector/`](./services/service_connector) - the WebRTC signalling server for the internal mesh network
 * [**`frontend/website/`**](./frontend/website) - The web application built with Svelte
 * [**`crates/`**](./crates) - Pure Rust utility libraries shared across the backend services
     * [`crypto_utils/`](./crates/crypto_utils) - encryption and decryption helpers
