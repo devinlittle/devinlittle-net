@@ -32,6 +32,8 @@
         "cargo-sources.json"
       ],
       "build-commands": [
+        "mkdir -p .cargo",
+        "cp -f cargo/config .cargo/config.toml",
         "cargo build --frozen --release --bin dln-cli",
         "cargo build --frozen --release --bin dln-ui",
         "install -Dm755 target/release/dln-cli /app/bin/dlncli",
