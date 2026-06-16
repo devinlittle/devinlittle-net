@@ -1,0 +1,27 @@
+#!/bin/sh
+HERE="$(dirname "$(readlink -f "${0}")")"
+
+case "$1" in
+    cli|--cli|-cli)
+        shift
+        exec "$HERE/usr/bin/dlncli" "$@"
+        ;;
+    ui|--ui|-ui)
+        shift # Strip the "ui" flag
+        exec "$HERE/usr/bin/dln-ui" "$@"
+        ;;
+    -h|--help|help)
+        echo "DlN Application Toolkit Package"
+        echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+        echo "Da Usage:"
+        echo "  ./dln.AppImage        -> Launches the graphical desktop interface"
+        echo "  ./dln.AppImage cli    -> Launches the command line interface"
+        echo "  ./dln.AppImage ui     -> Launches the graphical interface explicitly"
+        echo ""
+        echo "Any extra flags or arguments will be automatically passed down to the respective app!!"
+        exit 0
+        ;;
+    *)
+        exec "$HERE/usr/bin/dln-ui" "$@"
+        ;;
+esac

@@ -1,0 +1,52 @@
+# Template file for 'dln-git'
+pkgname=dln-git
+_pkgname="${pkgname%-git}"
+version=0.0.1
+revision=1
+build_style=cargo
+configure_args="--bin dln-cli --bin dln-ui"
+hostmakedepends="git pandoc"
+makedepends="gcc-libs glibc-devel"
+short_desc="Bundle of the dlncli and dln-ui"
+maintainer="Devin Little <devinlittlee@gmail.com>"
+license="AGPL-3.0-only"
+homepage="https://devinlittle.net"
+provides="dlncli-${version}_${revision} dln-ui-${version}_${revision}"
+conflicts="dlncli dln-ui"
+
+# xbps-src pulls git via do_fetch if no distfiles are defined, but requires explicit rules
+do_fetch() {
+	if [ ! -d "$XBPS_SRCDIR/../../$_pkgname" ]; then
+		git clone --depth=1 --branch master https://git.home.devinlittle.net/devin/devinlittle-net.git "$XBPS_BUILDDIR/$pkgname-$version"
+	fi
+}
+
+post_build() {
+	# Build man pages using pandoc after cargo finishes
+	mkdir -p target/man
+	for manpage in dlncli dln-ui; do
+		pandoc --standalone -f markdown -t man "dist/man/${manpage}.md" > "target/man/${manpage}.1"
+	done
+}
+
+do_install() {
+	# Install binaries
+	vbin target/release/dln-cli dlncli
+	vbin target/release/dln-ui dln-ui
+
+	# Install desktop and metadata files
+	vinstall dist/linux/dln.desktop 644 usr/share/applications
+	vinstall dist/linux/net.devinlittle.dln.metadata.xml 644 usr/share/metainfo
+
+	# Install shell completions
+	vcompletion apps/dln-cli/completions/zsh/_dln-cli zsh dlncli
+	vcompletion apps/dln-cli/completions/fish/dln-cli.fish fish dlncli
+	vcompletion apps/dln-cli/completions/bash/dln-cli bash dlncli
+
+	# Install man pages
+	vman target/man/dlncli.1
+	vman target/man/dln-ui.1
+
+	# Install license
+	vlicense apps/core/LICENSE
+}

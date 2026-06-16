@@ -1,0 +1,11 @@
+#!/bin/sh
+case "$1" in
+    cli|--cli)
+        shift
+        exec /app/bin/dlncli "$@"
+        ;;
+    *)
+        exec /app/bin/dln-ui "$@"
+        ;;
+esac
+

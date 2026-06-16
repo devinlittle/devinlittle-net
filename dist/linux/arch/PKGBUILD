@@ -1,0 +1,80 @@
+# Maintainer: Devin Little <devinlittlee@gmail.com>
+# Based off eza PKGBUILD
+pkgname=dln-git
+_pkgname="${pkgname%-git}"
+pkgver=r247.38c8e91
+pkgrel=1
+pkgdesc="Bundle of the dlncli and dln-ui"
+arch=(x86_64 aarch64)
+url="https://git.home.devinlittle.net/devin/devinlittle-net.git"
+license=('AGPL-3.0-only')
+depends=(
+  gcc-libs
+  glibc
+)
+makedepends=(
+  cargo
+  git
+  pandoc
+)
+checkdepends=(cargo)
+provides=(dlncli dln-ui dln)
+conflicts=(dlncli dln-ui dln)
+source=("${_pkgname}::git+${url}#branch=master")
+sha256sums=('SKIP')
+options=(!debug !strip)
+
+prepare() {
+  cd "${_pkgname}"
+
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+pkgver() {
+  cd "${_pkgname}"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+build() {
+  cd "${_pkgname}"
+
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release --bin dln-cli
+  cargo build --frozen --release --bin dln-ui
+
+  # Build man pages
+  mkdir -p target/man
+  for manpage in dlncli dln-ui; do
+    pandoc --standalone -f markdown -t man "docs/man/${manpage}.md" >"target/man/${manpage}.1"
+  done
+}
+
+check() {
+  cd "${_pkgname}"
+
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo test --frozen --release --bin dln-cli
+  cargo test --frozen --release --bin dln-ui
+}
+
+package() {
+  cd "${_pkgname}"
+
+  install -Dm755 "target/release/dln-cli" "${pkgdir}/usr/bin/dlncli"
+  install -Dm755 "target/release/dln-ui" "${pkgdir}/usr/bin/dln-ui"
+
+  install -Dm644 "dist/linux/dln.desktop" "${pkgdir}/usr/share/applications/dln.desktop"
+  install -Dm644 "dist/linux/net.devinlittle.dln.metadata.xml" -t "${pkgdir}"/usr/share/metainfo/
+
+  # Install shell completions.
+  install -Dm644 "apps/dln-cli/completions/zsh/_dln-cli" "${pkgdir}/usr/share/zsh/site-functions/_dlncli"
+  install -Dm644 "apps/dln-cli/completions/fish/dln-cli.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/dlncli.fish"
+  install -Dm644 "apps/dln-cli/completions/bash/dln-cli" "${pkgdir}/usr/share/bash-completion/completions/dlncli"
+
+  # Install man pages
+  install -Dm644 target/man/*.1 -t "${pkgdir}/usr/share/man/man1"
+
+  install -Dm644 "apps/core/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

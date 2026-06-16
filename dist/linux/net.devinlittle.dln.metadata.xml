@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component type="desktop-application">
-  <id>dln.desktop</id>
+  <id>net.devinlittle.dln</id>
   <name>DlN</name>
   <summary>DLN Desktop Client</summary>
   <project_license>AGPL-3.0-only</project_license>
   <metadata_license>FSFAP</metadata_license>
+  <developer id="net.devinlittle">
+    <name>Devin Little</name>
+  </developer>
+  <url type="homepage">https://devinlittle.net</url>
+  <url type="bugtracker">https://github.com/devinlittle/devinlittle-net/issues</url>
+  <url type="vcs-browser">https://github.com/devinlittle/devinlittle-net.git</url>
   <description>
     <p>The DlN desktop client supports the following features from the DevinLittle.Net suite:</p>
     <ul>
@@ -13,9 +19,6 @@
       <li>SmallTalk Notes</li>
     </ul>
   </description>
-  <developer>
-    <name>Devin Little</name>
-  </developer>
   <launchable type="desktop-id">dln.desktop</launchable>
   <icon type="stock">dln-ui</icon>
   <categories>
@@ -26,4 +29,5 @@
     <keyword>Devin</keyword>
     <keyword>Little</keyword>
   </keywords>
+  <content_rating type="oars-1.1" />
 </component>
