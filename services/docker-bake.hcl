@@ -13,42 +13,42 @@ target "settings" {
 
 target "auth_backend" {
     inherits = ["settings"]
-    dockerfile = "Dockerfile.auth_backend"
+    dockerfile = "auth_backend/Dockerfile.auth_backend"
     tags = ["${REGISTRY}/auth_backend:${TAG}"]
 }
 
 target "gradegetter" {
     inherits = ["settings"]
-    dockerfile = "Dockerfile.gradegetter"
+    dockerfile = "gradegetter/gradegetter/Dockerfile.gradegetter"
     tags = ["${REGISTRY}/gradegetter:${TAG}"]
 }
 
 target "gradegetter_backend" {
     inherits = ["settings"]
-    dockerfile = "Dockerfile.gradegetter_backend"
+    dockerfile = "gradegetter/gradegetter_backend/Dockerfile.gradegetter_backend"
     tags = ["${REGISTRY}/gradegetter_backend:${TAG}"]
 }
 
 target "nanopass_backend" {
     inherits = ["settings"]
-    dockerfile = "Dockerfile.nanopass_backend"
+    dockerfile = "nanopass_backend/Dockerfile.nanopass_backend"
     tags = ["${REGISTRY}/nanopass_backend:${TAG}"]
 }
 
 target "notification_backend" {
     inherits = ["settings"]
-    dockerfile = "Dockerfile.notification_backend"
+    dockerfile = "notification_backend/Dockerfile.notification_backend"
     tags = ["${REGISTRY}/notification_backend:${TAG}"]
 }
 
 target "smalltalk_backend" {
     inherits = ["settings"]
-    dockerfile = "Dockerfile.smalltalk_backend"
+    dockerfile = "smalltalk_backend/Dockerfile.smalltalk_backend"
     tags = ["${REGISTRY}/smalltalk_backend:${TAG}"]
 }
 
 target "service_connector" {
     inherits = ["settings"]
-    dockerfile = "Dockerfile.service_connector"
+    dockerfile = "service_connector/Dockerfile.service_connector"
     tags = ["${REGISTRY}/service_connector:${TAG}"]
 }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component type="desktop-application">
+  <id>dln.desktop</id>
+  <name>DlN</name>
+  <summary>DLN Desktop Client</summary>
+  <project_license>AGPL-3.0-only</project_license>
+  <metadata_license>FSFAP</metadata_license>
+  <description>
+    <p>The DlN desktop client supports the following features from the DevinLittle.Net suite:</p>
+    <ul>
+      <li>GradeGetter</li>
+      <li>NanoPass</li>
+      <li>SmallTalk Notes</li>
+    </ul>
+  </description>
+  <developer>
+    <name>Devin Little</name>
+  </developer>
+  <launchable type="desktop-id">dln.desktop</launchable>
+  <icon type="stock">dln-ui</icon>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>DevinLittle.Net</keyword>
+    <keyword>Devin</keyword>
+    <keyword>Little</keyword>
+  </keywords>
+</component>

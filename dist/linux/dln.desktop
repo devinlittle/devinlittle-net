@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=DlN
+GenericName=DLN
+Icon=dln-ui
+Exec=dln-ui
+Terminal=false
+Type=Application
+Categories=Utility;
+Comment=DLN Desktop Client
+Keywords=DevinLittle.Net;Devin;Little

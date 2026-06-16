@@ -10,7 +10,11 @@ members = [
   "services/backend-common",
   "services/service_connector",
   "crates/crypto_utils",
-  "crates/friendly-namer",]
+  "crates/friendly-namer",
+  "apps/core",
+  "apps/dln-cli",
+  "apps/dln-ui",
+]
 
 [workspace.package]
 authors = ["Devin Little <devinlittlee@gmail.com>"]
@@ -27,7 +31,7 @@ axum-server = {version = "0.8", features = ["tls-rustls"]}
 axum-prometheus = "0.10"
 hyper = {version = "1.10"}
 hyper-tls = "0.6.0"
-tower-http = { version = "0.6.11", features = ["cors"]}
+tower-http = { version = "0.7", features = ["cors"]}
 tower = "0.5.3"
 utoipa = {version = "5.5", features = ["axum_extras", "uuid", "chrono"]}
 utoipa-scalar = {version = "0.3", features = ["axum"]}
