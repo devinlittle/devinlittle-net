@@ -39,6 +39,3 @@ tracing-subscriber.workspace = true
 
 dotenvy.workspace = true
 constant_time_eq.workspace = true
-
-[target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }
