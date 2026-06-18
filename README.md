@@ -23,3 +23,7 @@ This monorepo isolates my frontend, backend services, applications, and shared l
     * [`crypto_utils/`](./crates/crypto_utils) - encryption and decryption helpers
     * [`friendly-namer/`](./crates/friendly-namer/) - alias generation used by the internal mesh network
 * [**`chart/`**](./chart) - deployment configurations
+
+## Building
+
+For information revolving around building look into the [BUILD.md](./BUILD.md) file

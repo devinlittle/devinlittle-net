@@ -1,0 +1,84 @@
+name: "dln"
+description: |
+  Devin Little client suite - CLI and Desktop application
+  for the DevinLittle.Net ecosystem.
+version: "REPLACE_ME"
+license: "AGPL-3.0-only"
+maintainer: "Devin Little <devinlittlee@gmail.com>"
+homepage: "https://git.home.devinlittle.net/devin/devinlittle-net"
+
+arch: "arm64"
+
+contents:
+  # Binaries
+  - src: "../target/aarch64-unknown-linux-gnu/release/dln-cli"
+    dst: "/usr/bin/dlncli"
+    type: "file"
+    file_info:
+      mode: 0755
+
+  - src: "../target/aarch64-unknown-linux-gnu/release/dln-ui"
+    dst: "/usr/bin/dln-ui"
+    type: "file"
+    file_info:
+      mode: 0755
+
+  # Desktop file
+  - src: "../dist/linux/dln.desktop"
+    dst: "/usr/share/applications/dln.desktop"
+    type: "file"
+    file_info:
+      mode: 0644
+
+  # Metainfo
+  - src: "../dist/linux/net.devinlittle.dln.metadata.xml"
+    dst: "/usr/share/metainfo/net.devinlittle.dln.metadata.xml"
+    type: "file"
+    file_info:
+      mode: 0644
+
+  # Shell completions
+# - src: "../../apps/dln-cli/completions/zsh/_dln-cli"
+#   dst: "/usr/share/zsh/site-functions/_dln-cli"
+#   type: "file"
+#   file_info:
+#     mode: 0644
+#
+# - src: "../../apps/dln-cli/completions/fish/dln-cli.fish"
+#   dst: "/usr/share/fish/vendor_completions.d/dln-cli.fish"
+#   type: "file"
+#   file_info:
+#     mode: 0644
+#
+# - src: "../../apps/dln-cli/completions/bash/dln-cli"
+#   dst: "/usr/share/bash-completion/completions/dln-cli"
+#   type: "file"
+#   file_info:
+#     mode: 0644
+#
+# # Man pages
+# - src: "../../target/man/dlncli.1"
+#   dst: "/usr/share/man/man1/dlncli.1"
+#   type: "file"
+#   file_info:
+#     mode: 0644
+#
+# - src: "../../target/man/dln-ui.1"
+#   dst: "/usr/share/man/man1/dln-ui.1"
+#   type: "file"
+#   file_info:
+#     mode: 0644
+
+  # License
+  - src: "../apps/core/LICENSE"
+    dst: "/usr/share/licenses/dln/LICENSE"
+    type: "file"
+    file_info:
+      mode: 0644
+
+  # Optional: README
+  - src: "../README.md"
+    dst: "/usr/share/doc/dln/README.md"
+    type: "file"
+    file_info:
+      mode: 0644

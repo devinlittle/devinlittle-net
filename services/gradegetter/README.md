@@ -6,4 +6,4 @@ GradeGetter consists of:
 * TokenGetter:
   - extracts session tokens from user provided credentials
 * GradeGetter_Backend:
-  - securely provide an interface in which clients interact with to fetch grades, provide credentials, bootstrap, etc.
+  - securely provides an interface in which clients interact with to fetch grades, provide credentials, bootstrap, etc.

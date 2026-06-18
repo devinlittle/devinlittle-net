@@ -1,0 +1,3 @@
+# Building...
+
+Just ensure you have `base-devel` installed and run a `makepkg -s` and you're good.
