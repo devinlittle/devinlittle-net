@@ -1,0 +1,15 @@
+[package]
+name = "dln-core"
+version = "0.1.0"
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aws-lc-rs.workspace = true
+serde.workspace = true
+
+arc-swap.workspace = true
+uuid.workspace = true
+backend-common.workspace = true
