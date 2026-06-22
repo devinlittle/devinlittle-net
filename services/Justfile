@@ -1,3 +1,5 @@
+export BUILDX_BAKE_ENTITLEMENTS_FS := "0"
+
 stable-all:
     TAG=stable docker buildx bake --push
 
