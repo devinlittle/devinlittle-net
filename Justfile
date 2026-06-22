@@ -1,6 +1,6 @@
 update:
   cargo update
-  uvx flatpak-cargo-generator ./Cargo.lock -o ./dist/linux/flatpak/cargo-sources.json
+  just update-lockfile
   bun update
 
 update-lockfile:
