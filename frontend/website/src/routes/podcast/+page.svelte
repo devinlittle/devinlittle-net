@@ -149,13 +149,6 @@
                 allowfullscreen
               ></iframe>
             </div>
-
-            <p
-              style="font-size: 0.9rem; color: var(--color-subtle-text); line-height: 1.5;"
-            >
-              <strong>Episode Notes:</strong>
-              {ep.notes}
-            </p>
           </div>
         {/if}
       {/each}
