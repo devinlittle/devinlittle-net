@@ -7,4 +7,4 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-dln-core.workspace = true
+dln-core = { workspace = true, features = ["client"] }
