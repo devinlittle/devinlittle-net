@@ -1,0 +1,4 @@
+.qmlls.ini
+*.autosave
+.qtcreator
+Generated/
