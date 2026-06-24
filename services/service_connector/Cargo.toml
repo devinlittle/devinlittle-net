@@ -7,7 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-backend-common.workspace = true
+backend-common = {workspace = true, features = ["tracing"]}
 
 tokio.workspace = true
 tokio-stream.workspace = true

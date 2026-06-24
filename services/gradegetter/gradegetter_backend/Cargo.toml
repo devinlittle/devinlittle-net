@@ -7,7 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-backend-common = {workspace = true, features = ["gradegetter"]}
+backend-common = {workspace = true, features = ["gradegetter", "internal"]}
 
 tokio.workspace = true
 axum = { workspace = true, features = ["ws"] }

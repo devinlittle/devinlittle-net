@@ -7,7 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-backend-common = {workspace = true, features = ["gradegetter"]}
+backend-common = {workspace = true, features = ["gradegetter", "internal"]}
 
 reqwest = { workspace = true, features = ["form", "query"]}
 tokio.workspace = true

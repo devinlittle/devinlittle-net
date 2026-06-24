@@ -19,7 +19,10 @@ pub mod notification;
 #[cfg(feature = "smalltalk")]
 pub mod smalltalk;
 
+#[cfg(feature = "internal")]
 pub mod internal;
+
+#[cfg(feature = "tracing")]
 pub mod tracing;
 
 #[derive(Clone, ToSchema, Serialize, Deserialize, Debug)]
