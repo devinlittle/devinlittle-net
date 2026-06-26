@@ -37,20 +37,20 @@ pub struct MyObjectRust {
 
 impl qobject::MyObject {
     pub fn increment(self: Pin<&mut Self>) {
-        println!("hi: {}", self.counter.clone());
         let new_value = *self.counter() + 1;
+        println!("increased to {}", new_value);
         self.set_counter(new_value);
     }
 
     pub fn decrement(self: Pin<&mut Self>) {
         let new_value = *self.counter() - 1;
+        println!("decreased to {}", new_value);
         self.set_counter(new_value);
-        println!("bye");
     }
 
     pub fn reset(self: Pin<&mut Self>) {
         self.set_counter(0);
-        println!("reset");
+        println!("reset the counter");
     }
 }
 
@@ -58,7 +58,7 @@ fn main() {
     let mut app = QApplication::new();
     let mut engine = QQmlApplicationEngine::new();
 
-    QGuiApplication::set_desktop_file_name(&"net.devinlittle.dln_ui".into());
+    QGuiApplication::set_desktop_file_name(&"net.devinlittle.dln".into());
 
     if env::var("QT_QUICK_CONTROLS_STYLE").is_err() {
         QQuickStyle::set_style(&"Basic".into());

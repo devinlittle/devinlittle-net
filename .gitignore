@@ -21,3 +21,4 @@ logs/
 *.swo
 *~
 docker-compose.yaml
+/.qtcreator

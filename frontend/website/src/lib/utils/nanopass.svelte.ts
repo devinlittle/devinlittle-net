@@ -254,7 +254,7 @@ import { PUBLIC_TURN_USERNAME, PUBLIC_TURN_PASSWORD } from "$env/static/public"
 function createPeerConnection(listing_id: string, target_session_id: string, target_user_id: string): RTCPeerConnection {
   const pc = new RTCPeerConnection({
     iceServers: [
-      { urls: "stun:turn.devinlittle.net:3478" },
+      { urls: "stun:stun.devinlittle.net:3478" },
       {
         urls: 'turn:turn.devinlittle.net:3478',
         username: PUBLIC_TURN_USERNAME,
