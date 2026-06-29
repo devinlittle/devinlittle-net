@@ -45,7 +45,7 @@ serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
 chrono.workspace = true
-utoipa.workspace = true
+utoipa = { workspace = true, features = ["macros"] }
 uuid.workspace = true
 dashmap.workspace = true
 anyhow.workspace = true

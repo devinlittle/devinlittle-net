@@ -1,0 +1,224 @@
+# i'd like to let u know if u are reading this you are very very cute I love you ❤
+
+set dotenv-load := true
+set shell := ["bash", "-uc"]
+
+# [Vars]
+#version := `cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "core") | .version'`
+version := `printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"`
+
+project_home := `printf $(cd ../ && pwd)`
+target_dir := project_home / "target"
+packaging_dir := target_dir / "packaging"
+qt_dir := target_dir / "qt"
+qt_ver := "6.11.1"
+qmake_wrapper := project_home / "scripts/qmake"
+mac_sdk_dir := target_dir / "mac_sdk"
+
+# -----------------------------------------
+
+default: help
+
+[private]
+ensure-packaging-dir:
+    mkdir -p {{packaging_dir}}
+
+[private]
+ensure-qt-managed:
+    #!/usr/bin/env bash
+    echo "{{qt_dir}}" > ../scripts/.qt_base_local
+    if [ ! -d {{qt_dir}} ]; then
+    mkdir -p {{qt_dir}}
+    echo "Downloading QT 6.11.1" && \
+      curl \
+      --progress-bar \
+      "https://minio.home.devinlittle.net/dev.bucket/qt_{{qt_ver}}.tar.zst" \
+      | tar --zstd -xf - -C {{qt_dir}}
+    fi
+
+[private]
+ensure-mac-sdk:
+    #!/usr/bin/env bash
+    if [ ! -d {{mac_sdk_dir}} ]; then
+    mkdir -p {{mac_sdk_dir}}
+    echo "Downloading the MacOSX.sdk" && \
+      curl \
+      --progress-bar \
+      "https://minio.home.devinlittle.net/dev.bucket/MacOSX.sdk.tar.zst" \
+      | tar --zstd -xf - -C {{mac_sdk_dir}}
+    fi
+# -----------------------------------------
+
+# builds with the debug profile with the HOST architecture
+build package="":
+  #!/usr/bin/env bash
+    if [ -z "{{package}}" ]; then
+        echo "No package specified. Building CLI and UI ..."
+        echo "Building CLI"
+        cargo build -p dln-cli
+        echo "Building UI"
+        cargo build -p dln-ui
+    else
+        echo "Building specified binary: {{package}}..."
+        cargo build -p {{package}}
+    fi
+
+# builds with the release profile with the HOST architecture
+build-release package="":
+    #!/usr/bin/env bash
+    if [ -z "{{package}}" ]; then
+        echo "No package specified. Building CLI and UI ..."
+        echo "Building CLI"
+        cargo build -p dln-cli --release
+        echo "Building UI"
+        cargo build -p dln-ui --release
+    else
+        echo "Building specified binary: {{package}}..."
+        cargo build -p {{package}} --release
+    fi
+
+# builds for linux on both x86_64 and aarch64
+build-linux: ensure-packaging-dir ensure-qt-managed
+    @echo "Building x86_64 cli"
+    cargo zigbuild --target x86_64-unknown-linux-gnu --release -p dln-cli
+
+    @echo "Building x86_64 ui"
+    echo "x86_64-unknown-linux-gnu" > ../scripts/.comp_target_local
+    QMAKE={{qmake_wrapper}} \
+      cargo zigbuild --target x86_64-unknown-linux-gnu --release -p dln-ui
+
+    cd "../target/x86_64-unknown-linux-gnu/release" && \
+    tar -czf ../../../target/packaging/dln-{{version}}-amd64.tar.gz dln-cli dln-ui
+
+    @echo "Building aaach64 cli"
+    cargo zigbuild --target aarch64-unknown-linux-gnu --release -p dln-cli
+
+    @echo "Building aarch64 ui"
+    echo "aarch64-unknown-linux-gnu" > ../scripts/.comp_target_local
+    QMAKE={{qmake_wrapper}} \
+      cargo zigbuild --target aarch64-unknown-linux-gnu --release -p dln-ui
+
+    cd "../target/aarch64-unknown-linux-gnu/release" && \
+    tar -czf ../../../target/packaging/dln-{{version}}-arm64.tar.gz dln-cli dln-ui
+
+
+#TODO: fix deb version yeah yeah 
+
+# packages deb file
+package-deb: ensure-packaging-dir
+    @echo "Packaging x86_64 DEB"
+    nfpm pkg --packager deb --config ../dist/linux/nfpm-amd64.yaml --target "../target/packaging/dln-{{version}}-amd64.deb"
+
+    @echo "Packaging aarch64 DEB"
+    nfpm pkg --packager deb --config ../dist/linux/nfpm-arm64.yaml --target "../target/packaging/dln-{{version}}-arm64.deb"
+
+#TODO: fix rpm version yeah yeah 
+
+# packages rpm file
+package-rpm: ensure-packaging-dir
+    @echo "Packaging x86_64 RPM"
+    nfpm pkg --packager rpm --config ../dist/linux/nfpm-amd64.yaml --target "../target/packaging/dln-{{version}}-amd64.rpm"
+
+    @echo "Packaging aarch64 RPM"
+    nfpm pkg --packager rpm --config ../dist/linux/nfpm-arm64.yaml --target "../target/packaging/dln-{{version}}-arm64.rpm"
+
+# builds using an PKGBUILD file
+package-arch: ensure-packaging-dir
+#    @echo "Packing for Arch Linux..."
+#    mkdir -p ../target/packaging/arch
+#    cp packaging/arch/PKGBUILD ../target/packaging/arch 
+#    cd ../target/packaging/arch
+#    makepkg -s
+#    mv
+
+# uses pycargoebuild to enerate an Gentoo ebuild file
+package-gentoo: build-linux
+#    @echo "→ Generating Gentoo ebuild..."
+#    mkdir -p packaging/gentoo
+#    pycargoebuild --output packaging/gentoo/ --manifest-path core/Cargo.toml
+#    cd packaging/gentoo && ebuild *.ebuild digest
+
+package-void: void-all
+
+void-setup: ensure-packaging-dir
+#    bash packaging/scripts/void-helper.sh setup
+
+void-build: ensure-packaging-dir
+#    bash packaging/scripts/void-helper.sh build
+
+void-all: ensure-packaging-dir void-setup void-build
+
+package-appimage: ensure-packaging-dir
+    @echo "→ Building AppImage..."
+    mkdir -p {{packaging_dir}}/appimage
+
+package-flatpak: ensure-packaging-dir
+    @echo "→ Building Flatpak..."
+#    flatpak-builder --repo={{packaging_dir}}/flatpak/repo ...
+
+package-linux: build-linux package-deb package-rpm package-arch package-gentoo package-void package-appimage package-flatpak
+
+# builds for windows using cargo-xwin
+build-windows: ensure-packaging-dir ensure-qt-managed
+    @echo "Building x86_64 cli"
+    cargo xwin build --target x86_64-pc-windows-msvc --release -p dln-cli
+
+    @echo "Building x86_64 ui"
+    echo "x86_64-pc-windows-msvc" > ../scripts/.comp_target_local
+    QMAKE={{qmake_wrapper}} \
+      cargo xwin build --target x86_64-pc-windows-msvc --release -p dln-ui
+
+    cp "{{target_dir}}/x86_64-pc-windows-msvc/release/dln-ui.exe" "{{packaging_dir}}"
+
+# TODO: fix the /ismv issues
+
+#    @echo "Building aaach64 cli"
+#    cargo xwin build --target aarch64-pc-windows-msvc --release -p dln-cli
+#
+#    @echo "Building aarch64 ui"
+#    echo "aarch64-pc-windows-msvc" > ../scripts/.comp_target_local
+#    QMAKE={{qmake_wrapper}} \
+#      cargo xwin build --target aarch64-pc-windows-msvc --release -p dln-ui
+
+
+# builds for macos using zigbuild and linking with zig
+build-macos: ensure-packaging-dir ensure-qt-managed ensure-mac-sdk
+    @echo "Building macOS cli"
+    cargo zigbuild --target aarch64-apple-darwin --release -p dln-cli
+
+    @echo "Building macOS ui"
+    echo "aarch64-apple-darwin" > ../scripts/.comp_target_local
+    QMAKE={{qmake_wrapper}} \
+      cargo xwin build --target aarch64-apple-darwin --release -p dln-ui
+
+package-macos:
+  @echo "Packing .App for macOS"
+  ../dist/macos/build-macos.sh
+
+package-all: package-linux package-macos build-windows
+    @echo "All packages built with soooo much love!"
+
+clean:
+    cargo clean
+
+clippy:
+    cargo clippy --all-targets --all-features -- -D warnings
+
+test:
+    cargo test --all-features
+
+doctor:
+    @echo "Checking prerequisites..."
+    command -v zig >/dev/null && echo "zig = yes" || echo "zig = no"
+    command -v just >/dev/null && echo "just = yes" || echo "just = no "
+    cargo --version
+    @echo "Run 'just build' to test basic build"
+
+bump-version:
+    @echo "TODO: Implement version bumping"
+
+release-dry:
+    @echo "Dry run release for version {{version}}"
+
+help:
+    @just --list

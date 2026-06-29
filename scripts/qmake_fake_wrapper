@@ -1,0 +1,154 @@
+#!/bin/bash
+# Fake qmake for
+# cxx-qt and its other stuffies all never truely or didnt do a good job documentitng this but crosscompiling with them is very challenging at first.
+# I found out after lots of time that the QMAKE varible has an effect on the compilation process.
+# after creating a script that just read what the build script wanted i saw that they were running "qmake -query" and on specific things
+# after seeing what that provided i created a mock script that provided what it would want, then i provide the envvar to link with the libraries and headers required but build using the host binaries. it works and thats what matters
+
+set -euo pipefail
+
+QT_VERSION="${QT_VERSION:-6.11.1}"
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+COMP_TARGET="${COMP_TARGET:-}"
+if [ -z "$COMP_TARGET" ]; then
+  if [ -f "${SCRIPT_DIR}/.comp_target_local" ]; then
+    COMP_TARGET=$(cat "${SCRIPT_DIR}/.comp_target_local")
+  else
+    echo "I HATE THIS SCRIPT SO MUCH, READ THE BUILD.MD" >&2
+    exit 1
+  fi
+fi
+
+QT_BASE="${QT_BASE:-}"
+if [ -z "$QT_BASE" ]; then
+  if [ -f "${SCRIPT_DIR}/.qt_base_local" ]; then
+    QT_BASE=$(cat "${SCRIPT_DIR}/.qt_base_local")
+  else
+    echo "I HATE THIS SCRIPT SO MUCH, READ THE BUILD.MD" >&2
+    exit 1
+  fi
+fi
+
+QT_BASE=$(cd "$QT_BASE" && pwd)
+
+case "$(uname -s)" in
+Darwin*)
+  QT_HOST="${QT_BASE}/${QT_VERSION}/macos"
+  ;;
+Linux*)
+  if [[ "$(uname -m)" == "aarch64" ]]; then
+    QT_HOST="${QT_BASE}/${QT_VERSION}/gcc_arm64"
+  else
+    QT_HOST="${QT_BASE}/${QT_VERSION}/gcc_64"
+  fi
+  ;;
+*)
+  QT_HOST="${QT_BASE}/${QT_VERSION}/gcc_64"
+  ;;
+esac
+
+case "$COMP_TARGET" in
+*aarch64*linux*gnu | *arm64*linux*)
+  QT_TARGET="${QT_BASE}/${QT_VERSION}/gcc_arm64"
+  QMAKE_SPEC="linux-arm-g++"
+  ;;
+
+*x86_64*linux* | *amd64*linux*)
+  QT_TARGET="${QT_BASE}/${QT_VERSION}/gcc_64"
+  QMAKE_SPEC="linux-g++"
+  ;;
+
+*apple*darwin* | *x86_64*macos* | *aarch64*macos*)
+  QT_TARGET="${QT_BASE}/${QT_VERSION}/macos"
+  QMAKE_SPEC="macx-clang"
+  ;;
+
+*msvc2022*arm64* | *aarch64*windows*)
+  QT_TARGET="${QT_BASE}/${QT_VERSION}/msvc2022_arm64"
+  QMAKE_SPEC="win32-arm64-msvc"
+  ;;
+
+*msvc2022*64* | *x86_64*windows*)
+  QT_TARGET="${QT_BASE}/${QT_VERSION}/msvc2022_64"
+  QMAKE_SPEC="win32-msvc"
+  ;;
+
+*)
+  echo "Warning; Unknown COMP_TARGET '${COMP_TARGET}', im gonna fall back to linux gcc_64" >&2
+  QT_TARGET="${QT_BASE}/${QT_VERSION}/gcc_64"
+  QMAKE_SPEC="linux-g++"
+  ;;
+esac
+
+if [ "$1" = "-query" ]; then
+  if [ -z "$2" ]; then
+    cat <<QTQUERY
+QT_SYSROOT:
+QT_INSTALL_PREFIX:${QT_TARGET}
+QT_INSTALL_ARCHDATA:${QT_TARGET}
+QT_INSTALL_DATA:${QT_TARGET}
+QT_INSTALL_DOCS:/Volumes/Untitled/Applications/qt/Docs/Qt-${QT_VERSION}
+QT_INSTALL_HEADERS:${QT_TARGET}/include
+QT_INSTALL_LIBS:${QT_TARGET}/lib
+QT_INSTALL_LIBEXECS:${QT_HOST}/libexec
+QT_INSTALL_BINS:${QT_HOST}/bin
+QT_INSTALL_TESTS:${QT_TARGET}/tests
+QT_INSTALL_PLUGINS:${QT_TARGET}/plugins
+QT_INSTALL_QML:${QT_TARGET}/qml
+QT_INSTALL_TRANSLATIONS:${QT_TARGET}/translations
+QT_INSTALL_CONFIGURATION:
+QT_INSTALL_EXAMPLES:/Volumes/Untitled/Applications/qt/Examples/Qt-${QT_VERSION}
+QT_HOST_PREFIX:${QT_TARGET}
+QT_HOST_DATA:${QT_HOST}
+QT_HOST_BINS:${QT_HOST}/bin
+QT_HOST_LIBEXECS:${QT_HOST}/libexec
+QT_HOST_LIBS:${QT_TARGET}/lib
+QMAKE_SPEC:${QMAKE_SPEC}
+QMAKE_XSPEC:${QMAKE_SPEC}
+QMAKE_VERSION:3.1
+QT_VERSION:${QT_VERSION}
+QTQUERY
+  else
+    case "$2" in
+    QT_VERSION)
+      echo ${QT_VERSION}
+      ;;
+    QT_INSTALL_PREFIX | QT_HOST_PREFIX)
+      echo "${QT_TARGET}"
+      ;;
+    QT_INSTALL_LIBS | QT_HOST_LIBS)
+      echo "${QT_TARGET}/lib"
+      ;;
+    QT_INSTALL_HEADERS | QT_HOST_HEADERS)
+      echo "${QT_TARGET}/include"
+      ;;
+    QT_INSTALL_BINS | QT_HOST_BINS)
+      echo "${QT_HOST}/bin"
+      ;;
+    QT_INSTALL_LIBEXECS | QT_HOST_LIBEXECS)
+      echo "${QT_HOST}/libexec"
+      ;;
+    QT_INSTALL_PLUGINS | QT_HOST_PLUGINS)
+      echo "${QT_TARGET}/plugins"
+      ;;
+    QT_INSTALL_QML | QT_HOST_QML)
+      echo "${QT_TARGET}/qml"
+      ;;
+    *)
+      echo "${QT_HOST}/bin" #INFO: maybe lib execs here?
+      ;;
+    esac
+  fi
+  exit 0
+fi
+
+if [ "$1" = "--version" ] || [ "$1" = "-version" ]; then
+  echo "QMake version 3.1"
+  echo "Using Qt version ${QT_VERSION} in ${QT_TARGET}"
+  exit 0
+fi
+
+echo "Unknown command: $@" >&2
+exit 1
