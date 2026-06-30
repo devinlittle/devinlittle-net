@@ -136,6 +136,9 @@ QTQUERY
     QT_INSTALL_QML | QT_HOST_QML)
       echo "${QT_TARGET}/qml"
       ;;
+    QMAKE_SPEC | QMAKE_XSPEC)
+      echo "${QMAKE_SPEC}"
+      ;;
     *)
       echo "${QT_HOST}/bin" #INFO: maybe lib execs here?
       ;;

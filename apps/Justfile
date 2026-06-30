@@ -170,28 +170,28 @@ build-windows: ensure-packaging-dir ensure-qt-managed
 
     cp "{{target_dir}}/x86_64-pc-windows-msvc/release/dln-ui.exe" "{{packaging_dir}}"
 
-# TODO: fix the /ismv issues
-
-#    @echo "Building aaach64 cli"
-#    cargo xwin build --target aarch64-pc-windows-msvc --release -p dln-cli
+#   @echo "Building aarch64 cli"
+#   cargo xwin build --target aarch64-pc-windows-msvc --release -p dln-cli
 #
-#    @echo "Building aarch64 ui"
-#    echo "aarch64-pc-windows-msvc" > ../scripts/.comp_target_local
-#    QMAKE={{qmake_wrapper}} \
-#      cargo xwin build --target aarch64-pc-windows-msvc --release -p dln-ui
+#   @echo "Building aarch64 ui"
+#   echo "aarch64-pc-windows-msvc" > ../scripts/.comp_target_local
+#   QMAKE={{qmake_wrapper}} \
+#     cargo xwin build --target aarch64-pc-windows-msvc --release -p dln-ui
 
 
 # builds for macos using zigbuild and linking with zig
 build-macos: ensure-packaging-dir ensure-qt-managed ensure-mac-sdk
     @echo "Building macOS cli"
-    cargo zigbuild --target aarch64-apple-darwin --release -p dln-cli
+    SDKROOT="{{mac_sdk_dir}}/MacOSX.sdk" \
+      cargo zigbuild --target aarch64-apple-darwin --release -p dln-cli
 
     @echo "Building macOS ui"
     echo "aarch64-apple-darwin" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
+      SDKROOT="{{mac_sdk_dir}}/MacOSX.sdk" \
       cargo xwin build --target aarch64-apple-darwin --release -p dln-ui
 
-package-macos:
+package-macos: build-macos
   @echo "Packing .App for macOS"
   ../dist/macos/build-macos.sh
 
