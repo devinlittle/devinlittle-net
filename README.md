@@ -10,6 +10,9 @@ DevinLittle.Net started out as a personal collection of tools built to improve m
 
 This monorepo isolates my frontend, backend services, applications, and shared libraries. Click on any directory to view its specific documentation.
 
+* [**apps/**](./apps) - all the applications DevinLittle.Net provides
+    * [`dln-cli/`](./apps/dln-cli/) - The CLI utility, interface thru the terminal
+    * [`dln-ui/`](./apps/dln-ui/) - the Qt ui for Linux, MacOS, and Windows
 * [**`services/`**](./services) - the backend which is composed of microservices
     * [`auth_backend/`](./services/auth_backend) - Authentication and User Data handleing
     * [`gradegetter/`](./services/gradegetter) - the GradeGetter stack
@@ -21,6 +24,7 @@ This monorepo isolates my frontend, backend services, applications, and shared l
 * [**`frontend/website/`**](./frontend/website) - The web application built with Svelte
 * [**`crates/`**](./crates) - Pure Rust utility libraries shared across the backend services
     * [`crypto_utils/`](./crates/crypto_utils) - encryption and decryption helpers
+    * [`dln-core/`](./crates/crypto_utils) - logic core for dln apps providing homogeneous capabilities to every platform
     * [`friendly-namer/`](./crates/friendly-namer/) - alias generation used by the internal mesh network
 * [**`chart/`**](./chart) - deployment configurations
 
