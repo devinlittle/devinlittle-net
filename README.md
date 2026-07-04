@@ -10,7 +10,7 @@ DevinLittle.Net started out as a personal collection of tools built to improve m
 
 This monorepo isolates my frontend, backend services, applications, and shared libraries. Click on any directory to view its specific documentation.
 
-* [**apps/**](./apps) - all the applications DevinLittle.Net provides
+* [**`apps/`**](./apps) - all the applications DevinLittle.Net provides
     * [`dln-cli/`](./apps/dln-cli/) - The CLI utility, interface thru the terminal
     * [`dln-ui/`](./apps/dln-ui/) - the Qt ui for Linux, MacOS, and Windows
 * [**`services/`**](./services) - the backend which is composed of microservices

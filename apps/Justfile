@@ -80,23 +80,23 @@ build-release package="":
 # builds for linux on both x86_64 and aarch64
 build-linux: ensure-packaging-dir ensure-qt-managed
     @echo "Building x86_64 cli"
-    cargo zigbuild --target x86_64-unknown-linux-gnu --release -p dln-cli
+    cargo build --target x86_64-unknown-linux-gnu --release -p dln-cli
 
     @echo "Building x86_64 ui"
     echo "x86_64-unknown-linux-gnu" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
-      cargo zigbuild --target x86_64-unknown-linux-gnu --release -p dln-ui
+      cargo build --target x86_64-unknown-linux-gnu --release -p dln-ui
 
     cd "../target/x86_64-unknown-linux-gnu/release" && \
     tar -czf ../../../target/packaging/dln-{{version}}-amd64.tar.gz dln-cli dln-ui
 
     @echo "Building aaach64 cli"
-    cargo zigbuild --target aarch64-unknown-linux-gnu --release -p dln-cli
+    cargo build --target aarch64-unknown-linux-gnu --release -p dln-cli
 
     @echo "Building aarch64 ui"
     echo "aarch64-unknown-linux-gnu" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
-      cargo zigbuild --target aarch64-unknown-linux-gnu --release -p dln-ui
+      cargo build --target aarch64-unknown-linux-gnu --release -p dln-ui
 
     cd "../target/aarch64-unknown-linux-gnu/release" && \
     tar -czf ../../../target/packaging/dln-{{version}}-arm64.tar.gz dln-cli dln-ui
@@ -189,7 +189,7 @@ build-macos: ensure-packaging-dir ensure-qt-managed ensure-mac-sdk
     echo "aarch64-apple-darwin" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
       SDKROOT="{{mac_sdk_dir}}/MacOSX.sdk" \
-      cargo xwin build --target aarch64-apple-darwin --release -p dln-ui
+      cargo zigbuild --target aarch64-apple-darwin --release -p dln-ui
 
 package-macos: build-macos
   @echo "Packing .App for macOS"

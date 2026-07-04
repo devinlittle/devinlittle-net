@@ -14,7 +14,7 @@ serde.workspace = true
 arc-swap.workspace = true
 uuid.workspace = true
 
-[target.'cfg(not(target_os = "windows"))'.dependencies]
+[target.'cfg(target_os = "linux")'.dependencies]
 openssl.workspace = true
 
 [target.'cfg(target_os = "windows")'.dependencies]
