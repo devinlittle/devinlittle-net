@@ -41,8 +41,10 @@
         "install -Dm755 dist/linux/flatpak/dln-wrapper /app/bin/dln-wrapper",
         "install -Dm644 dist/linux/dln.desktop /app/share/applications/net.devinlittle.dln.desktop",
         "install -Dm644 dist/linux/net.devinlittle.dln.metainfo.xml /app/share/metainfo/net.devinlittle.dln.metainfo.xml",
+        "install -Dm644 dist/icons/512x512/net.devinlittle.dln.png /app/share/icons/hicolor/512x512/apps/net.devinlittle.dln.png",
         "install -Dm644 dist/icons/256x256/net.devinlittle.dln.png /app/share/icons/hicolor/256x256/apps/net.devinlittle.dln.png",
-        "install -Dm644 dist/icons/512x512/net.devinlittle.dln.png /app/share/icons/hicolor/512x512/apps/net.devinlittle.dln.png"
+        "install -Dm644 dist/icons/128x128/net.devinlittle.dln.png /app/share/icons/hicolor/128x128/apps/net.devinlittle.dln.png",
+        "install -Dm644 dist/icons/64x64/net.devinlittle.dln.png /app/share/icons/hicolor/64x64/apps/net.devinlittle.dln.png"
       ]
     }
   ]
