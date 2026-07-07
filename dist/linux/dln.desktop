@@ -2,7 +2,7 @@
 Version=1.0
 Name=DlN
 GenericName=DLN
-Icon=dln-ui
+Icon=dln
 Exec=dln-ui
 Terminal=false
 Type=Application
