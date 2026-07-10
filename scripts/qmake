@@ -1,1 +1,1 @@
-qmake_fake_wrapper
+./qmake_fake_wrapper.sh

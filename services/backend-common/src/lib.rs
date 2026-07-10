@@ -52,22 +52,31 @@ pub struct Claims {
 //#[serde(rename_all = "snake_case")]
 #[serde(rename_all = "lowercase")]
 pub enum ServiceName {
+    /// This can NOT be used in the client
     #[serde(alias = "Auth")]
     Auth,
+    /// This can be used in the client
     #[serde(alias = "Global")]
     Global,
+    /// This can be used in the client
     #[serde(alias = "Gradegetter")]
     GradeGetter,
+    /// This can NOT be used in the client
     #[serde(alias = "GradeGetter_Backend")]
     GradeGetterBackend,
+    /// This can be used in the client
     #[serde(alias = "Nanopass")]
     NanoPass,
+    /// This can be used in the client
     #[serde(alias = "Smalltalk")]
     SmallTalk,
+    /// This can be used in the client
     #[serde(alias = "Notifications")]
     Notifications,
     #[serde(alias = "PodcastSchoolProject")]
+    /// This can be used in the client
     PodcastSchoolProject,
+    /// This can NOT be used in the client
     #[serde(alias = "Unknown")]
     Unknown,
 }

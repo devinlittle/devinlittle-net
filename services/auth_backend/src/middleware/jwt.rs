@@ -1,7 +1,7 @@
 use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response};
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
 use backend_common::{AuthenticatedUser, Claims};
 use jsonwebtoken::{DecodingKey, Validation};

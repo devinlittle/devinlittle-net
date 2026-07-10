@@ -77,32 +77,51 @@ build-release package="":
         cargo build -p {{package}} --release
     fi
 
-# builds for linux on both x86_64 and aarch64
+# grabs all crates so `--frozen` works for ci/cd
+cargo-fetch:
+    cargo fetch --locked
+
+    @echo "Fetching for Linux x86_64..."
+    cargo fetch --locked --target x86_64-unknown-linux-gnu
+
+    @echo "Fetching for Linux aarch64..."
+    cargo fetch --locked --target aarch64-unknown-linux-gnu
+
+    @echo "Fetching for Windows x86_64..."
+    cargo fetch --locked --target x86_64-pc-windows-msvc
+
+    @echo "Fetching for Windows aarch64..."
+    cargo fetch --locked --target aarch64-pc-windows-msvc
+
+    @echo "Fetching for macOS..."
+    cargo fetch --locked --target aarch64-apple-darwin
+
+# builds for gnu/linux on both x86_64 and aarch64
 build-linux: ensure-packaging-dir ensure-qt-managed
     @echo "Building x86_64 cli"
-    cargo build --target x86_64-unknown-linux-gnu --release -p dln-cli
+    cargo build --target x86_64-unknown-linux-gnu --frozen --release -p dln-cli
 
     @echo "Building x86_64 ui"
     echo "x86_64-unknown-linux-gnu" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
-      cargo build --target x86_64-unknown-linux-gnu --release -p dln-ui
+      cargo build --target x86_64-unknown-linux-gnu --frozen --release -p dln-ui
 
     cd "../target/x86_64-unknown-linux-gnu/release" && \
     tar -czf ../../../target/packaging/dln-{{version}}-amd64.tar.gz dln-cli dln-ui
 
     @echo "Building aaach64 cli"
-    cargo build --target aarch64-unknown-linux-gnu --release -p dln-cli
+    cargo build --target aarch64-unknown-linux-gnu --frozen --release -p dln-cli
 
     @echo "Building aarch64 ui"
     echo "aarch64-unknown-linux-gnu" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
-      cargo build --target aarch64-unknown-linux-gnu --release -p dln-ui
+      cargo build --target aarch64-unknown-linux-gnu --frozen --release -p dln-ui
 
     cd "../target/aarch64-unknown-linux-gnu/release" && \
     tar -czf ../../../target/packaging/dln-{{version}}-arm64.tar.gz dln-cli dln-ui
 
 
-#TODO: fix deb version yeah yeah 
+#TODO: fix deb version yeah yeah
 
 # packages deb file
 package-deb: ensure-packaging-dir
@@ -158,15 +177,17 @@ package-flatpak: ensure-packaging-dir
 
 package-linux: build-linux package-deb package-rpm package-arch package-gentoo package-void package-appimage package-flatpak
 
-# builds for windows using cargo-xwin
+# builds for windows
 build-windows: ensure-packaging-dir ensure-qt-managed
     @echo "Building x86_64 cli"
-    cargo xwin build --target x86_64-pc-windows-msvc --release -p dln-cli
+    cargo xwin build --target x86_64-pc-windows-msvc --frozen --release -p dln-cli
+
+    cp "{{target_dir}}/x86_64-pc-windows-msvc/release/dln-cli.exe" "{{packaging_dir}}"
 
     @echo "Building x86_64 ui"
     echo "x86_64-pc-windows-msvc" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
-      cargo xwin build --target x86_64-pc-windows-msvc --release -p dln-ui
+      cargo xwin build --target x86_64-pc-windows-msvc --frozen --release -p dln-ui
 
     cp "{{target_dir}}/x86_64-pc-windows-msvc/release/dln-ui.exe" "{{packaging_dir}}"
 
@@ -183,13 +204,13 @@ build-windows: ensure-packaging-dir ensure-qt-managed
 build-macos: ensure-packaging-dir ensure-qt-managed ensure-mac-sdk
     @echo "Building macOS cli"
     SDKROOT="{{mac_sdk_dir}}/MacOSX.sdk" \
-      cargo zigbuild --target aarch64-apple-darwin --release -p dln-cli
+      cargo zigbuild --target aarch64-apple-darwin --frozen --release -p dln-cli 
 
     @echo "Building macOS ui"
     echo "aarch64-apple-darwin" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
       SDKROOT="{{mac_sdk_dir}}/MacOSX.sdk" \
-      cargo zigbuild --target aarch64-apple-darwin --release -p dln-ui
+      cargo zigbuild --target aarch64-apple-darwin --frozen --release -p dln-ui
 
 package-macos: build-macos
   @echo "Packing .App for macOS"

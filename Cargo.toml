@@ -96,6 +96,13 @@ cxx-qt-lib-extras = "0.9"
 cxx-qt-build = { version = "0.9", features = [ "link_qt_object_files" ] }
 
 arc-swap = "1.9"
+reqwest_cookie_store = "0.10"
+cookie_store = "0.22"
+directories = "6.0"
+toml = "1.1"
+url = "2.5"
+
+rpassword = "7.5"
 
 [profile.release]
 panic = "abort"

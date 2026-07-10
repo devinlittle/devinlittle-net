@@ -1,10 +1,10 @@
 use aes_gcm::{
-    aead::{Aead, KeyInit},
     Aes256Gcm, Key, Nonce,
+    aead::{Aead, KeyInit},
 };
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use dotenvy::dotenv;
-use rand::{rng, Rng};
+use rand::{Rng, rng};
 use std::{env, sync::LazyLock};
 use thiserror::Error;
 use tracing::{error, instrument};
@@ -60,7 +60,6 @@ pub fn encrypt_string(plaintext: &str) -> Result<Vec<u8>, CryptoErrors> {
     Ok(combined)
 }
 
-// TODO: add special error types for this
 #[instrument(
     name = "crypto.decrypt",
     skip(data),

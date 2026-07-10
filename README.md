@@ -24,7 +24,7 @@ This monorepo isolates my frontend, backend services, applications, and shared l
 * [**`frontend/website/`**](./frontend/website) - The web application built with Svelte
 * [**`crates/`**](./crates) - Pure Rust utility libraries shared across the backend services
     * [`crypto_utils/`](./crates/crypto_utils) - encryption and decryption helpers
-    * [`dln-core/`](./crates/crypto_utils) - logic core for dln apps providing homogeneous capabilities to every platform
+    * [`dln-core/`](./crates/dln-core) - logic core for dln apps providing homogeneous capabilities to every platform
     * [`friendly-namer/`](./crates/friendly-namer/) - alias generation used by the internal mesh network
 * [**`chart/`**](./chart) - deployment configurations
 

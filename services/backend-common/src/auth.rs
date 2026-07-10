@@ -46,7 +46,7 @@ pub enum NotificationType {
 
 // used in auth_backend/src/routes/auth.rs
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct RegisterInput {
     #[schema(example = "user")]
     pub username: String,
@@ -54,7 +54,7 @@ pub struct RegisterInput {
     pub password: String,
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct LoginInput {
     #[schema(example = "user")]
     pub username: String,
