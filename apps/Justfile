@@ -99,7 +99,7 @@ cargo-fetch:
 # builds for gnu/linux on both x86_64 and aarch64
 build-linux: ensure-packaging-dir ensure-qt-managed
     @echo "Building x86_64 cli"
-    cargo build --target x86_64-unknown-linux-gnu --frozen --release -p dln-cli
+    cargo zigbuild --target x86_64-unknown-linux-gnu --frozen --release -p dln-cli
 
     @echo "Building x86_64 ui"
     echo "x86_64-unknown-linux-gnu" > ../scripts/.comp_target_local
@@ -110,7 +110,7 @@ build-linux: ensure-packaging-dir ensure-qt-managed
     tar -czf ../../../target/packaging/dln-{{version}}-amd64.tar.gz dln-cli dln-ui
 
     @echo "Building aaach64 cli"
-    cargo build --target aarch64-unknown-linux-gnu --frozen --release -p dln-cli
+    cargo zigbuild --target aarch64-unknown-linux-gnu --frozen --release -p dln-cli
 
     @echo "Building aarch64 ui"
     echo "aarch64-unknown-linux-gnu" > ../scripts/.comp_target_local

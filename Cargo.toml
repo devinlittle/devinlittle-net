@@ -35,7 +35,8 @@ tower-http = { version = "0.7", features = ["cors"]}
 tower = "0.5.3"
 utoipa = {version = "5.5", features = ["axum_extras", "uuid", "chrono"]}
 utoipa-scalar = {version = "0.3", features = ["axum"]}
-rustls = { version = "0.23.40", features = ["aws_lc_rs"] }
+rustls = { version = "0.23.40", default-features = false, features = ["aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 aws-lc-rs = "1.17"
 openssl = { version = "0.10", features = ["vendored"] }
 curl = {version = "0.4", features = ["rustls"]}
@@ -101,6 +102,7 @@ cookie_store = "0.22"
 directories = "6.0"
 toml = "1.1"
 url = "2.5"
+os_info = "3.15"
 
 rpassword = "7.5"
 

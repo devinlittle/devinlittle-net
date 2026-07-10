@@ -105,7 +105,7 @@ pub fn init_directories() -> Result<()> {
         let mut file = File::create(&gitignore_path)
             .ok()
             .context("failed to create .gitignore")?;
-        file.write_all(b"*\n!config.toml\n")
+        file.write_all(b"*\n!config.toml\n!.gitignore")
             .ok()
             .context("failed to write bytes to .gitignore")?;
     }

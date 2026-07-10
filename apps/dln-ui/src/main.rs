@@ -1,5 +1,3 @@
-use dln_core::add;
-
 use core::pin::Pin;
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QQuickStyle, QUrl};
 use cxx_qt_lib_extras::QApplication;
@@ -50,7 +48,6 @@ impl qobject::MyObject {
 
     pub fn reset(self: Pin<&mut Self>) {
         self.set_counter(0);
-        dln_core::print_from_dln_core();
         println!("reset the counter");
     }
 }

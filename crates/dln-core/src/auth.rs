@@ -2,10 +2,10 @@ use anyhow::{Context, Result};
 use arc_swap::ArcSwap;
 use aws_lc_rs::agreement::PrivateKey;
 use backend_common::{
-    Claims, UserRoles,
     auth::{LoginInput, LoginOutput},
+    Claims, UserRoles,
 };
-use base64::{Engine, prelude::BASE64_STANDARD};
+use base64::{prelude::BASE64_STANDARD, Engine};
 use reqwest::StatusCode;
 use std::sync::{Arc, OnceLock};
 use thiserror::Error;
@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::{
     error::CoreError,
-    fs::{COOKIE_STORE, GLOBAL_CONFIG, GLOBAL_SECRETS, save_cookies, save_secrets},
+    fs::{save_cookies, save_secrets, COOKIE_STORE, GLOBAL_CONFIG, GLOBAL_SECRETS},
     helpers::auth::get_username,
     no_auth_client,
 };
@@ -122,7 +122,7 @@ pub async fn refresh() -> Result<(), CoreError> {
 // TODO: have the openapi doc used instead of hardcoded urls
 pub async fn login_req(params: LoginInput) -> Result<(), CoreError> {
     let output = no_auth_client()
-        .post(format!("{}/auth/refresh", GLOBAL_CONFIG.load().api_url))
+        .post(format!("{}/auth/login", GLOBAL_CONFIG.load().api_url))
         .json(&params)
         .send()
         .await
@@ -143,6 +143,8 @@ pub async fn login_req(params: LoginInput) -> Result<(), CoreError> {
     let _ = save_cookies();
 
     let _ = set_token(output.access_token);
+
+    let _ = get_ready_for_devin_grfd(true).await;
 
     Ok(())
 }
