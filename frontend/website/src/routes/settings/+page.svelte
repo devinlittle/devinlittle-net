@@ -38,7 +38,9 @@
           ? "Chrome"
           : ua.includes("Safari")
             ? "Safari"
-            : "Browser";
+            : ua.includes("dln")
+              ? "DLN"
+              : "Browser";
 
     const os =
       ua.includes("iPhone") || ua.includes("iPad")
@@ -47,7 +49,7 @@
           ? "Android"
           : ua.includes("CrOS")
             ? "ChromeOS"
-            : ua.includes("Mac OS")
+            : ua.includes("Mac")
               ? "macOS"
               : ua.includes("Windows")
                 ? "Windows"
