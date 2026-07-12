@@ -9,9 +9,9 @@ pub enum CoreError {
     #[error("A configuration error; missing variables, invalid URLs, ect")]
     ConfigError(String),
 
-    #[error("Errors that are catigorized by being around authentication")]
+    #[error("Authentication Error")]
     Auth(crate::auth::AuthError),
 
-    #[error("filesystem or IO errors")]
+    #[error("filesystem or IO error")]
     Io(std::io::Error),
 }

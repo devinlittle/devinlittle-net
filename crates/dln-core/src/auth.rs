@@ -61,12 +61,6 @@ pub async fn get_ready_for_devin_grfd(called_from_login_page: bool) -> Result<()
         }
     }
 
-    println!(
-        "Hi {}\n this is teh auth: {:?}",
-        get_username()?,
-        auth_state()?.load()
-    );
-
     // mount db and notify client if they need to do encryption stuff
 
     // connect notifications

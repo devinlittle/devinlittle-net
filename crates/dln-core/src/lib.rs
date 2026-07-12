@@ -125,5 +125,6 @@ pub async fn init() -> Result<(), CoreError> {
 
     auth::get_ready_for_devin_grfd(false).await?;
 
+    println!("[dln-core]: successfully loaded!");
     Ok(())
 }
