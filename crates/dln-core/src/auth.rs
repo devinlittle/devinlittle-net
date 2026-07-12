@@ -14,7 +14,6 @@ use uuid::Uuid;
 use crate::{
     error::CoreError,
     fs::{save_cookies, save_secrets, COOKIE_STORE, GLOBAL_CONFIG, GLOBAL_SECRETS},
-    helpers::auth::get_username,
     no_auth_client,
 };
 

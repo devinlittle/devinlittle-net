@@ -3,13 +3,10 @@ use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QQuickStyle, QUrl};
 use cxx_qt_lib_extras::QApplication;
 use std::env;
 
+pub mod loading;
+
 #[cxx_qt::bridge]
 pub mod qobject {
-    unsafe extern "C++" {
-        include!("cxx-qt-lib/qstring.h");
-        type QString = cxx_qt_lib::QString;
-    }
-
     extern "RustQt" {
         #[qobject]
         #[qml_element]
@@ -52,7 +49,8 @@ impl qobject::MyObject {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut app = QApplication::new();
     let mut engine = QQmlApplicationEngine::new();
 

@@ -29,7 +29,7 @@ ensure-qt-managed:
     echo "{{qt_dir}}" > ../scripts/.qt_base_local
     if [ ! -d {{qt_dir}} ]; then
     mkdir -p {{qt_dir}}
-    echo "Downloading QT 6.11.1" && \
+    echo "Downloading QT {{qt_ver}}" && \
       curl \
       --progress-bar \
       "https://minio.home.devinlittle.net/dev.bucket/qt_{{qt_ver}}.tar.zst" \
@@ -81,25 +81,10 @@ build-release package="":
 cargo-fetch:
     cargo fetch --locked
 
-    @echo "Fetching for Linux x86_64..."
-    cargo fetch --locked --target x86_64-unknown-linux-gnu
-
-    @echo "Fetching for Linux aarch64..."
-    cargo fetch --locked --target aarch64-unknown-linux-gnu
-
-    @echo "Fetching for Windows x86_64..."
-    cargo fetch --locked --target x86_64-pc-windows-msvc
-
-    @echo "Fetching for Windows aarch64..."
-    cargo fetch --locked --target aarch64-pc-windows-msvc
-
-    @echo "Fetching for macOS..."
-    cargo fetch --locked --target aarch64-apple-darwin
-
 # builds for gnu/linux on both x86_64 and aarch64
 build-linux: ensure-packaging-dir ensure-qt-managed
     @echo "Building x86_64 cli"
-    cargo zigbuild --target x86_64-unknown-linux-gnu --frozen --release -p dln-cli
+    cargo build --target x86_64-unknown-linux-gnu --frozen --release -p dln-cli
 
     @echo "Building x86_64 ui"
     echo "x86_64-unknown-linux-gnu" > ../scripts/.comp_target_local
@@ -110,7 +95,7 @@ build-linux: ensure-packaging-dir ensure-qt-managed
     tar -czf ../../../target/packaging/dln-{{version}}-amd64.tar.gz dln-cli dln-ui
 
     @echo "Building aaach64 cli"
-    cargo zigbuild --target aarch64-unknown-linux-gnu --frozen --release -p dln-cli
+    cargo build --target aarch64-unknown-linux-gnu --frozen --release -p dln-cli
 
     @echo "Building aarch64 ui"
     echo "aarch64-unknown-linux-gnu" > ../scripts/.comp_target_local
@@ -168,11 +153,12 @@ void-build: ensure-packaging-dir
 void-all: ensure-packaging-dir void-setup void-build
 
 package-appimage: ensure-packaging-dir
-    @echo "→ Building AppImage..."
+    @echo "→ Packing AppImage..."
     mkdir -p {{packaging_dir}}/appimage
+    ../scripts/linuxdeploy.sh
 
 package-flatpak: ensure-packaging-dir
-    @echo "→ Building Flatpak..."
+    @echo "→ Packing Flatpak..."
 #    flatpak-builder --repo={{packaging_dir}}/flatpak/repo ...
 
 package-linux: build-linux package-deb package-rpm package-arch package-gentoo package-void package-appimage package-flatpak

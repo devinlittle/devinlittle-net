@@ -1,11 +1,33 @@
-[target.x86_64-unknown-linux-gnu]
-linker = "x86_64-linux-gnu-gcc"
-
+#===================================
 [target.aarch64-unknown-linux-gnu]
-linker = "aarch64-linux-gnu-gcc"
+linker = "scripts/clang-aarch64"
 
-[target.aarch64-apple-darwin]
-rustflags = [
-    "-Clink-arg=-headerpad_max_install_names",
-    "-Clink-arg=-lc++"
-]
+[target.aarch64-unknown-linux-gnu.env]
+CC = "scripts/clang-aarch64"
+CXX = "scripts/clang++-aarch64"
+CC_aarch64_unknown_linux_gnu = "scripts/clang-aarch64"
+CXX_aarch64_unknown_linux_gnu = "scripts/clang++-aarch64"
+AR_aarch64_unknown_linux_gnu= "llvm-ar"
+
+PKG_CONFIG_ALLOW_CROSS = "1"
+PKG_CONFIG_SYSROOT_DIR = "target/sysroots/aarch64"
+PKG_CONFIG_LIBDIR = "target/sysroots/aarch64/usr/lib/aarch64-linux-gnu/pkgconfig:target/sysroots/aarch64/usr/share/pkgconfig"
+
+BINDGEN_EXTRA_CLANG_ARGS = "--sysroot=target/sysroots/aarch64 --target=aarch64-unknown-linux-gnu"
+
+#===================================
+[target.x86_64-unknown-linux-gnu]
+linker = "scripts/clang-x86_64"
+
+[target.x86_64-unknown-linux-gnu.env]
+CC = "scripts/clang-x86_64"
+CXX = "scripts/clang++-x86_64"
+CC_x86_64_unknown_linux_gnu = "scripts/clang-x86_64"
+CXX_x86_64_unknown_linux_gnu = "scripts/clang++-x86_64"
+AR_x86_64_unknown_linux_gnu = "llvm-ar"
+
+PKG_CONFIG_ALLOW_CROSS = "1"
+PKG_CONFIG_SYSROOT_DIR = "target/sysroots/x86_64"
+PKG_CONFIG_LIBDIR = "target/sysroots/x86_64/usr/lib/x86_64-linux-gnu/pkgconfig:target/sysroots/x86_64/usr/share/pkgconfig"
+
+BINDGEN_EXTRA_CLANG_ARGS = "--sysroot=target/sysroots/x86_64 --target=x86_64-unknown-linux-gnu"

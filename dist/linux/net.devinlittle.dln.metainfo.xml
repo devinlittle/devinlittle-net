@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component type="desktop-application">
   <id>net.devinlittle.dln</id>
-  <name>DlN</name>
+  <name>DLN</name>
   <summary>DLN Desktop Client</summary>
 
   <project_license>AGPL-3.0-only</project_license>
@@ -16,7 +16,7 @@
   <url type="vcs-browser">https://github.com/devinlittle/devinlittle-net.git</url>
 
   <description>
-    <p>The DlN desktop client supports the following features from the DevinLittle.Net suite:</p>
+    <p>The DLN desktop client supports the following features from the DevinLittle.Net suite:</p>
     <ul>
       <li>GradeGetter</li>
       <li>NanoPass</li>

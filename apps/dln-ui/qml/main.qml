@@ -9,10 +9,25 @@ Window {
     color: "#1d1130"
     width: 400
     height: 300
-    title: "DLN Counter: " + myObject.counter
+    title: "DLN Counter: " + appState.username
+    Component.onCompleted: {
+        appState.start_loading();
+    }
 
     MyObject {
         id: myObject
+    }
+
+    AppState {
+        id: appState
+    }
+
+    Connections {
+        target: appState
+
+        function onLoading_failed(error) {
+            console.log(error);
+        }
     }
 
     Item {
@@ -30,6 +45,7 @@ Window {
             width: 110
             height: 80
             value: myObject.counter
+            rotation: 0
             textColor: "#9ac7ff"
         }
 
@@ -111,7 +127,9 @@ Window {
                 radius: 6
             }
 
-            onClicked: myObject.reset()
+            onClicked: {
+                myObject.reset();
+            }
         }
     }
 }

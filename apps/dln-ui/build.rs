@@ -5,6 +5,6 @@ fn main() {
         QmlModule::new("net.devinlittle.dln_ui")
             .qml_files(["qml/main.qml", "qml/AnimatedCounter.qml"]),
     )
-    .files(["src/main.rs"])
+    .files(["src/main.rs", "src/loading.rs"])
     .build();
 }

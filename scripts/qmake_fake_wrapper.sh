@@ -82,8 +82,8 @@ case "$COMP_TARGET" in
   ;;
 esac
 
-if [ "$1" = "-query" ]; then
-  if [ -z "$2" ]; then
+if [ "${1:-}" = "-query" ]; then
+  if [ -z "${2:-}" ]; then
     cat <<QTQUERY
 QT_SYSROOT:
 QT_INSTALL_PREFIX:${QT_TARGET}
@@ -101,6 +101,7 @@ QT_INSTALL_TRANSLATIONS:${QT_TARGET}/translations
 QT_INSTALL_CONFIGURATION:
 QT_INSTALL_EXAMPLES:/Volumes/Untitled/Applications/qt/Examples/Qt-${QT_VERSION}
 QT_HOST_PREFIX:${QT_TARGET}
+QT_INSTALL_PREFIX:${QT_TARGET}
 QT_HOST_DATA:${QT_HOST}
 QT_HOST_BINS:${QT_HOST}/bin
 QT_HOST_LIBEXECS:${QT_HOST}/libexec
