@@ -14,6 +14,7 @@ qt_dir := target_dir / "qt"
 qt_ver := "6.11.1"
 qmake_wrapper := project_home / "scripts/qmake"
 mac_sdk_dir := target_dir / "mac_sdk"
+sysroots_dir := target_dir / "sysroots"
 
 # -----------------------------------------
 
@@ -46,6 +47,18 @@ ensure-mac-sdk:
       --progress-bar \
       "https://minio.home.devinlittle.net/dev.bucket/MacOSX.sdk.tar.zst" \
       | tar --zstd -xf - -C {{mac_sdk_dir}}
+    fi
+
+[private]
+ensure-sysroots:
+    #!/usr/bin/env bash
+    if [ ! -d {{sysroots_dir}} ]; then
+    mkdir -p {{sysroots_dir}}
+    echo "Downloading the SysRoots" && \
+      curl \
+      --progress-bar \
+      "https://minio.home.devinlittle.net/dev.bucket/sysroots.tar.zst" \
+      | tar --zstd -xf - -C {{sysroots_dir}}
     fi
 # -----------------------------------------
 
@@ -82,7 +95,7 @@ cargo-fetch:
     cargo fetch --locked
 
 # builds for gnu/linux on both x86_64 and aarch64
-build-linux: ensure-packaging-dir ensure-qt-managed
+build-linux: ensure-packaging-dir ensure-sysroots ensure-qt-managed
     @echo "Building x86_64 cli"
     cargo build --target x86_64-unknown-linux-gnu --frozen --release -p dln-cli
 
