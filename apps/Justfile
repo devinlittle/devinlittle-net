@@ -58,7 +58,7 @@ ensure-sysroots:
       curl \
       --progress-bar \
       "https://minio.home.devinlittle.net/dev.bucket/sysroots.tar.zst" \
-      | tar --zstd -xf - -C {{sysroots_dir}}
+      | tar --zstd --exclude="*/dev/*" -xf - -C {{sysroots_dir}}
     fi
 # -----------------------------------------
 
