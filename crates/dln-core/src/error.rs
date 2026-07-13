@@ -2,7 +2,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CoreError {
-    /// The entire core library hasn't been initialized or bootstrap failed
+    /// The core library hasn't been initialized or bootstrap failed
     #[error("Accessing the auth state isn't possible until auth is initalized")]
     NotInitalized,
 

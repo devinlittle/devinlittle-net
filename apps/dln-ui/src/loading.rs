@@ -58,20 +58,28 @@ impl qobject::AppState {
                             .as_mut()
                             .set_username(get_username().unwrap().into());
                     }
-                    Err(CoreError::Auth(auth_err)) => match auth_err {
-                        Unauthenticated | Unauthorized => {
-                            app_state.loading_failed("Check your username or password.".into());
+                    Err(CoreError::Auth(auth_err)) => {
+                        println!("{}", auth_err);
+                        match auth_err {
+                            Unauthenticated => {
+                                app_state.loading_failed(
+                                    "You haven't logged in yet! Please Log in.".into(),
+                                );
+                            }
+                            Unauthorized => {
+                                app_state.loading_failed("Check your username or password.".into());
+                            }
+                            AccountLocked | ClientError => {
+                                app_state.loading_failed("Your Account is suspended :(.".into());
+                            }
+                            RequestFailure => {
+                                app_state.loading_failed("Connection failed.".into());
+                            }
+                            InternalServerError => {
+                                app_state.loading_failed("The server had an issue.".into());
+                            }
                         }
-                        InternalServerError => {
-                            app_state.loading_failed("The server had an issue.".into());
-                        }
-                        AccountLocked => {
-                            app_state.loading_failed("Account suspended.".into());
-                        }
-                        RequestFailure => {
-                            app_state.loading_failed("Connection failed.".into());
-                        }
-                    },
+                    }
                     _ => {
                         app_state.loading_failed("App failure".into());
                     }

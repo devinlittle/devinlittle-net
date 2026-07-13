@@ -76,7 +76,7 @@ pub struct UpdateProfileInput {
     pub last_seen_visible: Option<bool>,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct ActiveSessions {
     pub session_id: Uuid,
     #[serde(with = "chrono::serde::ts_seconds")]

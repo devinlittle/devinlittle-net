@@ -88,7 +88,7 @@ fn is_linux_family(t: Type) -> bool {
     )
 }
 
-static REQWEST_CLIENT: LazyLock<Client> = LazyLock::new(|| {
+fn get_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
 
     let user_agent = get_user_agent();
@@ -102,6 +102,12 @@ static REQWEST_CLIENT: LazyLock<Client> = LazyLock::new(|| {
 
     headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
+    headers
+}
+
+static REQWEST_CLIENT: LazyLock<Client> = LazyLock::new(|| {
+    let headers = get_headers();
 
     Client::builder()
         .default_headers(headers)
