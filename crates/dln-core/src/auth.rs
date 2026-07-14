@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 use crate::{
     error::CoreError,
-    fs::{save_cookies, save_secrets, COOKIE_STORE, GLOBAL_CONFIG, GLOBAL_SECRETS},
+    fs::{delete_secrets, save_cookies, save_secrets, COOKIE_STORE, GLOBAL_CONFIG, GLOBAL_SECRETS},
     get_headers, no_auth_client,
 };
 
@@ -176,8 +176,7 @@ impl AuthClient {
                 .await?;
             Ok(())
         } else {
-            self.clear();
-            AUTH_STATE.clear();
+            clear()?;
             logout().await?;
             Err(CoreError::Auth(AuthError::RequestFailure))
         }
@@ -315,6 +314,8 @@ pub async fn set_token(access_token: String) -> Result<()> {
 }
 
 pub async fn logout() -> Result<(), CoreError> {
+    clear()?;
+
     let _ = no_auth_client()
         .post(format!("{}/auth/logout", GLOBAL_CONFIG.load().api_url))
         .send()
@@ -329,5 +330,12 @@ pub async fn logout() -> Result<(), CoreError> {
             _ => CoreError::Auth(AuthError::RequestFailure),
         })?;
 
+    Ok(())
+}
+
+pub fn clear() -> Result<(), CoreError> {
+    AUTHED_CLIENT.clear();
+    AUTH_STATE.clear();
+    delete_secrets()?;
     Ok(())
 }

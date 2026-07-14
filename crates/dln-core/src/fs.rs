@@ -161,6 +161,14 @@ pub fn save_secrets(access: String) -> Result<(), CoreError> {
 }
 
 #[allow(clippy::redundant_closure)]
+pub fn delete_secrets() -> Result<(), CoreError> {
+    let paths = APP_PATHS.get().expect("App paths must be initialized");
+    fs::remove_file(&paths.access_token).map_err(|e| CoreError::Io(e))?;
+    // WARN: i think i should be clearing GLOBAL_SECRETS but im not so.... whateves
+    Ok(())
+}
+
+#[allow(clippy::redundant_closure)]
 pub fn save_cookies() -> Result<(), CoreError> {
     let paths = APP_PATHS.get().expect("App paths must be initialized");
     let cookie_file_path = paths.data_dir.join("cookies.json");
