@@ -1,10 +1,6 @@
 use anyhow::{Context, Result};
 use arc_swap::ArcSwap;
 use aws_lc_rs::agreement::PrivateKey;
-use backend_common::{
-    auth::{LoginInput, LoginOutput},
-    Claims, UserRoles,
-};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use reqwest::{
     header::{HeaderValue, AUTHORIZATION},
@@ -21,6 +17,8 @@ use crate::{
     error::CoreError,
     fs::{delete_secrets, save_cookies, save_secrets, COOKIE_STORE, GLOBAL_CONFIG, GLOBAL_SECRETS},
     get_headers, no_auth_client,
+    structs::{Claims, LoginInput, LoginOutput, UserRoles},
+    ws::connect_notifications,
 };
 
 #[derive(Error, Debug)]
@@ -187,16 +185,16 @@ impl AuthClient {
 pub async fn get_ready_for_devin_grfd(called_from_login_page: bool) -> Result<(), CoreError> {
     if !called_from_login_page {
         if let Err(e) = refresh().await {
-            // connect_notifications
+            connect_notifications().await?;
+
             println!("ERROR REFRESHING, NOW GUEST USER ON NOTIFICATIONS");
 
             return Err(e);
         }
     }
 
+    connect_notifications().await?;
     // mount db and notify client if they need to do encryption stuff
-
-    // connect notifications
 
     Ok(())
 }
@@ -334,8 +332,8 @@ pub async fn logout() -> Result<(), CoreError> {
 }
 
 pub fn clear() -> Result<(), CoreError> {
-    AUTHED_CLIENT.clear();
     AUTH_STATE.clear();
+    AUTHED_CLIENT.clear();
     delete_secrets()?;
     Ok(())
 }

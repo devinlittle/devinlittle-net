@@ -10,6 +10,8 @@ license.workspace = true
 backend-common = { workspace = true, features = ["client"] }
 
 tokio.workspace = true
+tokio-tungstenite.workspace = true
+futures-util.workspace = true
 reqwest = { workspace = true, features = ["json", "rustls", "cookies", "query"] }
 reqwest_cookie_store.workspace = true
 cookie_store.workspace = true

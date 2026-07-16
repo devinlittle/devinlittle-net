@@ -12,7 +12,10 @@ pub mod auth;
 pub mod error;
 pub mod fs;
 pub mod helpers;
+pub mod nanopass;
+pub mod notification;
 pub mod structs;
+pub mod ws;
 
 pub fn get_user_agent() -> String {
     let app_version = env!("CARGO_PKG_VERSION");

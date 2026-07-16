@@ -14,4 +14,7 @@ pub enum CoreError {
 
     #[error("filesystem or IO error")]
     Io(std::io::Error),
+
+    #[error("Error connecting to WS")]
+    Ws(crate::ws::WsError),
 }

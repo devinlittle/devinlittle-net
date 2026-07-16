@@ -33,15 +33,17 @@ pub struct PushSubscription {
 
 // HACK:
 // TODO: make this better
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct NotificationMessage {
     r#type: NotificationType,
     title: String,
     content: String,
+
+    #[serde(default)]
     sender_username: String,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum NotificationType {
     Global,
