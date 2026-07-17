@@ -2,7 +2,7 @@ use self::WsError::*;
 use crate::auth::AUTH_STATE;
 use crate::fs::GLOBAL_CONFIG;
 use crate::fs::GLOBAL_SECRETS;
-use crate::notification::handle_notification;
+use crate::services::notification::handle_notification;
 use crate::structs::Bootstrap;
 use crate::structs::Namespaces;
 use crate::structs::{NanoPassPayload, NotificationMessage};
@@ -133,7 +133,7 @@ pub async fn connect_notifications() -> Result<(), CoreError> {
         .await
         .map_err(|_| CoreError::Ws(ConnectionFaliure))?;
 
-    update_socket_state(Connected).map_err(|_| CoreError::Ws(ConnectionFaliure))?;
+    update_socket_state(Connected)?;
 
     let access_token = GLOBAL_SECRETS.load().access_token.clone();
 

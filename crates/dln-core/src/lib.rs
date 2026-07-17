@@ -12,8 +12,7 @@ pub mod auth;
 pub mod error;
 pub mod fs;
 pub mod helpers;
-pub mod nanopass;
-pub mod notification;
+pub mod services;
 pub mod structs;
 pub mod ws;
 
@@ -69,10 +68,8 @@ pub fn get_user_agent() -> String {
     };
 
     format!(
-        "dln-core/{} ({}; Rust/{}) (+https://devinlittle.net)",
-        app_version,
-        os_part,
-        env!("CARGO_PKG_RUST_VERSION")
+        "dln-core/{} ({}) (+https://devinlittle.net)",
+        app_version, os_part,
     )
 }
 
