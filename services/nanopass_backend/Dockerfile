@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-ARG RUST_VERSION=1.96.0
-ARG ALPINE_VERSION=3.23.4
+ARG RUST_VERSION=1.97.1
+ARG ALPINE_VERSION=3.24.1
 ARG APP_NAME=nanopass_backend
 
 ################################################################################
@@ -15,7 +15,7 @@ ENV RUSTFLAGS="-C link-arg=-fuse-ld=lld"
 RUN --mount=type=cache,target=/app/target/,id=${APP_NAME} \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
-cargo build --locked --release --bin ${APP_NAME} && \
+cargo build --locked --release -p ${APP_NAME} && \
 cp ./target/release/$APP_NAME /bin/nanopass_backend
 ################################################################################
 FROM alpine:${ALPINE_VERSION} AS final

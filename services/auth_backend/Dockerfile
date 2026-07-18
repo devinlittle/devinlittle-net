@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-ARG RUST_VERSION=1.96.0
-ARG ALPINE_VERSION=3.23
+ARG RUST_VERSION=1.97.1
+ARG ALPINE_VERSION=3.24.1
 ARG APP_NAME=auth_backend
 
 ################################################################################
@@ -16,7 +16,7 @@ ENV SQLX_OFFLINE=true
 RUN --mount=type=cache,target=/app/target/,id=${APP_NAME} \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
-cargo build --locked --release --bin auth_backend && \
+cargo build --locked --release -p auth_backend && \
 cp ./target/release/$APP_NAME /bin/$APP_NAME
 
 ################################################################################
