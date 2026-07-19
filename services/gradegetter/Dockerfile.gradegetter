@@ -63,7 +63,7 @@ COPY ./services/gradegetter/tokengetter/ ./tokengetter/
 COPY --from=rust-build /bin/gradegetter ./gradegetter/gradegetter
 COPY ./services/gradegetter/gradegetter/ ./gradegetter/
 
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/lib/chromium/chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV RUST_LOG=info
 
 RUN chown -R appuser:appuser /app && \

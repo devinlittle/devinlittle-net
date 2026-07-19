@@ -10,11 +10,11 @@ const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
       args: [
         '--disable-setuid-sandbox',
         '--disable-gpu',
-        //        '--disable-dev-shm-usage',
+        '--disable-dev-shm-usage',
         '--no-sandbox',
         '--disable-blink-features=AutomationControlled',
         '--window-size=1280,720',
-        '--single-process',
+        //        '--single-process', //INFO: this broke previous versions
         '--no-zygote']
     });
 
@@ -34,11 +34,9 @@ const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
     await page.goto('https://essexnorthshore.schoology.com/');
     console.error("Navigated to Schoology login,2"); // Went to schoology page
 
-    await page.waitForSelector('input[type="email"]', {
-      visible: true,
-      timeout: 30000
-    });
-    await page.type('input[type="email"]', `${args[2]}`); // <-- config value
+    await page.waitForSelector('input[name="identifier"]');
+    await page.locator('input[name="identifier"]').fill(args[2]);
+
     console.error("Typed in Email,3"); // Typed email
     await page.click('#identifierNext');
     console.error("Entered Email,4"); // entered email
@@ -76,7 +74,6 @@ const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 
   } catch (error) {
     console.error(`ERROR: ${error.message}`);
-    await recorder.stop();
     process.exit(1);
   }
 })();

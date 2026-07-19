@@ -352,10 +352,6 @@ async fn push_to_browser(
 
     match data.get("namespace").and_then(|n| n.as_str()) {
         Some("notification") => {
-            /*let title = data["payload"]["title"].as_str().unwrap_or("");
-            let content = data["payload"]["content"].as_str().unwrap_or("");
-            let sender_username = data["payload"]["sender_username"].as_str().unwrap_or(""); */
-
             if notify_user(&pool, &web_push_client, user_id, message)
                 .await
                 .is_ok()

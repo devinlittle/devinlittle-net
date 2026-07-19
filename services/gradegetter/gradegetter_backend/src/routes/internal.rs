@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::routes::AppState;
 
-use backend_common::gradegetter::{ForwardMessage, ForwardStatus};
+use backend_common::gradegetter::ForwardMessage;
 
 #[utoipa::path(
     get,
@@ -100,11 +100,13 @@ pub async fn forward_status_ws(
         tracing::debug!("internal ws connected");
         while let Some(Ok(Message::Text(msg))) = socket.recv().await {
             tracing::debug!("internal ws received: {}", msg);
-            let payload: ForwardMessage =
-                serde_json::from_str(msg.as_str()).unwrap_or_else(|_| ForwardMessage {
-                    id: uuid::Uuid::nil(),
-                    status: ForwardStatus::ErrorInSetup,
-                });
+            let payload: ForwardMessage = match serde_json::from_str(msg.as_str()) {
+                Ok(payload) => payload,
+                Err(e) => {
+                    tracing::error!("error: {:?}", e);
+                    break;
+                }
+            };
             if let Some(tx) = state.channels.get(&payload.id.to_string()) {
                 tracing::debug!("found channel for {}, sending", payload.id);
 

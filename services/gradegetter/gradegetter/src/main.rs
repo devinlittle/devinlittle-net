@@ -101,48 +101,55 @@ fn setup_token_thread(pool_token: Arc<PgPool>) {
                         (user.id, user.encrypted_email, user.encrypted_password);
 
                     async move {
-                        let Ok(dec_password) = decrypt_string(password) else {
-                            error!(
-                                user.id = %id,
-                                "[Decryption Error]: decrypting password failed, (token thread) skipping user due to decryption error",
-                            );
+                        let dec_password = match decrypt_string(password) {
+                            Ok(dec_password) => dec_password,
+                            Err(e) => {
+                                error!(
+                                    user.id = %id,
+                                    error = %e,
+                                    "[Decryption Error]: decrypting password failed, (token thread) skipping user due to decryption error",
+                                );
 
-                            return;
+                                return;
+                            }
                         };
 
-                        let Ok(dec_email) = decrypt_string(email) else {
-                            error!(
-                                user.id = %id,
-                                "[Decryption Error]: decrypting email failed, (token thread) skipping user due to decryption error",
-                            );
+                        let dec_email = match decrypt_string(email) {
+                            Ok(dec_email) => dec_email,
+                            Err(e) => {
+                                error!(
+                                    user.id = %id,
+                                    error = %e,
+                                    "[Decryption Error]: decrypting email failed, (token thread) skipping user due to decryption error",
+                                );
 
-                            return;
+                                return;
+                            }
                         };
 
                         let get_token_span = info_span!("get_token_func");
 
-                        let Ok(token) = get_token(dec_email.as_str(), dec_password.as_str(), id, false).instrument(get_token_span)
-                            .await else {
+                        let Ok(token) = get_token(dec_email.as_str(), dec_password.as_str(), id, false).instrument(get_token_span).await else {
                                 error!(
                                     user.id = %id,
-                                    "[Decryption Error]: decrypting email failed, (token thread) skipping user due to decryption error",
+                                    "[Decryption Error]: decrypting token failed, (token thread) skipping user due to decryption error",
                                 );
 
-                                let db_span = info_span!("set_token_null_query");
+                              let db_span = info_span!("set_token_null_query");
 
-                                let _ = sqlx::query!(
-                                    "UPDATE schoology_auth SET session_token = NULL WHERE id = $1",
-                                    id
-                                )
-                                .execute(&*pool_token_clone)
-                                .instrument(db_span)
-                                .await
-                                .map_err(|err| {
-                                    error!(error = %err, "[Database failure]: (inside token thread); failed to set user session_token to null");
-                                });
+                              let _ = sqlx::query!(
+                                  "UPDATE schoology_auth SET session_token = NULL WHERE id = $1",
+                                  id
+                              )
+                              .execute(&*pool_token_clone)
+                              .instrument(db_span)
+                              .await
+                              .map_err(|err| {
+                                  error!(error = %err, "[Database failure]: (inside token thread); failed to set user session_token to null");
+                              });
 
                                 return;
-                            };
+                        };
 
                         let db_span = info_span!("set_new_token_query");
 
