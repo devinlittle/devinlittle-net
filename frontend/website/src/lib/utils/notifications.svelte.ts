@@ -8,7 +8,7 @@ import { API_URL } from "./constants.svelte";
 
 export const notificationApi = createClient<NotificationPaths>(`${API_URL}/notification`);
 
-// --- types ---
+// types
 type Notification =
   {
     id: string
@@ -38,13 +38,13 @@ type NotificationPayload = {
   sender_username?: string
 }
 
-// --- state ---
+// state
 
 export let notifications = $state<Notification[]>([])
 let socket: WebSocket | null = null
 let dismissFn: ((id: string) => void) | null = null
 
-// --- notification logic ---
+// notification logic
 
 export function registerDismiss(fn: (id: string) => void) {
   dismissFn = fn
@@ -83,7 +83,7 @@ export function removeNotification(id: string) {
   if (idx !== -1) notifications.splice(idx, 1)
 }
 
-// --- namespace handlers ---
+// namespace handlers
 
 function handleNotification(payload: NotificationPayload) {
   if (document.visibilityState === 'hidden') {
@@ -112,7 +112,7 @@ function handleNotification(payload: NotificationPayload) {
   })
 }
 
-// --- socket ---
+// socket
 
 function handleMessage(msg: IncomingMessage) {
   switch (msg.namespace) {

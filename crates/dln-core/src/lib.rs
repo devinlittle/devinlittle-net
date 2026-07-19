@@ -10,6 +10,7 @@ use crate::{error::CoreError, fs::COOKIE_STORE};
 
 pub mod auth;
 pub mod error;
+pub mod event_bus;
 pub mod fs;
 pub mod helpers;
 pub mod services;

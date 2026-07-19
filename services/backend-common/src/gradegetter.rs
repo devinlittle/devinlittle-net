@@ -22,6 +22,11 @@ pub struct ForwardMessage {
     pub status: ForwardStatus,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub enum GradeGetterPayload {
+    GradesUpdated,
+}
+
 #[derive(Serialize, Deserialize, ToSchema, Debug, Clone, PartialEq, Display, EnumString)]
 pub enum ForwardStatus {
     #[serde(rename = "Started,1")]

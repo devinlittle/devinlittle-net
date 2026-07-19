@@ -1,13 +1,11 @@
+use crate::{auth::AUTH_STATE, error::CoreError};
 use crate::{
     auth::{AuthError, AUTHED_CLIENT},
     fs::GLOBAL_CONFIG,
-    structs::{AdminGlobalMessage, UserRoles},
+    structs::{ActiveSessions, AdminGlobalMessage, UserRoles},
 };
-use backend_common::auth::ActiveSessions;
-use reqwest::Response;
-use uuid::Uuid;
 
-use crate::{auth::AUTH_STATE, error::CoreError};
+use uuid::Uuid;
 
 pub fn get_username() -> Result<String, CoreError> {
     let auth = AUTH_STATE.get().ok_or(CoreError::NotInitalized)?;
@@ -34,10 +32,7 @@ pub async fn get_sessions() -> Result<Vec<ActiveSessions>, CoreError> {
         .execute(|client| {
             Box::pin(async move {
                 client
-                    .get(format!(
-                        "{}/auth/me/sessions",
-                        &GLOBAL_CONFIG.load().api_url
-                    ))
+                    .get(format!("{}/auth/me/sessions", GLOBAL_CONFIG.load().api_url))
                     .send()
                     .await
                     .map_err(|_| CoreError::NotInitalized)
@@ -49,8 +44,8 @@ pub async fn get_sessions() -> Result<Vec<ActiveSessions>, CoreError> {
         .map_err(|_| CoreError::Auth(AuthError::RequestFailure))
 }
 
-pub async fn global_message(params: AdminGlobalMessage) -> Result<Response, CoreError> {
-    AUTHED_CLIENT
+pub async fn global_message(params: AdminGlobalMessage) -> Result<(), CoreError> {
+    let _ = AUTHED_CLIENT
         .execute(|client| {
             let params = params.clone();
             Box::pin(async move {
@@ -58,7 +53,7 @@ pub async fn global_message(params: AdminGlobalMessage) -> Result<Response, Core
                 client
                     .post(format!(
                         "{}/auth/admin/global_message",
-                        &GLOBAL_CONFIG.load().api_url
+                        GLOBAL_CONFIG.load().api_url
                     ))
                     .json::<AdminGlobalMessage>(&params)
                     .send()
@@ -66,5 +61,6 @@ pub async fn global_message(params: AdminGlobalMessage) -> Result<Response, Core
                     .map_err(|_| CoreError::NotInitalized)
             })
         })
-        .await
+        .await;
+    Ok(())
 }

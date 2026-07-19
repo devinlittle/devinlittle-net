@@ -9,6 +9,10 @@ pub use backend_common::{
     Claims,
 };
 
+// GradeGetter
+pub use backend_common::gradegetter::GradeGetterPayload;
+pub use backend_common::gradegetter::GradesHashMap;
+
 // NanoPass
 pub use backend_common::nanopass::{FileListing, FileListingInput, Visibility};
 pub use backend_common::nanopass::{NanoPassMessage, NanoPassPayload};

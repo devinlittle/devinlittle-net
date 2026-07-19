@@ -2,10 +2,11 @@ use self::WsError::*;
 use crate::auth::AUTH_STATE;
 use crate::fs::GLOBAL_CONFIG;
 use crate::fs::GLOBAL_SECRETS;
+use crate::services::gradegetter::set_grades;
 use crate::services::notification::handle_notification;
 use crate::structs::Bootstrap;
 use crate::structs::Namespaces;
-use crate::structs::{NanoPassPayload, NotificationMessage};
+use crate::structs::{GradeGetterPayload, NanoPassPayload, NotificationMessage};
 use crate::ws::SocketStates::{Connected, Connecting, Disconnected};
 use crate::CoreError;
 
@@ -42,9 +43,11 @@ pub struct IncomingMessage {
 pub enum IncomingPayload {
     Notification(NotificationMessage),
     NanoPass(NanoPassPayload),
+    GradeGetter(GradeGetterPayload),
 }
 
 pub fn handle_message(msg: IncomingMessage) -> Result<(), CoreError> {
+    println!("{:?}", msg);
     match msg.namespace {
         Namespaces::Notification => {
             if let IncomingPayload::Notification(payload) = msg.payload {
@@ -54,7 +57,11 @@ pub fn handle_message(msg: IncomingMessage) -> Result<(), CoreError> {
             }
         }
         Namespaces::NanoPass => {}
-        Namespaces::GradeGetter => (), // Just run FetchGrades Function
+        Namespaces::GradeGetter => {
+            tokio::spawn(async move {
+                let _ = set_grades().await;
+            });
+        }
         Namespaces::SmallTalkKeySync => (),
         Namespaces::SmallTalkNotes => (),
     }

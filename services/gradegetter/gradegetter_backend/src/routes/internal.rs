@@ -104,7 +104,7 @@ pub async fn forward_status_ws(
                 Ok(payload) => payload,
                 Err(e) => {
                     tracing::error!("error: {:?}", e);
-                    break;
+                    continue;
                 }
             };
             if let Some(tx) = state.channels.get(&payload.id.to_string()) {

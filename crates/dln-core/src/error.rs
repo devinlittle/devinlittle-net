@@ -9,12 +9,15 @@ pub enum CoreError {
     #[error("A configuration error; missing variables, invalid URLs, ect")]
     ConfigError(String),
 
+    #[error("network request failed")]
+    RequestFailure,
+
     #[error("Authentication Error")]
     Auth(crate::auth::AuthError),
 
-    #[error("filesystem or IO error")]
-    Io(std::io::Error),
-
     #[error("Error connecting to WS")]
     Ws(crate::ws::WsError),
+
+    #[error("filesystem or IO error")]
+    Io(std::io::Error),
 }
