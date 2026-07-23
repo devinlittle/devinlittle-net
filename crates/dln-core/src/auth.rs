@@ -199,8 +199,6 @@ pub async fn get_ready_for_devin_grfd(called_from_login_page: bool) -> Result<()
     Ok(())
 }
 
-// TODO: have the openapi doc used instead of hardcoded urls
-
 /// just does a token refresh on inital app load
 pub async fn refresh() -> Result<(), CoreError> {
     let secrets = GLOBAL_SECRETS.load();
@@ -244,7 +242,6 @@ pub async fn refresh() -> Result<(), CoreError> {
     Ok(())
 }
 
-// TODO: have the openapi doc used instead of hardcoded urls
 pub async fn login_req(params: LoginInput) -> Result<(), CoreError> {
     let output = no_auth_client()
         .post(format!("{}/auth/login", GLOBAL_CONFIG.load().api_url))

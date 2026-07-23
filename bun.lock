@@ -32,8 +32,8 @@
       "name": "tokengetter",
       "version": "1.0.0",
       "dependencies": {
-        "puppeteer": "^25",
-        "puppeteer-core": "^25",
+        "puppeteer": "^25.3.0",
+        "puppeteer-core": "^25.3.0",
         "puppeteer-screen-recorder": "^3.0.6",
       },
     },

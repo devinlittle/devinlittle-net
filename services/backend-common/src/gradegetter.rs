@@ -7,7 +7,7 @@ use strum::{Display, EnumString};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct SchoologyLogin {
     #[schema(example = "email@exmaple.com")]
     pub schoology_email: String,
@@ -45,6 +45,37 @@ pub enum ForwardStatus {
     Finished,
     #[serde(rename = "Incorrect Email or Password,E")]
     ErrorInSetup,
+}
+
+impl ForwardStatus {
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::Started => "1",
+            Self::Navigated => "2",
+            Self::TypedEmail => "3",
+            Self::EnteredEmail => "4",
+            Self::TypedPassword => "5",
+            Self::EnteredPassword => "6",
+            Self::Finished => "7",
+            Self::ErrorInSetup => "E",
+        }
+    }
+}
+
+impl ForwardStatus {
+    pub fn ws_from_str(s: &str) -> Option<Self> {
+        match s.trim() {
+            "Started,1" => Some(ForwardStatus::Started),
+            "Navigated to Schoology login,2" => Some(ForwardStatus::Navigated),
+            "Typed in Email,3" => Some(ForwardStatus::TypedEmail),
+            "Entered Email,4" => Some(ForwardStatus::EnteredEmail),
+            "Typed in Password,5" => Some(ForwardStatus::TypedPassword),
+            "Enter Password,6" => Some(ForwardStatus::EnteredPassword),
+            "Finished,7" => Some(ForwardStatus::Finished),
+            "Incorrect Email or Password,E" => Some(ForwardStatus::ErrorInSetup),
+            _ => None,
+        }
+    }
 }
 
 pub type GradesHashMap = BTreeMap<String, Vec<Option<f32>>>;

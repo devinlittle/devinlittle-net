@@ -1,10 +1,10 @@
 # General Information:
   * If you are on windows its recommended to use WSL rather than a normal Windows host
-  * Docker images _will_ eventually provided with all mentioned prerequisites pre-installed; so what I'm getting at is if you don't want to install all these and rather use a docker image to build, that option is available to you.
+  * Docker images will be provided with all mentioned prerequisites pre-installed; so what I'm getting at is if you don't want to install all these and rather use a docker image to build, that option is available to you.
 
 ## General Prerequisites
   * [`rustup`](https://rustup.rs)
-    * this includes cargo as cargo is used heavily
+    * rustup is required as it provides the rust toolchain which...this project is written mainly in rust so yk..kinda required
   * [`bun`](https://bun.sh)
     * bun is used solely as a package manager in this project as its fast and great
   * `node`

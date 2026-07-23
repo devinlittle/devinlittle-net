@@ -12,6 +12,7 @@ pub use backend_common::{
 // GradeGetter
 pub use backend_common::gradegetter::GradeGetterPayload;
 pub use backend_common::gradegetter::GradesHashMap;
+pub use backend_common::gradegetter::{ForwardStatus, SchoologyLogin};
 
 // NanoPass
 pub use backend_common::nanopass::{FileListing, FileListingInput, Visibility};
