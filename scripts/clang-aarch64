@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-SYSROOT="$ROOT_DIR/target/sysroots/aarch64"
+SYSROOT="$ROOT_DIR/target/.sysroots/aarch64"
 
 exec clang \
   --target=aarch64-unknown-linux-gnu \
