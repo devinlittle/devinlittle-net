@@ -1,5 +1,6 @@
 export BUILDX_BAKE_ENTITLEMENTS_FS := "0"
 
+[private]
 default: help
 
 stable-all:
@@ -16,12 +17,24 @@ build-stable service:
 
 run-migrations:
 	#!/usr/bin/env bash
-	dirs=("auth_backend" "gradegetter/gradegetter" "gradegetter/gradegetter_backend" "notification_backend" "smalltalk_backend")
+	dirs=("auth_backend" "gradegetter/gradegetter_backend" "notification_backend" "smalltalk_backend")
 	for d in "${dirs[@]}"; do
 		(
+			echo "Migrations for $d running"
 			cd "$d"
 			cargo sqlx db create
 			cargo sqlx mig run
+		)
+	done
+
+prepare:
+	#!/usr/bin/env bash
+	dirs=("auth_backend" "gradegetter/gradegetter" "gradegetter/gradegetter_backend" "notification_backend" "smalltalk_backend")
+	for d in "${dirs[@]}"; do
+		(
+			echo "$d"
+			cd "$d"
+			cargo sqlx prepare
 		)
 	done
 

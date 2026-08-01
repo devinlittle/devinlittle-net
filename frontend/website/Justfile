@@ -1,2 +1,19 @@
+[private]
+default: help
+
+dev:
+  bun run dev
+
 build:
+  bun run build
+
+publish:
 	./build.sh
+
+
+# Shows this message
+help:
+  @just --list
+
+doctor: 
+  @echo this works

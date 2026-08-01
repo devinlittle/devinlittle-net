@@ -10,14 +10,15 @@ version := `printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --sh
 project_home := `printf $(cd ../ && pwd)`
 target_dir := project_home / "target"
 packaging_dir := target_dir / "packaging"
-qt_dir := target_dir / "qt"
+qt_dir := target_dir / ".qt"
 qt_ver := "6.11.1"
 qmake_wrapper := project_home / "scripts/qmake"
-mac_sdk_dir := target_dir / "mac_sdk"
-sysroots_dir := target_dir / "sysroots"
+mac_sdk_dir := target_dir / ".mac_sdk"
+sysroots_dir := target_dir / ".sysroots"
 
 # -----------------------------------------
 
+[private]
 default: help
 
 [private]
@@ -240,5 +241,6 @@ bump-version:
 release-dry:
     @echo "Dry run release for version {{version}}"
 
+# shows this message
 help:
     @just --list

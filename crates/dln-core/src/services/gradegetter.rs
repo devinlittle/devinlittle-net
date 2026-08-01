@@ -1,7 +1,6 @@
 use crate::auth::AUTH_STATE;
 use crate::event_bus::{EventBusEvent, EVENT_BUS};
 use crate::fs::GLOBAL_CONFIG;
-use crate::services::gradegetter::GradeOutput::{BTreeGrades, JsonGrades};
 use crate::structs::{ForwardStatus, GradesHashMap, SchoologyLogin};
 use crate::{auth::AUTHED_CLIENT, error::CoreError};
 
