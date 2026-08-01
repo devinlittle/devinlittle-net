@@ -13,20 +13,20 @@ use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 use indicatif::{ProgressBar, ProgressStyle};
 use inquire::{Password, PasswordDisplayMode, Text};
-use owo_colors::{OwoColorize, Style};
+use owo_colors::OwoColorize;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-struct Cli {
+pub struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>,
+    pub command: Option<Commands>,
 
     #[arg(long, value_enum)]
-    generate_completion: Option<Shell>,
+    pub generate_completion: Option<Shell>,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub enum Commands {
     // Auth
     /// Login to DLN
     Login {
@@ -48,8 +48,9 @@ enum Commands {
 }
 
 #[derive(Subcommand)]
-enum GradeAction {
+pub enum GradeAction {
     /// fetch and display your grades
+    #[command(alias = "fetch")]
     Get {
         #[arg(long, short = 'j')]
         json: bool,
@@ -182,7 +183,7 @@ async fn main() -> Result<()> {
 
                     let grades = match grades {
                         GradeOutput::BTreeGrades(_) => {
-                            Err("Expected BTreeGrades, got JsonGrades".to_string())
+                            Err("Expected JsonGrades, got BTreeGrades".to_string())
                         }
                         GradeOutput::JsonGrades(grades) => Ok(grades),
                     }

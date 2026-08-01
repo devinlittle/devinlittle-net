@@ -1,6 +1,6 @@
 import adapter from '@sveltejs/adapter-node';
 import { enhancedImages } from "@sveltejs/enhanced-img"
-import { mdsvex } from 'mdsvex';
+//import { mdsvex } from 'mdsvex';
 
 export default {
   compilerOptions: {
@@ -15,11 +15,11 @@ export default {
       //preprocess: preprocess({sass: true}),
     }),
   },
-  extensions: ['.svelte', '.md', ".svx"],
+  extensions: ['.svelte'], //'.md', ".svx"],
   preprocess: [
     enhancedImages(),
-    mdsvex({
-      extensions: ['.md', '.svx']
-    })
+    /*     mdsvex({
+          extensions: ['.md', '.svx']
+        }) */
   ],
 };

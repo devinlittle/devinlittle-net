@@ -1,10 +1,10 @@
 use aes_gcm::{
-    Aes256Gcm, Key, Nonce,
     aead::{Aead, KeyInit},
+    Aes256Gcm, Key, Nonce,
 };
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 use dotenvy::dotenv;
-use rand::{Rng, rng};
+use rand::{rng, Rng};
 use std::{env, sync::LazyLock};
 use thiserror::Error;
 use tracing::{error, instrument};
@@ -18,7 +18,10 @@ static ENCRYPTION_KEY: LazyLock<Key<Aes256Gcm>> = LazyLock::new(|| {
     if key_bytes.len() != 32 {
         panic!("ENCRYPTION_KEY must be 32 bytes (Base64-encoded)");
     }
-    Key::<Aes256Gcm>::from_slice(&key_bytes).to_owned()
+    // Key::<Aes256Gcm>::from_slice(&key_bytes).to_owned()
+    Key::<Aes256Gcm>::try_from(&key_bytes)
+        .to_owned()
+        .expect("ENCRYPTION_KEY must be 32 bytes (Base64-encoded)")
 });
 
 #[derive(Error, Debug)]
@@ -47,7 +50,8 @@ pub fn encrypt_string(plaintext: &str) -> Result<Vec<u8>, CryptoErrors> {
 
     let mut nonce_bytes = [0u8; 12];
     rng().fill_bytes(&mut nonce_bytes);
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let nonce =
+        &Nonce::try_from(nonce_bytes.as_slice()).map_err(|_| CryptoErrors::TooLittleData)?;
 
     let ciphertext = cipher.encrypt(nonce, plaintext.as_bytes()).map_err(|err| {
         error!(error = %err, "[Crypto_Utils failure]: failure to encrypt data");
@@ -76,7 +80,7 @@ pub fn decrypt_string(data: Vec<u8>) -> Result<String, CryptoErrors> {
     }
 
     let (nonce_bytes, ciphertext) = data.split_at(12);
-    let nonce = Nonce::from_slice(nonce_bytes);
+    let nonce = &Nonce::try_from(nonce_bytes).map_err(|_| CryptoErrors::TooLittleData)?;
 
     let cipher = Aes256Gcm::new(&ENCRYPTION_KEY);
 

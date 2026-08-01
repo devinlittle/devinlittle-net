@@ -21,6 +21,8 @@ client = [
   "smalltalk"
 ]
 
+server = ["internal"]
+
 internal = ["tracing", "webrtc", "tonic"]
 tracing = [
   "dep:tracing",

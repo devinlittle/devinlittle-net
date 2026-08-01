@@ -23,7 +23,7 @@ cp ./target/release/$APP_NAME /bin/$APP_NAME
 FROM rust:${RUST_VERSION}-alpine AS sqlx_build
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo install sqlx-cli --version 0.8.6 --no-default-features --features postgres && \
+    cargo install sqlx-cli --version 0.9.0 --no-default-features --features postgres && \
     cp /usr/local/cargo/bin/sqlx /bin/sqlx
 
 ################################################################################

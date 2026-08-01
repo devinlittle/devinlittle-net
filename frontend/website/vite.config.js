@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [sveltekit()],
   server: {
     https: {
-      //      key: fs.readFileSync('./certs/localhostTRUE.pem'),
-      //     cert: fs.readFileSync('./certs/localhostTRUE.crt'),
+      key: fs.readFileSync('./certs/localhostTRUE.pem'),
+      cert: fs.readFileSync('./certs/localhostTRUE.crt'),
     },
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',

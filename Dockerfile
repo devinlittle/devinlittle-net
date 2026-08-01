@@ -50,22 +50,6 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     fi && \
     rm -rf /var/lib/apt/lists/*
 
-# RUN if [ "$TARGETARCH" = "amd64" ]; then \
-#         dpkg --add-architecture arm64 && \
-#         apt-get update && apt-get install -y --no-install-recommends \
-#         gcc-aarch64-linux-gnu \
-#         g++-aarch64-linux-gnu \
-# #       libc6-dev-arm64-cross; \
-# #       crossbuild-essential-arm64 \
-#     elif [ "$TARGETARCH" = "arm64" ]; then \
-#         dpkg --add-architecture amd64 && \
-#         apt-get update && apt-get install -y --no-install-recommends \
-#         gcc-x86-64-linux-gnu \
-#         g++-x86-64-linux-gnu \
-#        libc6-dev-amd64-cross; \
-#        crossbuild-essential-amd64 \
-#   fi && rm -rf /var/lib/apt/lists/*
-
 RUN  install -d -m 0755 /etc/apt/keyrings && \
   curl -fsSL https://deb.griffo.io/EA0F721D231FDD3A0A17B9AC7808B4DD62C41256.asc | gpg --dearmor --yes -o /etc/apt/keyrings/deb.griffo.io.gpg && \
   echo "deb [signed-by=/etc/apt/keyrings/deb.griffo.io.gpg] https://deb.griffo.io/apt trixie main" | tee /etc/apt/sources.list.d/deb.griffo.io.list > /dev/null && \
@@ -81,7 +65,6 @@ RUN curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir /usr/lo
     && fnm default $(fnm current) \
     && cp -r /usr/local/fnm/aliases/default/bin/* /usr/local/bin/
 
-# 7. Cargo Cargo packaging utilities
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable \
     && rustup target add \
     x86_64-unknown-linux-gnu \
@@ -90,7 +73,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
     aarch64-pc-windows-msvc \
     aarch64-apple-darwin
 
-RUN cargo install cargo-zigbuild cargo-xwin
+RUN cargo install cargo-zigbuild cargo-xwin mdbook
 
 ENV SQLX_OFFLINE=true
 WORKDIR /workspace
