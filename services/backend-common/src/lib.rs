@@ -1,3 +1,12 @@
+#![doc = include_str!("../docs/lib.md")]
+//!
+//! ## Features:
+//!
+#![doc = document_features::document_features!(feature_label = "**`{feature}`**")]
+// I don't think il post this to docs.rs but just good to have
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -82,7 +91,6 @@ pub enum ServiceName {
 }
 
 #[derive(Serialize, Deserialize, Eq, Hash, PartialEq, Clone, Debug, ToSchema, strum::Display)]
-//#[serde(rename_all = "snake_case")]
 #[serde(rename_all = "lowercase")]
 pub enum UserRole {
     Devin,

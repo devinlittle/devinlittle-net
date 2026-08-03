@@ -1,3 +1,8 @@
+//! Authentication models shared between DLN clients and services.
+//!
+//! This module contains the request and response structures required for
+//! authentication.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;

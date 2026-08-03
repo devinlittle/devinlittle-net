@@ -516,6 +516,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "dashmap",
+ "document-features",
  "dotenvy",
  "opentelemetry",
  "opentelemetry-otlp",

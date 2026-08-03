@@ -82,6 +82,7 @@ base64 = "0.23.0"
 crypto_utils = { path = "./crates/crypto_utils" }
 backend-common = { path = "./services/backend-common/" }
 strum = { version = "0.28.0", features = ["derive"] }
+document-features = "0.2.12"
 
 tonic = "0.14.6"
 tonic-reflection = "0.14.6"
