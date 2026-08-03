@@ -166,30 +166,6 @@ pub async fn notify(
 
         loop {
             select! {
-                msg = socket.recv() => {
-                        let msg = match msg {
-                            Some(Ok(msg)) => msg,
-                            _ => break,
-                        };
-                        let msg = msg.to_text().unwrap_or_default();
-
-                        let send_req = match serde_json::from_str::<SendNotification>(msg) {
-                            Ok(send_req) => send_req,
-                            Err(_) => break,
-                        };
-
-                        let recipient_uuid = match Uuid::from_str(send_req.recipient.as_str()) {
-                            Ok(recipient_uuid) => recipient_uuid,
-                            Err(_) => break,
-                        };
-
-                        if let Some(tx) = state.connected_users.get(&recipient_uuid) {
-                            tx.send(send_req.content)
-                              .map_err(|err| tracing::error!("error sending to user_tx: {}", err))
-                              .ok();
-                        }
-                        tracing::trace!("This is a send request");
-                },
                 msg = global_rx.recv() => {
                     match msg {
                         Ok(msg) => {
