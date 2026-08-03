@@ -90,42 +90,45 @@ async fn main() -> Result<()> {
         std::process::exit(1);
     }
 
-    if let Err(err) = dln_core::init().await {
-        match err {
-            CoreError::Auth(AuthError::Unauthorized)
-            | CoreError::Auth(AuthError::Unauthenticated) => match cli.command {
-                Some(Commands::Logout) => {
-                    return logout().await.map_err(|e| e.into());
-                }
+    // only init when a command is given
+    if cli.command.is_some() {
+        if let Err(err) = dln_core::init().await {
+            match err {
+                CoreError::Auth(AuthError::Unauthorized)
+                | CoreError::Auth(AuthError::Unauthenticated) => match cli.command {
+                    Some(Commands::Logout) => {
+                        return logout().await.map_err(|e| e.into());
+                    }
+                    _ => {
+                        println!("Please log in first");
+                        std::process::exit(1);
+                    }
+                },
                 _ => {
-                    println!("Please log in first");
+                    eprintln!("Critical system error during startup: {:?}", err);
                     std::process::exit(1);
                 }
-            },
-            _ => {
-                eprintln!("Critical system error during startup: {:?}", err);
-                std::process::exit(1);
             }
         }
-    }
 
-    {
-        let (tx, mut rx) = tokio::sync::mpsc::channel::<EventBusEvent>(256);
+        {
+            let (tx, mut rx) = tokio::sync::mpsc::channel::<EventBusEvent>(256);
 
-        dln_core::event_bus::init_events(tx);
-        tokio::spawn(async move {
-            while let Some(event) = rx.recv().await {
-                println!("{event:?}");
+            dln_core::event_bus::init_events(tx);
+            tokio::spawn(async move {
+                while let Some(event) = rx.recv().await {
+                    println!("{event:?}");
 
-                match event {
-                    EventBusEvent::GradesUpdated => {
-                        if let Ok(grades) = grab_grades() {
-                            println!("{grades:?}");
+                    match event {
+                        EventBusEvent::GradesUpdated => {
+                            if let Ok(grades) = grab_grades() {
+                                println!("{grades:?}");
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 
     match cli.command {
@@ -250,7 +253,19 @@ async fn main() -> Result<()> {
                     pb.inc(1);
                 }
             }
-            GradeAction::DeleteCreds => {}
+            GradeAction::DeleteCreds => {
+                match dln_core::helpers::gradegetter::delete_credentials()
+                    .await
+                    .is_ok()
+                {
+                    true => {
+                        println!("Sucessfully deleted credentials");
+                    }
+                    false => {
+                        println!("Failed to deleted credentials");
+                    }
+                }
+            }
         },
         _ => {
             let mut cmd = Cli::command();

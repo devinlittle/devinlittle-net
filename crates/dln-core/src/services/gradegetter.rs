@@ -157,6 +157,7 @@ pub async fn forward_to_gradegetter() -> Result<(), CoreError> {
         .map_err(|_| CoreError::RequestFailure)?;
     Ok(())
 }
+
 pub async fn forward_ws() -> Result<Receiver<ForwardStatus>, CoreError> {
     let auth = AUTH_STATE.get().ok_or(CoreError::NotInitalized)?;
     let (tx, rx) = watch::channel(ForwardStatus::Started);
@@ -215,4 +216,23 @@ pub async fn forward_ws() -> Result<Receiver<ForwardStatus>, CoreError> {
     });
 
     Ok(rx)
+}
+
+pub async fn delete_credentials() -> Result<(), CoreError> {
+    let _ = AUTHED_CLIENT
+        .execute(|client| {
+            Box::pin(async move {
+                client
+                    .get(format!(
+                        "{}/gradegetter/auth/schoology/credentials",
+                        GLOBAL_CONFIG.load().api_url
+                    ))
+                    .send()
+                    .await
+                    .map_err(|_| CoreError::NotInitalized)
+            })
+        })
+        .await
+        .map_err(|_| CoreError::RequestFailure)?;
+    Ok(())
 }

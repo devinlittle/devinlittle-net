@@ -17,3 +17,5 @@ pub async fn add_schoology_credentials(params: SchoologyLogin) -> Result<(), Cor
     crate::services::gradegetter::forward_to_gradegetter().await?;
     Ok(())
 }
+
+pub use crate::services::gradegetter::delete_credentials;
