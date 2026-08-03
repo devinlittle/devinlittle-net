@@ -71,7 +71,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
     x86_64-pc-windows-msvc \
     aarch64-unknown-linux-gnu \
     aarch64-pc-windows-msvc \
-    aarch64-apple-darwin
+    aarch64-apple-darwin \
+    && rustup component add llvm-tools
 
 RUN cargo install cargo-zigbuild cargo-xwin mdbook
 
