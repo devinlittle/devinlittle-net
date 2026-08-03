@@ -21,18 +21,26 @@ update-lockfile:
   cargo generate-lockfile
   uvx flatpak-cargo-generator ./Cargo.lock -o ./dist/linux/flatpak/cargo-sources.json
 
-# runs a checkup 
+# build builer?
+
+# runs a checkup
 doctor proj="":
     #!/usr/bin/env bash
     set -e
 
-    echo "Running environment checks..."
-
     if [ -z "{{proj}}" ]; then
         echo "Checking all projects..."
+        echo
+        echo "[Apps]"
         just apps::doctor
+        echo
+        echo "[Services]"
         just services::doctor
+        echo
+        echo "[Website]"
         just website::doctor
+        echo
+        echo "[Docs]"
         just docs::doctor
         exit 0
     fi

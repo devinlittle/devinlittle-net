@@ -41,5 +41,11 @@ prepare:
 clean:
     docker builder prune --filter type=exec.cachemount
 
+doctor:
+  #!/usr/bin/env bash
+    command -v docker >/dev/null 2>&1 && printf "docker = \033[1;32myes\033[0m\n" || printf "docker = \033[1;31mno\033[0m\n"
+    command -v cargo-sqlx >/dev/null && printf "cargo-sqlx = \033[1;32myes\033[0m\n" || printf "cargo-sqlx = \033[1;31mno\033[0m\n" 
+    cargo --version
+
 help:
     @just --list

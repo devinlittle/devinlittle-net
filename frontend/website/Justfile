@@ -15,5 +15,8 @@ publish:
 help:
   @just --list
 
-doctor: 
-  @echo this works
+# runs a checkup
+doctor:
+    #!/usr/bin/env bash
+    command -v bun >/dev/null && printf "bun = \033[1;32myes\033[0m\n" || printf "bun = \033[1;31mno\033[0m\n"
+    command -v node >/dev/null && printf "node = \033[1;32myes\033[0m\n" || printf "node = \033[1;31mno\033[0m\n"

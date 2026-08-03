@@ -91,6 +91,14 @@ build-release package="":
         cargo build -p {{package}} --release
     fi
 
+# due to the complex nature of the build process for dln clients, this command is just for the docs and its builder
+build-for-docs: ensure-sysroots ensure-qt-managed
+  cargo build -p dln-cli --frozen
+
+  QMAKE={{qmake_wrapper}} \
+      cargo build -p dln-ui --frozen
+
+
 # grabs all crates so `--frozen` works for ci/cd
 cargo-fetch:
     cargo fetch --locked
@@ -228,12 +236,16 @@ clippy:
 test:
     cargo test --all-features
 
+# runs a checkup
 doctor:
-    @echo "Checking prerequisites..."
-    command -v zig >/dev/null && echo "zig = yes" || echo "zig = no"
-    command -v just >/dev/null && echo "just = yes" || echo "just = no "
+    #!/usr/bin/env bash
+    command -v zig >/dev/null && printf "zig = \033[1;32myes\033[0m\n" || printf "zig = \033[1;31mno\033[0m\n"
+    command -v clang >/dev/null && printf "clang = \033[1;32myes\033[0m\n" || printf "clang = \033[1;31mno\033[0m\n"
+    command -v cargo-xwin >/dev/null && printf "cargo-xwin = \033[1;32myes\033[0m\n" || printf "cargo-xwin = \033[1;31mno\033[0m\n"
+    command -v cargo-zigbuild >/dev/null && printf "cargo-zigbuild = \033[1;32myes\033[0m\n" || printf "cargo-zigbuild = \033[1;31mno\033[0m\n"
+    command -v curl >/dev/null && printf "curl = \033[1;32myes\033[0m\n" || printf "curl = \033[1;31mno\033[0m\n"
+    command -v zstd >/dev/null && printf "zstd = \033[1;32myes\033[0m\n" || printf "zstd = \033[1;31mno\033[0m\n"
     cargo --version
-    @echo "Run 'just build' to test basic build"
 
 bump-version:
     @echo "TODO: Implement version bumping"

@@ -53,6 +53,12 @@ build-docker:
 build-docker-stable:
     TAG=stable docker buildx bake docs --push
 
+# runs a checkup
+doctor:
+  #!/usr/bin/env bash
+    command -v mdbook >/dev/null && printf "mdbook = \033[1;32myes\033[0m\n" || printf "mdbook = \033[1;31mno\033[0m\n"
+    cargo --version
+
 # shows this message
 help:
   @just --list
