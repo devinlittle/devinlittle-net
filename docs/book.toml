@@ -2,3 +2,10 @@
 title = "DevinLittle-Net"
 authors = ["Devin Little"]
 language = "en"
+
+## TODO: get catppuccin working.. :( i hope i can
+
+#[output.html]
+#additional-css = ["./theme/catppuccin.css"]
+#default-theme = "latte"
+#preferred-dark-theme = "mocha"

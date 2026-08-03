@@ -1,14 +1,57 @@
 export SQLX_OFFLINE := "1"
+export BUILDX_BAKE_ENTITLEMENTS_FS := "0"
+
+project_home := `printf $(cd ../ && pwd)`
+target_dir := project_home / "target"
+docs_out_dir := project_home / "docs" / "out"
 
 [private]
 default: help
 
+[private]
+ensure-docs-out-dir:
+    mkdir -p {{docs_out_dir}}
+
+# create the rustdocs
 rustdocs:
   cargo doc \
   --workspace \
   --no-deps \
   --all-features \
   --document-private-items
+
+# copy rustdocs to the out folder
+rustdocs-cp: ensure-docs-out-dir rustdocs
+  #!/usr/bin/env bash
+  rm -rf {{docs_out_dir}}/rustdocs
+  mkdir -p {{docs_out_dir}}/rustdocs
+
+  cp -r "{{target_dir}}/doc/static.files" "{{docs_out_dir}}/rustdocs/"
+  cp "{{target_dir}}/doc/"*.js "{{docs_out_dir}}/rustdocs/"
+  cp "{{target_dir}}/doc/"*.css "{{docs_out_dir}}/rustdocs/"
+  cp "{{target_dir}}/doc/"*.html "{{docs_out_dir}}/rustdocs/"
+
+  cargo metadata --format-version=1 --no-deps \
+  | jq -r '.packages[].name' \
+  | while IFS= read -r pkg; do
+      crate=${pkg//-/_}
+      cp -R "{{target_dir}}/doc/$crate" "{{docs_out_dir}}/rustdocs/$crate"
+    done
+
+# build the mdbook
+book-build: ensure-docs-out-dir
+  mdbook build -d "{{docs_out_dir}}/book"
+
+# full rustdoc build + mdbook build
+build-docs: rustdocs-cp book-build
+
+# build the server image
+build-docker:
+    docker buildx bake docs --push
+
+# build the server image but put stable tag on
+build-docker-stable:
+    TAG=stable docker buildx bake docs --push
 
 # shows this message
 help:
