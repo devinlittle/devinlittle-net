@@ -6,6 +6,9 @@ repository.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [dependencies]
 backend-common = { workspace = true, features = ["client"] }
 
