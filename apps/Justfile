@@ -190,22 +190,26 @@ build-windows: ensure-packaging-dir ensure-qt-managed
     @echo "Building x86_64 cli"
     cargo xwin build --target x86_64-pc-windows-msvc --frozen --release -p dln-cli
 
-    cp "{{target_dir}}/x86_64-pc-windows-msvc/release/dln-cli.exe" "{{packaging_dir}}"
+    cp "{{target_dir}}/x86_64-pc-windows-msvc/release/dln-cli.exe" "{{packaging_dir}}/dln-cli-amd64.exe"
 
     @echo "Building x86_64 ui"
     echo "x86_64-pc-windows-msvc" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
       cargo xwin build --target x86_64-pc-windows-msvc --frozen --release -p dln-ui
 
-    cp "{{target_dir}}/x86_64-pc-windows-msvc/release/dln-ui.exe" "{{packaging_dir}}"
+    cp "{{target_dir}}/x86_64-pc-windows-msvc/release/dln-ui.exe" "{{packaging_dir}}/dln-ui-amd64.exe"
 
     @echo "Building aarch64 cli"
-    cargo xwin build --target aarch64-pc-windows-msvc --release -p dln-cli
+    cargo xwin build --target aarch64-pc-windows-msvc --frozen --release -p dln-cli
+
+    cp "{{target_dir}}/aarch64-pc-windows-msvc/release/dln-cli.exe" "{{packaging_dir}}/dln-cli-arm64.exe"
 
     @echo "Building aarch64 ui"
     echo "aarch64-pc-windows-msvc" > ../scripts/.comp_target_local
     QMAKE={{qmake_wrapper}} \
-      cargo xwin build --target aarch64-pc-windows-msvc --release -p dln-ui
+      cargo xwin build --target aarch64-pc-windows-msvc --frozen --release -p dln-ui
+
+    cp "{{target_dir}}/aarch64-pc-windows-msvc/release/dln-ui.exe" "{{packaging_dir}}/dln-ui-arm64.exe"
 
 
 # builds for macos using zigbuild and linking with zig
