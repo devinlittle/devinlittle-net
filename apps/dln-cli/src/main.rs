@@ -1,6 +1,6 @@
 use comfy_table::{Cell, Color, ContentArrangement, Row, Table};
 use dln_core::{
-    auth::{logout, AuthError},
+    auth::{AuthError, logout},
     error::CoreError,
     event_bus::EventBusEvent,
     helpers::gradegetter::grab_grades,
