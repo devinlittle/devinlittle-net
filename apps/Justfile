@@ -243,8 +243,8 @@ test:
 # runs a checkup
 doctor:
     #!/usr/bin/env bash
-    command -v zig >/dev/null && printf "zig = \033[1;32myes\033[0m\n" || printf "zig = \033[1;31mno\033[0m\n"
-    command -v clang >/dev/null && printf "clang = \033[1;32myes\033[0m\n" || printf "clang = \033[1;31mno\033[0m\n"
+    command -v zig >/dev/null && printf "zig = \033[1;32myes\033[0m ($(zig version))\n" || printf "zig = \033[1;31mno\033[0m\n"
+    command -v clang >/dev/null && printf "clang = \033[1;32myes\033[0m ($(clang --version | head -1))\n" || printf "clang = \033[1;31mno\033[0m\n"
     command -v cargo-xwin >/dev/null && printf "cargo-xwin = \033[1;32myes\033[0m\n" || printf "cargo-xwin = \033[1;31mno\033[0m\n"
     command -v cargo-zigbuild >/dev/null && printf "cargo-zigbuild = \033[1;32myes\033[0m\n" || printf "cargo-zigbuild = \033[1;31mno\033[0m\n"
     command -v curl >/dev/null && printf "curl = \033[1;32myes\033[0m\n" || printf "curl = \033[1;31mno\033[0m\n"
