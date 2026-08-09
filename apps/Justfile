@@ -25,9 +25,18 @@ default: help
 ensure-packaging-dir:
     mkdir -p {{packaging_dir}}
 
-[private]
+# Downloads the QT Toolchain
 ensure-qt-managed:
     #!/usr/bin/env bash
+    set -euo pipefail
+
+    cleanup() {
+        echo -e "\nDownload was interrupted or failed! :( Cleaning up the partial download..."
+        rm -rf "{{qt_dir}}"
+    }
+
+    trap cleanup INT TERM EXIT
+
     echo "{{qt_dir}}" > ../scripts/.qt_base_local
     if [ ! -d {{qt_dir}} ]; then
     mkdir -p {{qt_dir}}
@@ -38,9 +47,20 @@ ensure-qt-managed:
       | tar --zstd -xf - -C {{qt_dir}}
     fi
 
-[private]
+    trap - EXIT INT TERM
+
+# Downloads the MacOSX.sdk
 ensure-mac-sdk:
     #!/usr/bin/env bash
+    set -euo pipefail
+
+    cleanup() {
+        echo -e "\nDownload was interrupted or failed! :( Cleaning up the partial download..."
+        rm -rf "{{mac_sdk_dir}}"
+    }
+
+    trap cleanup INT TERM EXIT
+
     if [ ! -d {{mac_sdk_dir}} ]; then
     mkdir -p {{mac_sdk_dir}}
     echo "Downloading the MacOSX.sdk" && \
@@ -50,9 +70,20 @@ ensure-mac-sdk:
       | tar --zstd -xf - -C {{mac_sdk_dir}}
     fi
 
-[private]
+    trap - EXIT INT TERM
+
+# Downloads the SysRoots
 ensure-sysroots:
     #!/usr/bin/env bash
+    set -euo pipefail
+
+    cleanup() {
+        echo -e "\nDownload was interrupted or failed! :( Cleaning up the partial download..."
+        rm -rf "{{sysroots_dir}}"
+    }
+
+    trap cleanup INT TERM EXIT
+
     if [ ! -d {{sysroots_dir}} ]; then
     mkdir -p {{sysroots_dir}}
     echo "Downloading the SysRoots" && \
@@ -61,6 +92,8 @@ ensure-sysroots:
       "https://minio.home.devinlittle.net/dev.bucket/sysroots.tar.zst" \
       | tar --zstd --exclude="*/dev/*" -xf - -C {{sysroots_dir}}
     fi
+
+    trap - INT TERM EXIT
 # -----------------------------------------
 
 # builds with the debug profile with the HOST architecture
