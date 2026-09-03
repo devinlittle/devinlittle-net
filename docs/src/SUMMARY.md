@@ -27,10 +27,6 @@
 
 * [Presence](concepts/presence.md)
 
-* [Trust](concepts/trust.md)
-
-* [State](concepts/state.md)
-
 * [Clients](concepts/clients.md)
 
 * [Services](concepts/services.md)
