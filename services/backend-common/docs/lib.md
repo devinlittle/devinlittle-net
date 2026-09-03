@@ -38,4 +38,4 @@ Visually it looks like so:
 
 However, clients should *definitely* not use this crate up front. Clients are advised to use [`dln-core`](../dln_core) instead.
 
-**Servers should be the only package which _directly_ depends on this crate.**
+**Servers should be the only package which <u>directly</u> depends on this crate.**
