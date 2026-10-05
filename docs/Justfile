@@ -46,11 +46,11 @@ book-build: ensure-docs-out-dir
 build-docs: rustdocs-cp book-build
 
 # build the server image
-build-docker:
+build-docker: build-docs
     docker buildx bake docs --push
 
 # build the server image but put stable tag on
-build-docker-stable:
+build-docker-stable: build-docs
     TAG=stable docker buildx bake docs --push
 
 # runs a checkup

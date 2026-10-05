@@ -658,8 +658,7 @@ async fn fetch_export_initial_form_data(token: String) -> Result<QuarterForms, a
         .map(|c| c.extract::<1>().1[0].to_string())
         .collect();
 
-    // BUG: crash here possibly fixed...but just a warning
-    for id in &quater_ids[quater_ids.len() - 4..] {
+    for id in &quater_ids[quater_ids.len().saturating_sub(4)..] {
         trace!("quarter ids: {id}");
         grading_periods.insert(format!("grading_period[{}]", id), id.to_string());
     }

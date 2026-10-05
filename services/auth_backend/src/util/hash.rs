@@ -1,5 +1,8 @@
 use argon2::{
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::{
+        phc::{PasswordHash, SaltString},
+        PasswordHasher, PasswordVerifier,
+    },
     Argon2,
 };
 use constant_time_eq::constant_time_eq;
@@ -16,12 +19,14 @@ use crate::util::secrets::SECRETS;
 )]
 pub fn hash_password(password: String) -> Result<String, StatusCode> {
     let salt = &SECRETS.hash_secret;
-    let salt = SaltString::encode_b64(salt.as_bytes()).expect("SaltString initilization");
+    let salt = SaltString::from_b64(salt)
+        .expect("SaltString initilization")
+        .to_salt();
 
     let argon2 = Argon2::default();
 
     let password_hash = argon2
-        .hash_password(password.as_bytes(), &salt)
+        .hash_password_with_salt(password.as_bytes(), &salt)
         .map_err(|err| {
             tracing::error!(error = %err, "Cryptographic failure processing password hash");
             StatusCode::INTERNAL_SERVER_ERROR
@@ -42,6 +47,7 @@ pub fn verify_password(original: &str, hashed_password: &str) -> bool {
     let parsed = PasswordHash::new(hashed_password)
         .map_err(|err| {
             tracing::error!(error = %err, "Database contained an invalid or corrupted password hash format");
+            return false;
         })
         .unwrap();
 

@@ -19,8 +19,7 @@ static ENCRYPTION_KEY: LazyLock<Key<Aes256Gcm>> = LazyLock::new(|| {
         panic!("ENCRYPTION_KEY must be 32 bytes (Base64-encoded)");
     }
     // Key::<Aes256Gcm>::from_slice(&key_bytes).to_owned()
-    Key::<Aes256Gcm>::try_from(&key_bytes)
-        .to_owned()
+    Key::<Aes256Gcm>::try_from(key_bytes.as_slice())
         .expect("ENCRYPTION_KEY must be 32 bytes (Base64-encoded)")
 });
 

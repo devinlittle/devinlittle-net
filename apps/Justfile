@@ -124,14 +124,6 @@ build-release package="":
         cargo build -p {{package}} --release
     fi
 
-# due to the complex nature of the build process for dln clients, this command is just for the docs and its builder
-build-for-docs: ensure-sysroots ensure-qt-managed
-  cargo build -p dln-cli --frozen
-
-  QMAKE={{qmake_wrapper}} \
-      cargo build -p dln-ui --frozen
-
-
 # grabs all crates so `--frozen` works for ci/cd
 cargo-fetch:
     cargo fetch --locked
