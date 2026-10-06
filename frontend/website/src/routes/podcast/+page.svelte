@@ -3,7 +3,7 @@
     auth,
     type ServiceName,
     type UserRole,
-  } from "$lib/utils/auth.svelte";
+  } from "#lib/utils/auth.svelte.js";
 
   const PodcastSchoolProjectService: ServiceName = "podcastschoolproject";
 

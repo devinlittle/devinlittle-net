@@ -2,14 +2,13 @@
 default: help
 
 dev:
-  bun run dev
+  bun run --bun dev
 
 build:
-  bun run build
+  bun run --bun build
 
 publish:
 	./build.sh
-
 
 # Shows this message
 help:

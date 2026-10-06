@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import { auth, logout, getRole, authApi } from "$lib/utils/auth.svelte";
+  import { auth, logout, getRole, authApi } from "#lib/utils/auth.svelte.js";
   import { goto } from "$app/navigation";
   import {
     db_state,
     generate_and_store_keypair,
-  } from "$lib/utils/sqlite.svelte";
+  } from "#lib/utils/sqlite.svelte.js";
 
   import {
     keysync,
@@ -15,13 +15,13 @@
     generate_recovery_words,
     setup_recovery_phrase,
     recover_with_phrase,
-  } from "$lib/utils/smalltalk.svelte";
+  } from "#lib/utils/smalltalk.svelte.js";
   import {
     addNotification,
     notificationApi,
-  } from "$lib/utils/notifications.svelte";
-  import { gradesApi } from "$lib/utils/gradegetter.svelte";
-  import { API_URL, VAPID_PUBLIC_KEY } from "$lib/utils/constants.svelte";
+  } from "#lib/utils/notifications.svelte.js";
+  import { gradesApi } from "#lib/utils/gradegetter.svelte.js";
+  import { API_URL, VAPID_PUBLIC_KEY } from "#lib/utils/constants.svelte.js";
 
   let sessions = $state([]);
   let confirmText = $state("");

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { auth } from "$lib/utils/auth.svelte";
+  import { auth } from "#lib/utils/auth.svelte.js";
   import {
     fetchGrades,
     grades,
     the_bad_status,
     type BadStatus,
-  } from "$lib/utils/gradegetter.svelte";
+  } from "#lib/utils/gradegetter.svelte.js";
 
   const status_messages: Record<Exclude<BadStatus, null>, string> = {
     no_gg_account:

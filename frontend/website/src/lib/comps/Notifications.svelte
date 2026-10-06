@@ -3,7 +3,7 @@
     notifications,
     registerDismiss,
     removeNotification,
-  } from "$lib/utils/notifications.svelte";
+  } from "#lib/utils/notifications.svelte.js";
   import { onMount } from "svelte";
 
   let dying = $state(new Set());

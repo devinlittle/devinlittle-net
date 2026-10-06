@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { auth } from "$lib/utils/auth.svelte";
+  import { auth } from "#lib/utils/auth.svelte.js";
 </script>
 
 {#if auth.ready}

@@ -6,12 +6,12 @@
     auth,
     get_ready_for_devin_grfd,
     getRefreshStatus,
-  } from "$lib/utils/auth.svelte";
+  } from "#lib/utils/auth.svelte.js";
   import {
     connectNotifications,
     getSocket,
     socketState,
-  } from "$lib/utils/notifications.svelte";
+  } from "#lib/utils/notifications.svelte.js";
 
   onMount(async () => {
     await get_ready_for_devin_grfd(false);
@@ -38,9 +38,9 @@
   $inspect(smalltalk_notes);
 
   import "./styles.css";
-  import Notifications from "$lib/comps/Notifications.svelte";
-  import { nanopass } from "$lib/utils/nanopass.svelte";
-  import { smalltalk_notes } from "$lib/utils/smalltalk.svelte";
+  import Notifications from "#lib/comps/Notifications.svelte";
+  import { nanopass } from "#lib/utils/nanopass.svelte.js";
+  import { smalltalk_notes } from "#lib/utils/smalltalk.svelte.js";
   /**
    * @typedef {Object} Props
    * @property {import('svelte').Snippet} [children]

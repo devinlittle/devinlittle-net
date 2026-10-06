@@ -5,8 +5,8 @@
     authApi,
     get_ready_for_devin_grfd,
     onAuthSuccess,
-  } from "$lib/utils/auth.svelte";
-  import { connectNotifications } from "$lib/utils/notifications.svelte";
+  } from "#lib/utils/auth.svelte.js";
+  import { connectNotifications } from "#lib/utils/notifications.svelte.js";
 
   let tab = $state("login");
 

@@ -90,7 +90,7 @@ async function apiPreformRefresh(url: any, init: any, next: any) {
   return new Error("Refresh failed")
 }
 
-import type { paths as AuthPaths, components } from "$lib/types/auth.api";
+import type { paths as AuthPaths, components } from "#lib/types/auth.api.js";
 import { base64_to_arraybuffer, load_notes } from "./smalltalk.svelte";
 import { db_exec, db_state, get_private_key_from_indexeddb, mountDB } from "./sqlite.svelte";
 import { addNotification, connectNotifications } from "./notifications.svelte";

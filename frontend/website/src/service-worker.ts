@@ -4,15 +4,20 @@
 /// <reference types="@sveltejs/kit" />
 /// <reference types="../.svelte-kit/ambient.d.ts" />
 
-import { build, files, version } from '$service-worker';
+import { self } from '$app/service-worker';
+import { version } from '$app/env';
+import { immutable, assets } from '$app/manifest';
+import { resolve } from '$app/paths';
 
-const self = globalThis.self as unknown as ServiceWorkerGlobalScope;
-const CACHE_NAME = `cache-${version}`;
-const ASSETS = [...build, ...files];
+const CACHE = `cache-${version}`;
+const ASSETS = [
+  ...immutable.map((asset) => resolve(asset.path)),
+  ...assets.map((asset) => resolve(asset.path))
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE).then((cache) => {
       return Promise.all(
         ASSETS.map(url => cache.add(url).catch(() => {
           console.warn(`[SW] Could not cache: ${url}`);
@@ -27,7 +32,7 @@ self.addEventListener('activate', (event) => {
     (async () => {
       await caches.keys().then((keys) => {
         return Promise.all(
-          keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+          keys.filter(key => key !== CACHE).map(key => caches.delete(key))
         );
       }).then(() => self.clients.claim())
     })()

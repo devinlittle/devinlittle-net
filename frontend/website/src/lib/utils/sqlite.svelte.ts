@@ -1,4 +1,4 @@
-import type { SmallTalkNotesDecryptedNote } from '$lib/types/smalltalk.types.js'
+import type { SmallTalkNotesDecryptedNote } from '#lib/types/smalltalk.types.js'
 import { auth, authApi, global_private_key, getRefreshStatus } from './auth.svelte'
 import { addNotification } from './notifications.svelte.js'
 import { getDb } from './sqlite.js'

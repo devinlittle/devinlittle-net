@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG RUST_VERSION=1.97.1
+ARG RUST_VERSION=1.99.0
 ARG ALPINE_VERSION=3.24.1
 ARG APP_NAME=auth_backend
 

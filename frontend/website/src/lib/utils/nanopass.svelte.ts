@@ -1,7 +1,7 @@
 import { auth, createClient } from "./auth.svelte"
 import { API_URL } from "./constants.svelte";
 import { addNotification, formatBytes, sendMessage } from "./notifications.svelte"
-import type { components, paths as NanoPassPaths } from "$lib/types/nanopass.api"
+import type { components, paths as NanoPassPaths } from "#lib/types/nanopass.api.js"
 
 export const nanopassApi = createClient<NanoPassPaths>(`${API_URL}/nanopass`);
 export type FileListing = components["schemas"]["FileListing"]
@@ -44,14 +44,14 @@ export function handleNanoPass(msg: NanoPassMessage) {
 // --- listings ---
 
 function handleListingAdded(listing: FileListing) {
-  if (nanopass.listings.some(l => l.id === listing.id)) return
-  nanopass.listings.push(listing)
+  if (nanopass.listings.some((l) => l.id === listing.id)) return;
 
-  console.log("[NanoPass]: Added New Listing")
+  nanopass.listings.push(listing);
+  console.log("[NanoPass]: Added New Listing");
 }
 
 function handleListingModified(listing: FileListing) {
-  const idx = nanopass.listings.findIndex(l => l.id == listing.id)
+  const idx = nanopass.listings.findIndex((l) => l.id == listing.id);
 
   // remove listing if the restricted one isnt for us
   if (listing.visibility.type === "Restricted") {
@@ -73,10 +73,11 @@ function handleListingModified(listing: FileListing) {
 }
 
 function handleListingRemoved(listing_id: string) {
-  const idx = nanopass.listings.findIndex(l => l.id == listing_id)
-  if (idx !== -1) nanopass.listings.splice(idx, 1)
+  const idx = nanopass.listings.findIndex((l) => l.id == listing_id);
 
-  console.log("[NanoPass]: Removed Listing")
+  if (idx !== -1) nanopass.listings.splice(idx, 1);
+
+  console.log("[NanoPass]: Removed Listing");
 }
 
 // --- ARP resolution ---
@@ -119,12 +120,21 @@ function handleFileQueryResponse(msg: NanoPassMessage) {
 function handleTransferRequest(msg: NanoPassMessage) {
   const raw_payload = msg.payload as Extract<NanoPassPayload, { type: 'TransferRequest' }>
   let payload = raw_payload.data;
-  const listing = nanopass.listings.find(l => l.id === payload.listing_id)
-  if (!listing) return
+  const listing = nanopass.listings.find((l) => l.id === payload.listing_id);
+
+  if (!listing) return;
 
   if (listing.auto_accept == true) {
-    sendNanoPass({ type: 'TransferAccepted', data: { listing_id: payload.listing_id } }, msg.from_session_id, msg.from_user_id)
-    initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id)
+    sendNanoPass(
+      {
+        type: 'TransferAccepted',
+        data: { listing_id: payload.listing_id }
+      },
+      msg.from_session_id,
+      msg.from_user_id
+    );
+
+    initWebRTCAsHost(payload.listing_id, msg.from_session_id, msg.from_user_id);
 
     sendMessage(
       JSON.stringify({
@@ -249,7 +259,7 @@ async function handleICECandidate(msg: NanoPassMessage) {
 
 const peerConnections = new Map<string, RTCPeerConnection>()
 
-import { PUBLIC_TURN_USERNAME, PUBLIC_TURN_PASSWORD } from "$env/static/public"
+import { PUBLIC_TURN_USERNAME, PUBLIC_TURN_PASSWORD } from "$env/static/public";
 
 function createPeerConnection(listing_id: string, target_session_id: string, target_user_id: string): RTCPeerConnection {
   const pc = new RTCPeerConnection({
@@ -285,15 +295,20 @@ function createPeerConnection(listing_id: string, target_session_id: string, tar
   return pc
 }
 
+async function initWebRTCAsRequester(
+  listing_id: string,
+  target_session_id: string,
+  target_user_id: string
+) {
+  const pc = createPeerConnection(listing_id, target_session_id, target_user_id);
+  const dc = pc.createDataChannel('filetransfer');
 
+  receiveFileInChunks(dc, listing_id);
 
-async function initWebRTCAsRequester(listing_id: string, target_session_id: string, target_user_id: string) {
-  const pc = createPeerConnection(listing_id, target_session_id, target_user_id)
-  const dc = pc.createDataChannel('filetransfer')
-  receiveFileInChunks(dc, listing_id)
-  const offer = await pc.createOffer()
-  await pc.setLocalDescription(offer)
-  sendNanoPass({ type: 'SDPOffer', data: { listing_id, sdp: offer.sdp! } }, target_session_id, target_user_id)
+  const offer = await pc.createOffer();
+
+  await pc.setLocalDescription(offer);
+  sendNanoPass({ type: 'SDPOffer', data: { listing_id, sdp: offer.sdp! } }, target_session_id, target_user_id);
 }
 
 function initWebRTCAsHost(listing_id: string, target_session_id: string, target_user_id: string) {

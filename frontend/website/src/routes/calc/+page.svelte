@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import type { components } from "$lib/types/auth.api";
+  import type { components } from "#lib/types/auth.api.js";
   import {
     auth,
     onAuthSuccess,
@@ -8,11 +8,11 @@
     authApi,
     type ServiceName,
     type UserRole,
-  } from "$lib/utils/auth.svelte";
+  } from "#lib/utils/auth.svelte.js";
   import {
     notificationApi,
     sendMessage,
-  } from "$lib/utils/notifications.svelte";
+  } from "#lib/utils/notifications.svelte.js";
 
   type Users = components["schemas"]["Users"];
   type UserRoles = components["schemas"]["UserRole"];

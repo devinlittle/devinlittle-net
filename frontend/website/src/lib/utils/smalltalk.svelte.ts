@@ -1,5 +1,5 @@
-import type { components } from "$lib/types/smalltalk.api"
-import type { SmallTalkNotesDecryptedNote } from "$lib/types/smalltalk.types";
+import type { components } from "#lib/types/smalltalk.api.js"
+import type { SmallTalkNotesDecryptedNote } from "#lib/types/smalltalk.types.js";
 
 export type SmallTalkNoteMessage = components["schemas"]["SmalltalkNotesMessage"];
 export type SmallTalkNotesEvent = components["schemas"]["SmalltalkNotesEvent"];
@@ -65,8 +65,8 @@ async function addNote() {
 import { sendMessage } from "./notifications.svelte"
 import { auth, authApi, global_private_key } from "./auth.svelte"
 import { db_exec, store_private_key_in_indexeddb } from "./sqlite.svelte"
-import type { KeySyncMessage, KeySyncPayload, KeySyncStatus, PendingChallenge, } from "$lib/types/smalltalk.types"
-import wordlist from "$lib/utils/wordlist.json"
+import type { KeySyncMessage, KeySyncPayload, KeySyncStatus, PendingChallenge, } from "#lib/types/smalltalk.types.js"
+import wordlist from "#lib/utils/wordlist.json"
 
 // --- emoji pool ---
 

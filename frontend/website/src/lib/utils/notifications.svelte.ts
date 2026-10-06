@@ -3,7 +3,7 @@ import { fetchGrades } from "./gradegetter.svelte";
 import { handleNanoPass, type NanoPassMessage } from "./nanopass.svelte";
 import { handleKeySync, handleSmallTalkNotes, type SmallTalkNoteMessage } from "./smalltalk.svelte";
 import type { KeySyncMessage } from "../types/smalltalk.types";
-import type { components, paths as NotificationPaths } from "$lib/types/notification.api.ts";
+import type { components, paths as NotificationPaths } from "#lib/types/notification.api.ts";
 import { API_URL } from "./constants.svelte";
 
 export const notificationApi = createClient<NotificationPaths>(`${API_URL}/notification`);

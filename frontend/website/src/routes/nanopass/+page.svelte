@@ -6,13 +6,13 @@
     sendNanoPass,
     unregisterHostedFile,
     nanopassApi,
-  } from "$lib/utils/nanopass.svelte";
-  import { auth, authApi } from "$lib/utils/auth.svelte";
-  import type { FileListing, Visibility } from "$lib/utils/nanopass.svelte";
-  import { formatBytes } from "$lib/utils/notifications.svelte";
+  } from "#lib/utils/nanopass.svelte.js";
+  import { auth, authApi } from "#lib/utils/auth.svelte.js";
+  import type { FileListing, Visibility } from "#lib/utils/nanopass.svelte.js";
+  import { formatBytes } from "#lib/utils/notifications.svelte.js";
   import { beforeNavigate } from "$app/navigation";
-  import { db_exec, db_run, upsert_contact } from "$lib/utils/sqlite.svelte";
-  import type { components as AuthApiComponents } from "$lib/types/auth.api";
+  import { db_exec, db_run, upsert_contact } from "#lib/utils/sqlite.svelte.js";
+  import type { components as AuthApiComponents } from "#lib/types/auth.api.js";
 
   let activeTab = $state<"mine" | "public" | "forme">("mine");
 
@@ -23,6 +23,7 @@
   let selectedVisibility = $state<"Private" | "Public" | "Restricted">(
     "Private",
   );
+
   let selectedAutoAcceptState = $state(false);
   let uploading = $state(false);
   let fileInput: HTMLInputElement;
@@ -30,9 +31,11 @@
   const myListings = $derived(
     nanopass.listings.filter((l) => l.owner_id === auth.id),
   );
+
   const publicListings = $derived(
     nanopass.listings.filter((l) => l.visibility.type === "Public"),
   );
+
   const forMeListings = $derived(
     nanopass.listings.filter(
       (l) =>
@@ -41,6 +44,7 @@
         l.owner_id !== auth.id,
     ),
   );
+
   const activeListings = $derived(
     activeTab === "mine"
       ? myListings
@@ -211,7 +215,7 @@
       size_bytes: pendingEditListing.size_bytes,
       created_at: pendingEditListing.created_at,
       mime_type: pendingEditListing.mime_type,
-      visibility: visibility,
+      visibility,
       auto_accept: selectedAutoAcceptState,
     });
 
@@ -310,7 +314,9 @@
     showFileUploadModal = true;
   }
 
-  beforeNavigate(({ cancel }) => {
+  beforeNavigate(({ cancel, shallow }) => {
+    if (shallow) return;
+
     if (isTransferring) {
       if (
         !confirm(
@@ -484,9 +490,8 @@
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2.5"
+                      ><path d="M2 2l12 12M14 2L2 14"></path></svg
                     >
-                      <path d="M2 2l12 12M14 2L2 14" />
-                    </svg>
                   </button>
                 </div>
               {/each}
@@ -546,9 +551,9 @@
             stroke="currentColor"
             stroke-width="1.5"
           >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
           drop to share
         </div>
@@ -649,9 +654,8 @@
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2.5"
+                      ><path d="M2 2l12 12M14 2L2 14"></path></svg
                     >
-                      <path d="M2 2l12 12M14 2L2 14" />
-                    </svg>
                   </button>
                 {/if}
               </div>
@@ -709,10 +713,9 @@
                     viewBox="0 0 16 16"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="2"
+                    stroke-width="2"><path d="M2 8l4 4 8-8"></path></svg
                   >
-                    <path d="M2 8l4 4 8-8" />
-                  </svg>
+
                   downloaded
                 {:else if progress !== null}
                   <span class="btn-progress-wrap">
@@ -732,9 +735,9 @@
                     fill="none"
                     stroke="currentColor"
                     stroke-width="1.5"
+                    ><path d="M8 2v8M5 7l3 3 3-3M3 13h10"></path></svg
                   >
-                    <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
-                  </svg>
+
                   {listing.auto_accept === true
                     ? "download file"
                     : "request file"}
