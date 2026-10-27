@@ -9,6 +9,7 @@ members = [
   "services/smalltalk_backend",
   "services/backend-common",
   "services/service_connector",
+ "services/face_backend",
   "crates/crypto_utils",
   "crates/friendly-namer",
   "crates/dln-core",
@@ -117,6 +118,7 @@ cxx-qt-lib = { version="0.10.0", features = ["full"] }
 cxx-qt-lib-extras = "0.10.0"
 cxx-qt-build = { version = "0.10.0", features = [ "link_qt_object_files" ] }
 
+ankle-face-protocol = { version = "0.0.1", registry = "forgejo" }
 
 [profile.release]
 panic = "abort"

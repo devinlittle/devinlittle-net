@@ -52,3 +52,9 @@ target "service_connector" {
     dockerfile = "./services/service_connector/Dockerfile"
     tags = ["${REGISTRY}/service_connector:${TAG}"]
 }
+
+target "face" {
+    inherits = ["settings"]
+    dockerfile = "./services/face/Dockerfile"
+    tags = ["${REGISTRY}/service_connector:${TAG}"]
+}

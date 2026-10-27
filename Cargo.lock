@@ -93,6 +93,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ankle-face-protocol"
+version = "0.0.1"
+source = "sparse+https://git.home.devinlittle.net/api/packages/devin/cargo/"
+checksum = "0fd472ac84bd38cbf2f6dbfc02622262c3d7800737e89b54e933c8c1befb4b85"
+dependencies = [
+ "prost",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+]
+
+[[package]]
 name = "anstream"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1962,6 +1974,44 @@ dependencies = [
  "hashbag",
  "left-right",
  "smallvec",
+]
+
+[[package]]
+name = "face_backend"
+version = "0.1.0"
+dependencies = [
+ "ankle-face-protocol",
+ "anyhow",
+ "axum",
+ "axum-extra",
+ "axum-prometheus",
+ "axum-server",
+ "backend-common",
+ "base64 0.23.1",
+ "chrono",
+ "constant_time_eq 0.6.1",
+ "dashmap",
+ "dotenvy",
+ "hyper",
+ "hyper-tls",
+ "jsonwebtoken",
+ "prost",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-prost",
+ "tonic-reflection",
+ "tower",
+ "tower-http 0.7.1",
+ "tracing",
+ "tracing-subscriber",
+ "utoipa",
+ "utoipa-scalar",
+ "uuid",
 ]
 
 [[package]]

@@ -19,7 +19,8 @@ client = [
   "gradegetter",
   "nanopass",
   "notifications",
-  "smalltalk"
+  "smalltalk",
+  "face"
 ]
 
 ## Enables server specific features `tracing, webrtc, internal, and tonic specifically`
@@ -37,6 +38,8 @@ notifications = []
 nanopass = []
 ## Enables the `smalltalk` module
 smalltalk = ["dep:sqlx"]
+## Enabled the `face` module
+face = []
 
 internal = []
 

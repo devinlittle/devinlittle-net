@@ -34,6 +34,9 @@ pub mod internal;
 #[cfg(feature = "tracing")]
 pub mod tracing;
 
+#[cfg(feature = "face")]
+pub mod face;
+
 #[derive(Clone, ToSchema, Serialize, Deserialize, Debug)]
 pub struct AuthenticatedUser {
     pub username: String,
@@ -85,6 +88,9 @@ pub enum ServiceName {
     #[serde(alias = "PodcastSchoolProject")]
     /// This can be used in the client
     PodcastSchoolProject,
+    ///This can be used in the client
+    #[serde(alias = "AnkleMonitor")]
+    AnkleMonitor,
     /// This can NOT be used in the client
     #[serde(alias = "Unknown")]
     Unknown,
@@ -119,4 +125,5 @@ pub enum Namespaces {
     #[serde(rename = "smalltalk_notes")]
     #[schema(rename = "smalltalk_notes")]
     SmallTalkNotes,
+    Face,
 }
