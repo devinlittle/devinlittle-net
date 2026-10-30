@@ -22,6 +22,7 @@ export const the_bad_status = {
 };
 
 export async function fetchGrades() {
+  /*
   try {
     const grades_req = gradesApi.path("/grades").method("get").create();
     const response = await grades_req({});
@@ -48,4 +49,5 @@ export async function fetchGrades() {
         return;
     }
   }
+  */
 }

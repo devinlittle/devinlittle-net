@@ -4,6 +4,7 @@ use axum::{
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
 use dashmap::DashMap;
+use hyper::StatusCode;
 use sqlx::PgPool;
 use std::{
     collections::HashSet,
@@ -24,12 +25,12 @@ pub mod internal;
 #[derive(OpenApi)]
 #[openapi(
       paths(
+        crate::routes::health,
         // Auth paths
         crate::routes::auth::foward_to_gradegetter,
         crate::routes::auth::forward_status_for_client,
         crate::routes::auth::add_schoology_credentials_handler,
         crate::routes::auth::delete_schoology_credentials_handler,
-        crate::routes::auth::health,
         // Grade path
         crate::routes::grades::grades_handler,
         // Internal Paths
@@ -83,6 +84,19 @@ impl utoipa::Modify for InternalAuth {
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, description = "Service is alive"),
+    ),
+    tag = "none"
+)]
+
+pub async fn health() -> Result<(), StatusCode> {
+    Ok(())
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
@@ -112,7 +126,7 @@ pub fn create_routes(pool: PgPool) -> Router {
             "/auth/forward_ws/{uuid}",
             get(auth::forward_status_for_client),
         )
-        .route("/health", get(auth::health))
+        .route("/health", get(health))
         .route("/metrics", get(|| async move { metric_handle.render() }))
         // Fowrard route here bc u cant add authorization headers to websockets in browser :(
         .route(

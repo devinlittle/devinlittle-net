@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
-use backend_common::{gradegetter::SchoologyLogin, AuthenticatedUser};
+use backend_common::{gradegetter::SchoologyLogin, AuthenticatedUser, UserRole};
 use crypto_utils::encrypt_string;
 use tokio::sync::watch::{self};
 use tracing::{error, info, info_span, instrument, Instrument};
@@ -40,6 +40,9 @@ pub async fn add_schoology_credentials_handler(
     Extension(user): Extension<AuthenticatedUser>,
     Json(req): Json<SchoologyLogin>,
 ) -> Result<StatusCode, StatusCode> {
+    if user.role != UserRole::Devin {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
     let encrypted_email = match encrypt_string(&req.schoology_email) {
         Ok(encrypted_email) => encrypted_email,
         Err(err) => {
@@ -157,6 +160,10 @@ pub async fn foward_to_gradegetter(
     State(state): State<AppState>,
     Extension(user): Extension<AuthenticatedUser>,
 ) -> Result<StatusCode, StatusCode> {
+    // prevent gradegetter from receieving this request
+    if user.role != UserRole::Devin {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
     let (tx, rx) = watch::channel(user.uuid.to_string());
     state.channels.insert(user.uuid.to_string(), tx);
 
@@ -226,17 +233,4 @@ pub async fn forward_status_for_client(
             }
         }
     })
-}
-
-#[utoipa::path(
-    get,
-    path = "/health",
-    responses(
-        (status = 200, description = "Service is alive"),
-    ),
-    tag = "none"
-)]
-
-pub async fn health() -> Result<(), axum::http::StatusCode> {
-    Ok(())
 }

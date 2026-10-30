@@ -23,7 +23,7 @@
   const links = [
     { href: "/", label: "Home" },
     { href: "/projects", label: "Projects" },
-    { href: "/gradegetter", label: "GradeGetter" },
+    //    { href: "/gradegetter", label: "GradeGetter" },
     { href: "/nanopass", label: "NanoPass" },
     //    { href: "/smalltalk", label: "SmallTalk" },
     { href: "/calc", label: "Calculator" },

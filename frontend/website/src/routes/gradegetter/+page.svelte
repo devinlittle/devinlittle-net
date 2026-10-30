@@ -30,6 +30,9 @@
   <meta name="description" content="Devin's gradegetter duh" />
 </svelte:head>
 
+<h1>GradeGetter is currently unavilable</h1>
+
+<!--->
 <main>
   {#if auth.ready}
     {#if the_bad_status.value != null}
@@ -57,6 +60,7 @@
     <h1>To use GradeGetter, Register an account on DevinLittle.Net!</h1>
   {/if}
 </main>
+<!-->
 
 <style>
   .grades {

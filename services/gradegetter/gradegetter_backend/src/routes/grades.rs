@@ -5,7 +5,7 @@ use tracing::{error, info, info_span, instrument, warn, Instrument};
 
 use crate::routes::AppState;
 
-use backend_common::{gradegetter::GradesHashMap, AuthenticatedUser};
+use backend_common::{gradegetter::GradesHashMap, AuthenticatedUser, UserRole};
 
 #[instrument(
     name = "fetch_grades",
@@ -35,6 +35,11 @@ pub async fn grades_handler(
     Extension(user): Extension<AuthenticatedUser>,
 ) -> Result<Json<GradesHashMap>, StatusCode> {
     let db_span = info_span!("grades_query");
+
+    // only let the devin user use gradegetter
+    if user.role != UserRole::Devin {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
 
     let grades_row = sqlx::query!("SELECT grades FROM grades WHERE id = $1", user.uuid)
         .fetch_optional(&state.pool)
