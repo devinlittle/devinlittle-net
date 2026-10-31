@@ -1,3 +1,6 @@
+[registries.forgejo]
+index = "sparse+https://git.home.devinlittle.net/api/packages/devin/cargo/"
+
 #===================================
 [target.aarch64-unknown-linux-gnu]
 linker = "scripts/clang-aarch64"
