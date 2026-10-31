@@ -1,7 +1,3 @@
-use ankle_face_protocol::ankleface::{
-    ankle_face_server::{AnkleFace, AnkleFaceServer},
-    Event,
-};
 use anyhow::Result;
 use base64::prelude::*;
 use std::{net::SocketAddr, sync::Arc};
@@ -10,8 +6,12 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::{async_trait, transport::Server, Response, Status, Streaming};
 use tracing::info;
 
+use crate::grpc::basic_auth::basic_auth_for_grpc;
 use crate::AppState;
-use crate::{grpc::basic_auth::basic_auth_for_grpc, utils::secrets::SECRETS};
+use ankle_face_protocol::ankleface::{
+    ankle_face_server::{AnkleFace, AnkleFaceServer},
+    Event,
+};
 
 pub mod basic_auth;
 
@@ -50,14 +50,37 @@ impl AnkleFace for FaceService {
             return Err(Status::unauthenticated("incorrect credentials"));
         }
 
-        println!("remote addr: {:?}", request.remote_addr());
-
         let mut inbound_stream = request.into_inner();
         let (tx, rx) = mpsc::channel(128);
-
-        let _ = tx.send(Ok(Event::default())).await;
-
         let output_stream = ReceiverStream::new(rx);
+
+        // INFO: Sender Worker
+        let sender_self = Arc::clone(&self.state);
+        let sender_grpc_tx = tx.clone();
+        tokio::spawn(async move {
+            let sender_self = sender_self;
+            let sender_grpc_tx = sender_grpc_tx;
+            let mut ankle_recv = sender_self.ankle_channel.subscribe();
+
+            //
+            loop {
+                tokio::select! {
+                    msg = ankle_recv.recv() => {
+                        match msg {
+                            Ok(msg) => {
+                                let _ = sender_grpc_tx.send(Ok(msg)).await;
+                            },
+                            Err(_) => { continue; }
+                        }
+                    }
+                }
+            }
+            //
+        });
+
+        // TODO: have the inbound_stream report live connection to notification (broadcast)
+        // > maybe also report battery life/if critical
+
         Ok(Response::new(
             Box::pin(output_stream) as Self::ConnectFaceStream
         ))

@@ -1,10 +1,13 @@
+use ankle_face_protocol::ankleface::Event;
 use axum::Router;
-use dashmap::DashSet;
 use hyper::header::{ACCESS_CONTROL_ALLOW_ORIGIN, AUTHORIZATION, CONTENT_TYPE};
-use std::{io::Empty, net::SocketAddr, sync::Arc, time::Duration};
-use tokio::signal::{
-    self,
-    unix::{signal, SignalKind},
+use std::{net::SocketAddr, sync::Arc, time::Duration};
+use tokio::{
+    signal::{
+        self,
+        unix::{signal, SignalKind},
+    },
+    sync::{self, broadcast},
 };
 use tower_http::cors::CorsLayer;
 use tracing::info;
@@ -19,7 +22,7 @@ mod grpc;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub sockets: DashSet<()>,
+    pub ankle_channel: sync::broadcast::Sender<Event>,
     pub client: reqwest::Client,
 }
 
@@ -31,10 +34,14 @@ async fn main() {
         .install_default()
         .expect("failed to install rustls cryptoi provider");
 
-    let sockets: DashSet<()> = DashSet::new();
+    let ankle_channel = broadcast::channel::<Event>(16).0;
+
     let client = reqwest::Client::new();
 
-    let app_state = Arc::new(AppState { sockets, client });
+    let app_state = Arc::new(AppState {
+        ankle_channel,
+        client,
+    });
 
     // INFO: GRPC Serve worker
     let grpc_app_state = Arc::clone(&app_state);
