@@ -32,8 +32,7 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-COPY --from=build /bin/face_backend/bin/
-COPY --from=sqlx_build /usr/local/cargo/bin/sqlx /bin/sqlx
+COPY --from=build /bin/face_backend/ /bin/
 
 RUN mkdir -p /app/logs
 

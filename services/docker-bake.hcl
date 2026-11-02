@@ -3,7 +3,7 @@ variable "REGISTRY" { default = "git.home.devinlittle.net/devin" }
 variable "TAG" { default = "dev" }
 
 group "default" {
-    targets = ["auth_backend", "gradegetter", "gradegetter_backend", "nanopass_backend", "notification_backend", "smalltalk_backend", "service_connector"]
+    targets = ["auth_backend", "gradegetter", "gradegetter_backend", "nanopass_backend", "notification_backend", "smalltalk_backend", "service_connector", "face_backend"]
 }
 
 target "settings" {
@@ -53,8 +53,8 @@ target "service_connector" {
     tags = ["${REGISTRY}/service_connector:${TAG}"]
 }
 
-target "face" {
+target "face_backend" {
     inherits = ["settings"]
-    dockerfile = "./services/face/Dockerfile"
+    dockerfile = "./services/face_backend/Dockerfile"
     tags = ["${REGISTRY}/service_connector:${TAG}"]
 }
