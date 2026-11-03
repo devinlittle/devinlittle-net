@@ -127,3 +127,9 @@ pub enum Namespaces {
     SmallTalkNotes,
     Face,
 }
+
+#[cfg(feature = "server")]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct VersionInfo<'a> {
+    pub commit: &'a str,
+}

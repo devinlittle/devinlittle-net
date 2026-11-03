@@ -4,6 +4,7 @@ use axum::{
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
 use backend_common::UserRole;
+use backend_common::VersionInfo;
 use dashmap::DashMap;
 use hyper::StatusCode;
 use sqlx::PgPool;
@@ -29,9 +30,12 @@ mod noties;
 #[openapi(
       paths(
         crate::routes::health,
+        crate::routes::version,
+        // Noties
         crate::routes::noties::notify,
         crate::routes::noties::user_message,
         crate::routes::noties::push_api_subscribe,
+        // Internal
         crate::routes::internal::internal_user_message,
         crate::routes::internal::global_message,
         crate::routes::internal::role_message,
@@ -41,6 +45,7 @@ mod noties;
     ),
     components(
         schemas(
+            backend_common::VersionInfo,
             backend_common::AuthenticatedUser,
             backend_common::Claims,
             backend_common::notification::RoleMessage,
@@ -97,6 +102,22 @@ async fn health() -> StatusCode {
     StatusCode::OK
 }
 
+pub const COMMIT_HASH: &str = env!("GIT_COMMIT_HASH");
+
+#[utoipa::path(
+    get,
+    path = "/version",
+    responses(
+        (status = 200, description = "returns current commit hash"),
+    ),
+    tag = "internal"
+)]
+pub async fn version<'a>() -> Json<VersionInfo<'a>> {
+    Json(VersionInfo {
+        commit: COMMIT_HASH,
+    })
+}
+
 type ConnectedUsers = Arc<DashMap<Uuid, broadcast::Sender<String>>>;
 type RbacChannels = Arc<DashMap<UserRole, broadcast::Sender<String>>>;
 type OnlineUsers = Arc<DashMap<Uuid, Arc<RwLock<HashSet<Uuid>>>>>;
@@ -144,6 +165,7 @@ pub fn create_routes(pool: PgPool) -> Router {
     let routes_without_middleware = Router::new()
         .route("/ws/{uuid}", get(noties::notify))
         .route("/health", get(health))
+        .route("/version", get(version))
         .route("/metrics", get(|| async move { metric_handle.render() }))
         .route(
             "/api-docs/openapi.json",

@@ -3,6 +3,7 @@ use axum::{
     Json, Router,
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
+use backend_common::VersionInfo;
 use sqlx::PgPool;
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, HttpAuthScheme, HttpBuilder, SecurityScheme},
@@ -19,6 +20,7 @@ mod user;
 #[openapi(
       paths(
         crate::routes::health,
+        crate::routes::version,
         // Auth paths
         crate::routes::auth::register_handler,
         crate::routes::auth::login_handler,
@@ -46,6 +48,7 @@ mod user;
     ),
     components(
         schemas(
+            backend_common::VersionInfo,
             backend_common::auth::RegisterInput,
             backend_common::auth::LoginInput,
             backend_common::auth::UpdateProfileInput,
@@ -119,6 +122,22 @@ pub async fn health() -> Result<(), axum::http::StatusCode> {
     Ok(())
 }
 
+pub const COMMIT_HASH: &str = env!("GIT_COMMIT_HASH");
+
+#[utoipa::path(
+    get,
+    path = "/version",
+    responses(
+        (status = 200, description = "returns current commit hash"),
+    ),
+    tag = "none"
+)]
+pub async fn version<'a>() -> Json<VersionInfo<'a>> {
+    Json(VersionInfo {
+        commit: COMMIT_HASH,
+    })
+}
+
 pub fn create_routes(pool: PgPool) -> Router {
     let (prometheus_layer, metric_handle) = PrometheusMetricLayerBuilder::new()
         .with_prefix("auth_backend")
@@ -140,7 +159,8 @@ pub fn create_routes(pool: PgPool) -> Router {
                 move || async { Json(json_spec) }
             }),
         )
-        .route("/health", get(health));
+        .route("/health", get(health))
+        .route("/version", get(version));
 
     let routes_with_middleware = Router::new()
         // User Routes

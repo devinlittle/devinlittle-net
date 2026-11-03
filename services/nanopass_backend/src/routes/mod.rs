@@ -5,6 +5,7 @@ use axum::{
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
 use backend_common::nanopass::{FileListing, NanoPassMessage, NanoPassPayload, Visibility};
+use backend_common::VersionInfo;
 use dashmap::DashMap;
 use hyper::StatusCode;
 use std::sync::Arc;
@@ -27,6 +28,7 @@ mod internal;
 #[openapi(
     paths(
         crate::routes::health,
+        crate::routes::version,
         crate::routes::files::create_listing,
         crate::routes::files::modify_listing,
         crate::routes::files::remove_listing,
@@ -36,6 +38,7 @@ mod internal;
     ),
     components(
         schemas(
+            backend_common::VersionInfo,
             backend_common::nanopass::RemoveListingInput,
             backend_common::nanopass::RemoveSessionInput,
             backend_common::nanopass::RemoveSessionInternalInput,
@@ -90,6 +93,22 @@ impl utoipa::Modify for InternalAuth {
 )]
 async fn health() -> StatusCode {
     StatusCode::OK
+}
+
+pub const COMMIT_HASH: &str = env!("GIT_COMMIT_HASH");
+
+#[utoipa::path(
+    get,
+    path = "/version",
+    responses(
+        (status = 200, description = "returns current commit hash"),
+    ),
+    tag = "internal"
+)]
+pub async fn version<'a>() -> Json<VersionInfo<'a>> {
+    Json(VersionInfo {
+        commit: COMMIT_HASH,
+    })
 }
 
 #[derive(Clone)]
@@ -154,6 +173,7 @@ pub fn create_routes() -> Router {
 
     let routes_without_middleware = Router::new()
         .route("/health", get(health))
+        .route("/version", get(version))
         .route("/metrics", get(|| async move { metric_handle.render() }))
         .route(
             "/api-docs/openapi.json",

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::{middleware, routing::get, Json, Router};
 use axum_prometheus::PrometheusMetricLayerBuilder;
+use backend_common::VersionInfo;
 use hyper::StatusCode;
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
@@ -18,9 +19,11 @@ use crate::{
 #[openapi(
     paths(
         crate::routes::health,
+        crate::routes::version,
     ),
     components(
         schemas(
+            backend_common::VersionInfo,
         )
     ),
     modifiers(&JwtBearer, &InternalAuth),
@@ -71,6 +74,22 @@ async fn health() -> StatusCode {
     StatusCode::OK
 }
 
+pub const COMMIT_HASH: &str = env!("GIT_COMMIT_HASH");
+
+#[utoipa::path(
+    get,
+    path = "/version",
+    responses(
+        (status = 200, description = "returns current commit hash"),
+    ),
+    tag = "internal"
+)]
+pub async fn version<'a>() -> Json<VersionInfo<'a>> {
+    Json(VersionInfo {
+        commit: COMMIT_HASH,
+    })
+}
+
 pub fn create_routes(app_state: Arc<AppState>) -> Router {
     let (prometheus_layer, metric_handle) = PrometheusMetricLayerBuilder::new()
         .with_prefix("nanopass_backend")
@@ -81,6 +100,7 @@ pub fn create_routes(app_state: Arc<AppState>) -> Router {
 
     let routes_without_middleware = Router::new()
         .route("/health", get(health))
+        .route("/version", get(version))
         .route("/metrics", get(|| async move { metric_handle.render() }))
         .route(
             "/api-docs/openapi.json",

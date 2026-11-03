@@ -3,6 +3,7 @@ use axum::{
     Json, Router,
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
+use backend_common::VersionInfo;
 use dashmap::DashMap;
 use hyper::StatusCode;
 use sqlx::PgPool;
@@ -26,6 +27,7 @@ pub mod internal;
 #[openapi(
       paths(
         crate::routes::health,
+        crate::routes::version,
         // Auth paths
         crate::routes::auth::foward_to_gradegetter,
         crate::routes::auth::forward_status_for_client,
@@ -40,6 +42,7 @@ pub mod internal;
     ),
     components(
         schemas(
+            backend_common::VersionInfo,
             backend_common::AuthenticatedUser,
             backend_common::Claims,
             backend_common::gradegetter::SchoologyLogin,
@@ -97,6 +100,22 @@ pub async fn health() -> Result<(), StatusCode> {
     Ok(())
 }
 
+pub const COMMIT_HASH: &str = env!("GIT_COMMIT_HASH");
+
+#[utoipa::path(
+    get,
+    path = "/version",
+    responses(
+        (status = 200, description = "returns current commit hash"),
+    ),
+    tag = "none"
+)]
+pub async fn version<'a>() -> Json<VersionInfo<'a>> {
+    Json(VersionInfo {
+        commit: COMMIT_HASH,
+    })
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
@@ -127,6 +146,7 @@ pub fn create_routes(pool: PgPool) -> Router {
             get(auth::forward_status_for_client),
         )
         .route("/health", get(health))
+        .route("/version", get(version))
         .route("/metrics", get(|| async move { metric_handle.render() }))
         // Fowrard route here bc u cant add authorization headers to websockets in browser :(
         .route(

@@ -1,9 +1,8 @@
-//variable "REGISTRY" { default = "10.10.10.245:5000/devin" }
 variable "REGISTRY" { default = "git.home.devinlittle.net/devin" }
 variable "TAG" { default = "dev" }
 
 group "default" {
-    targets = ["auth_backend", "gradegetter", "gradegetter_backend", "nanopass_backend", "notification_backend", "smalltalk_backend", "service_connector", "face_backend"]
+    targets = ["auth_backend", "gradegetter", "gradegetter_backend", "nanopass_backend", "notification_backend", "service_connector", "face_backend"]
 }
 
 target "settings" {
