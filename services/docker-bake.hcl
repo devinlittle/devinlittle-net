@@ -1,5 +1,8 @@
 variable "REGISTRY" { default = "git.home.devinlittle.net/devin" }
 variable "TAG" { default = "dev" }
+variable "GIT_COMMIT_HASH" {
+  default = "unknown"
+}
 
 group "default" {
     targets = ["auth_backend", "gradegetter", "gradegetter_backend", "nanopass_backend", "notification_backend", "service_connector", "face_backend"]
@@ -8,6 +11,9 @@ group "default" {
 target "settings" {
     context = ".."
     output = ["type=registry"]
+    args = {
+      GIT_COMMIT_HASH = GIT_COMMIT_HASH
+    }
 }
 
 target "auth_backend" {

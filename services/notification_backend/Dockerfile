@@ -2,6 +2,7 @@
 ARG RUST_VERSION=1.99.1
 ARG ALPINE_VERSION=3.24.1
 ARG APP_NAME=notification_backend
+ARG GIT_COMMIT_HASH
 
 ################################################################################
 FROM rust:${RUST_VERSION}-alpine AS build
@@ -11,6 +12,8 @@ COPY . .
 
 RUN apk add --no-cache clang lld musl-dev openssl-libs-static git perl make curl protoc
 ENV RUSTFLAGS="-C link-arg=-fuse-ld=lld"
+ARG GIT_COMMIT_HASH
+ENV GIT_COMMIT_HASH=$GIT_COMMIT_HASH
 
 ENV SQLX_OFFLINE=true
 RUN --mount=type=cache,target=/app/target/,id=${APP_NAME} \
