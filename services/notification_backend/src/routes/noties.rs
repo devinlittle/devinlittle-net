@@ -108,9 +108,6 @@ pub async fn notify(
                 .insert(user.uuid, Arc::new(RwLock::new(new_set)));
         }
 
-        // TODO: set active to true on auth_db thru internal call
-        // announce to all users with conversations that user is now active
-
         if !state.connected_users.contains_key(&user.uuid) {
             let (tx, _) = broadcast::channel::<String>(32);
             state.connected_users.insert(user.uuid, tx);
@@ -142,14 +139,18 @@ pub async fn notify(
         );
 
         let mut global_rx = state.global_channel.subscribe();
-        let tx = if let Some(tx) = state.connected_users.get(&user.uuid) {
-            tx.subscribe()
-        } else {
-            let (tx, _) = broadcast::channel(32);
-            state.connected_users.insert(user.uuid, tx.clone());
-            state.connected_users.get(&user.uuid).unwrap().subscribe()
-        };
-        let mut user_rx = tx;
+
+        let rx = state
+            .connected_users
+            .entry(user.uuid)
+            .or_insert_with(|| {
+                let (tx, _) = broadcast::channel::<String>(32);
+                tx
+            })
+        .clone()
+        .subscribe();
+
+        let mut user_rx = rx;
 
         let admin_tx = if let Some(tx) = state.role_channel.get(&UserRole::Devin) {
             tx.subscribe()
@@ -166,6 +167,13 @@ pub async fn notify(
 
         loop {
             select! {
+                msg = socket.recv() => {
+                    match msg {
+                        Some(Ok(Message::Close(_))) | None => break,
+                        Some(Ok(_)) => {},
+                        Some(Err(_)) => break,
+                    }
+                },
                 msg = global_rx.recv() => {
                     match msg {
                         Ok(msg) => {
