@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { auth, logout } from "#lib/utils/auth.svelte.js";
-  import github from "#lib/images/github.svg";
   import { goto } from "$app/navigation";
 
   let open = $state(false);
@@ -123,12 +122,6 @@
       {/if}
     </button>
   </nav>
-
-  <div class="corner">
-    <a href="https://github.com/devinlittle/devinlittle-net">
-      <img src={github} alt="GitHub" />
-    </a>
-  </div>
 </header>
 
 <!-- mobile drawer -->
@@ -191,29 +184,6 @@
     border-bottom: 1px solid var(--color-border);
     top: 0;
     z-index: 50;
-  }
-
-  .corner {
-    width: 3em;
-    height: 3em;
-    flex-shrink: 0;
-  }
-  .corner a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-  }
-  .corner img {
-    width: 2em;
-    height: 2em;
-    object-fit: contain;
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
-  }
-  .corner img:hover {
-    opacity: 1;
   }
 
   nav {

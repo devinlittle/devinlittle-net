@@ -3,6 +3,17 @@ import { enhancedImages } from "@sveltejs/enhanced-img";
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import fs from 'fs';
+import { execSync } from 'child_process';
+
+function getGitHash() {
+  try {
+    return execSync("git rev-parse --short=12 HEAD").toString().trim();
+  } catch {
+    return "unknown-build";
+  }
+}
+
+const GIT_HASH = getGitHash();
 
 export default defineConfig({
   plugins: [
@@ -25,6 +36,14 @@ export default defineConfig({
     }),
     enhancedImages(),
   ],
+  build: {
+    rolldownOptions: {
+      external: ["bun"]
+    }
+  },
+  define: {
+    __GIT_HASH__: JSON.stringify(GIT_HASH),
+  },
   server: {
     https: {
       key: fs.readFileSync('./certs/localhostTRUE.pem'),
